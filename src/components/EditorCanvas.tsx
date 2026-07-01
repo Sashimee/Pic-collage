@@ -14,7 +14,7 @@ import { Background } from './Background'
 import { ElementNode } from './CanvasNodes'
 import { GridView } from './GridView'
 import { exportBoard, type ExportFormat } from '../lib/exportImage'
-import type { PhotoElement } from '../types'
+import type { CanvasElement, PhotoElement } from '../types'
 
 export interface EditorHandle {
   exportImage: (format: ExportFormat) => string | null
@@ -69,17 +69,20 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   // Re-fit when the viewport or board dimensions change.
   useEffect(fitToScreen, [size.w, size.h, boardWidth, boardHeight])
 
-  // --- transformer attachment (free mode only) ---------------------------
+  // --- transformer attachment --------------------------------------------
+  // Attach to the selected element when it is rendered as a free node: any
+  // element in free mode, only non-photo overlays in grid mode (grid photos
+  // keep the tap-highlight from GridView, without transform handles).
   useEffect(() => {
     const tr = trRef.current
     const stage = stageRef.current
     if (!tr || !stage) return
-    if (mode === 'free' && selectedId) {
-      const node = stage.findOne('#' + selectedId)
-      tr.nodes(node ? [node] : [])
-    } else {
-      tr.nodes([])
-    }
+    const sel = selectedId
+      ? elements.find((e) => e.id === selectedId)
+      : undefined
+    const attachable = !!sel && (mode !== 'grid' || sel.type !== 'photo')
+    const node = attachable ? stage.findOne('#' + selectedId) : undefined
+    tr.nodes(node ? [node] : [])
     tr.getLayer()?.batchDraw()
   }, [selectedId, mode, elements])
 
@@ -159,6 +162,26 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
 
   const gridLayout = gridId ? getGridById(gridId) : undefined
   const photos = elements.filter((e): e is PhotoElement => e.type === 'photo')
+  const inGrid = mode === 'grid' && !!gridLayout
+  // In grid mode photos fill the cells; text/stickers float on top as free nodes.
+  const freeElements = inGrid
+    ? elements.filter((e) => e.type !== 'photo')
+    : elements
+
+  const renderElement = (el: CanvasElement) => (
+    <ElementNode
+      key={el.id}
+      el={el}
+      onSelect={() => select(el.id)}
+      onChange={(patch) => updateElement(el.id, patch)}
+      onEditText={(id) => {
+        const current = useEditor.getState().elements.find((x) => x.id === id)
+        if (current?.type !== 'text') return
+        const next = window.prompt('Edit text', current.text)
+        if (next != null) updateElement(id, { text: next })
+      }}
+    />
+  )
 
   return (
     <div ref={hostRef} className="canvas-host relative h-full w-full">
@@ -176,7 +199,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           <Layer>
             <Group ref={boardRef} x={tf.x} y={tf.y} scaleX={tf.scale} scaleY={tf.scale}>
               <Background bg={background} width={boardWidth} height={boardHeight} />
-              {mode === 'grid' && gridLayout ? (
+              {inGrid && gridLayout && (
                 <GridView
                   layout={gridLayout}
                   photos={photos}
@@ -185,24 +208,8 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
                   selectedId={selectedId}
                   onSelect={select}
                 />
-              ) : (
-                elements.map((el) => (
-                  <ElementNode
-                    key={el.id}
-                    el={el}
-                    onSelect={() => select(el.id)}
-                    onChange={(patch) => updateElement(el.id, patch)}
-                    onEditText={(id) => {
-                      const current = useEditor
-                        .getState()
-                        .elements.find((x) => x.id === id)
-                      if (current?.type !== 'text') return
-                      const next = window.prompt('Edit text', current.text)
-                      if (next != null) updateElement(id, { text: next })
-                    }}
-                  />
-                ))
               )}
+              {freeElements.map(renderElement)}
             </Group>
             <Transformer
               ref={trRef}
