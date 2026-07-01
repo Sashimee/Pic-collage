@@ -5,6 +5,7 @@ import { FILTER_PRESETS } from '../lib/filters'
 import { loadPhotoMeta } from '../lib/importPhotos'
 import type { PhotoElement, TextElement } from '../types'
 import { Chip, ColorField, PrimaryButton, Slider } from './ui'
+import { useT } from '../i18n/useLang'
 
 async function importFiles(
   files: FileList,
@@ -24,6 +25,7 @@ async function importFiles(
 // ---- Photos --------------------------------------------------------------
 
 export function PhotosPanel() {
+  const t = useT()
   const addPhoto = useEditor((s) => s.addPhoto)
   const galleryRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
@@ -47,10 +49,10 @@ export function PhotosPanel() {
         onChange={(e) => e.target.files && importFiles(e.target.files, addPhoto)}
       />
       <PrimaryButton onClick={() => galleryRef.current?.click()}>
-        🖼️ Add photos
+        {t('photos.add')}
       </PrimaryButton>
       <PrimaryButton onClick={() => cameraRef.current?.click()}>
-        📷 Camera
+        {t('photos.camera')}
       </PrimaryButton>
     </div>
   )
@@ -59,13 +61,14 @@ export function PhotosPanel() {
 // ---- Layout (canvas size + grids) ---------------------------------------
 
 const ASPECTS = [
-  { label: 'Square', w: 1080, h: 1080 },
-  { label: 'Portrait', w: 1080, h: 1350 },
-  { label: 'Story', w: 1080, h: 1920 },
-  { label: 'Landscape', w: 1350, h: 1080 },
+  { key: 'square', w: 1080, h: 1080 },
+  { key: 'portrait', w: 1080, h: 1350 },
+  { key: 'story', w: 1080, h: 1920 },
+  { key: 'landscape', w: 1350, h: 1080 },
 ]
 
 export function LayoutPanel() {
+  const t = useT()
   const setBoardSize = useEditor((s) => s.setBoardSize)
   const setGrid = useEditor((s) => s.setGrid)
   const boardWidth = useEditor((s) => s.boardWidth)
@@ -77,17 +80,17 @@ export function LayoutPanel() {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {ASPECTS.map((a) => (
           <Chip
-            key={a.label}
+            key={a.key}
             active={boardWidth === a.w && boardHeight === a.h}
             onClick={() => setBoardSize(a.w, a.h)}
           >
-            {a.label}
+            {t('aspect.' + a.key)}
           </Chip>
         ))}
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
         <Chip active={gridId === null} onClick={() => setGrid(null)}>
-          Free
+          {t('layout.free')}
         </Chip>
         {GRID_LAYOUTS.map((g) => (
           <Chip key={g.id} active={gridId === g.id} onClick={() => setGrid(g.id)}>
@@ -96,10 +99,7 @@ export function LayoutPanel() {
         ))}
       </div>
       {gridId && (
-        <p className="text-xs text-slate-400">
-          Add photos — they fill the grid cells in order. Tap a cell to select it
-          for filters.
-        </p>
+        <p className="text-xs text-slate-400">{t('grid.hint')}</p>
       )}
     </div>
   )
@@ -117,6 +117,7 @@ const FONTS = [
 ]
 
 export function TextPanel() {
+  const t = useT()
   const addText = useEditor((s) => s.addText)
   const selectedId = useEditor((s) => s.selectedId)
   const el = useEditor((s) => s.elements.find((e) => e.id === s.selectedId))
@@ -125,14 +126,14 @@ export function TextPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      <PrimaryButton onClick={addText}>＋ Add text</PrimaryButton>
+      <PrimaryButton onClick={addText}>{t('text.add')}</PrimaryButton>
       {text && selectedId && (
         <div className="flex flex-col gap-3">
           <input
             value={text.text}
             onChange={(e) => update(selectedId, { text: e.target.value })}
             className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white"
-            placeholder="Type your text"
+            placeholder={t('text.placeholder')}
           />
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -165,13 +166,13 @@ export function TextPanel() {
               B
             </button>
             <ColorField
-              label="Color"
+              label={t('common.color')}
               value={text.fill}
               onChange={(v) => update(selectedId, { fill: v })}
             />
           </div>
           <Slider
-            label="Size"
+            label={t('common.size')}
             min={16}
             max={240}
             value={text.fontSize}
@@ -213,6 +214,7 @@ export function StickerPanel() {
 const PALETTE = ['#ffffff', '#000000', '#f43f5e', '#6366f1', '#22c55e', '#eab308', '#0ea5e9', '#f97316']
 
 export function BackgroundPanel() {
+  const t = useT()
   const bg = useEditor((s) => s.background)
   const setBg = useEditor((s) => s.setBackground)
 
@@ -220,10 +222,10 @@ export function BackgroundPanel() {
     <div className="flex flex-col gap-3">
       <div className="flex gap-2">
         <Chip active={bg.type === 'solid'} onClick={() => setBg({ type: 'solid' })}>
-          Solid
+          {t('bg.solid')}
         </Chip>
         <Chip active={bg.type === 'gradient'} onClick={() => setBg({ type: 'gradient' })}>
-          Gradient
+          {t('bg.gradient')}
         </Chip>
       </div>
       {bg.type === 'solid' ? (
@@ -240,14 +242,14 @@ export function BackgroundPanel() {
               />
             ))}
           </div>
-          <ColorField label="Custom" value={bg.color} onChange={(v) => setBg({ color: v })} />
+          <ColorField label={t('bg.custom')} value={bg.color} onChange={(v) => setBg({ color: v })} />
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <ColorField label="From" value={bg.gradientFrom} onChange={(v) => setBg({ gradientFrom: v })} />
-          <ColorField label="To" value={bg.gradientTo} onChange={(v) => setBg({ gradientTo: v })} />
+          <ColorField label={t('bg.from')} value={bg.gradientFrom} onChange={(v) => setBg({ gradientFrom: v })} />
+          <ColorField label={t('bg.to')} value={bg.gradientTo} onChange={(v) => setBg({ gradientTo: v })} />
           <Slider
-            label="Angle"
+            label={t('bg.angle')}
             min={0}
             max={360}
             value={bg.gradientAngle}
@@ -262,13 +264,14 @@ export function BackgroundPanel() {
 // ---- Filters -------------------------------------------------------------
 
 export function FilterPanel() {
+  const t = useT()
   const selectedId = useEditor((s) => s.selectedId)
   const el = useEditor((s) => s.elements.find((e) => e.id === s.selectedId))
   const updateFilters = useEditor((s) => s.updateFilters)
   const photo = el?.type === 'photo' ? (el as PhotoElement) : null
 
   if (!photo || !selectedId) {
-    return <p className="text-sm text-slate-400">Select a photo to apply filters.</p>
+    return <p className="text-sm text-slate-400">{t('filter.selectHint')}</p>
   }
 
   const f = photo.filters
@@ -281,12 +284,12 @@ export function FilterPanel() {
             active={f.preset === p.id}
             onClick={() => updateFilters(selectedId, { preset: p.id })}
           >
-            {p.label}
+            {t('filter.' + p.id)}
           </Chip>
         ))}
       </div>
       <Slider
-        label="Brightness"
+        label={t('filter.brightness')}
         min={-0.5}
         max={0.5}
         step={0.02}
@@ -294,14 +297,14 @@ export function FilterPanel() {
         onChange={(v) => updateFilters(selectedId, { brightness: v })}
       />
       <Slider
-        label="Contrast"
+        label={t('filter.contrast')}
         min={-60}
         max={60}
         value={f.contrast}
         onChange={(v) => updateFilters(selectedId, { contrast: v })}
       />
       <Slider
-        label="Saturation"
+        label={t('filter.saturation')}
         min={-2}
         max={4}
         step={0.1}

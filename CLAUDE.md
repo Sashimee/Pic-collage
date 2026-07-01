@@ -52,6 +52,7 @@ Key files:
 | Grid layout presets | `src/lib/grids.ts` |
 | PNG/JPG export + Web Share | `src/lib/exportImage.ts` |
 | Bottom tool tabs + panels | `src/components/Toolbar.tsx`, `src/components/Panels.tsx` |
+| i18n (DE/EN, flag switcher) | `src/i18n/translations.ts`, `src/i18n/useLang.ts`, `src/components/LangSwitcher.tsx` |
 
 **Coordinate model:** elements store positions in *board design units*
 (`boardWidth × boardHeight`, e.g. 1080×1350). The board is a Konva `Group` that
@@ -78,6 +79,11 @@ Done:
 - [x] Export PNG / JPG (download) + Web Share API
 - [x] Mobile-first touch UI, pinch-to-zoom / wheel-zoom, canvas aspect presets
 - [x] Installable PWA (manifest + service worker) + GitHub Pages CI/CD
+- [x] Bilingual UI (German / English) with flag switcher, defaults to system language
+
+To add a UI string: add the key to both `de` and `en` in
+`src/i18n/translations.ts`, then use `const t = useT()` and `t('your.key')` in the
+component. English is the fallback.
 
 Nice-to-have / next:
 

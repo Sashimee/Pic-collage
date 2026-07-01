@@ -4,6 +4,7 @@ import { HeaderBar, type ExportKind } from './components/HeaderBar'
 import { SelectionBar } from './components/SelectionBar'
 import { Toolbar } from './components/Toolbar'
 import { useEditor } from './store/editorStore'
+import { useT } from './i18n/useLang'
 import {
   downloadDataURL,
   shareDataURL,
@@ -18,6 +19,7 @@ const nextFrame = () =>
 export default function App() {
   const editorRef = useRef<EditorHandle>(null)
   const select = useEditor((s) => s.select)
+  const t = useT()
 
   const handleExport = async (kind: ExportKind) => {
     // Drop the selection so transform handles / grid highlight aren't captured,
@@ -28,7 +30,7 @@ export default function App() {
     const url = editorRef.current?.exportImage(format)
     if (!url) return
     if (kind === 'share') {
-      const shared = await shareDataURL(url, format)
+      const shared = await shareDataURL(url, format, t('share.title'))
       if (!shared) downloadDataURL(url, format)
     } else {
       downloadDataURL(url, format)

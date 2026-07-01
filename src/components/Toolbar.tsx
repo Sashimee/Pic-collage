@@ -8,26 +8,28 @@ import {
   StickerPanel,
   TextPanel,
 } from './Panels'
+import { useT } from '../i18n/useLang'
 
 interface Tab {
   id: string
-  label: string
+  labelKey: string
   icon: string
   panel: ReactNode
 }
 
 const TABS: Tab[] = [
-  { id: 'photos', label: 'Photos', icon: '🖼️', panel: <PhotosPanel /> },
-  { id: 'layout', label: 'Layout', icon: '▦', panel: <LayoutPanel /> },
-  { id: 'text', label: 'Text', icon: 'T', panel: <TextPanel /> },
-  { id: 'stickers', label: 'Stickers', icon: '😊', panel: <StickerPanel /> },
-  { id: 'bg', label: 'Background', icon: '🎨', panel: <BackgroundPanel /> },
-  { id: 'filters', label: 'Filters', icon: '✨', panel: <FilterPanel /> },
+  { id: 'photos', labelKey: 'tab.photos', icon: '🖼️', panel: <PhotosPanel /> },
+  { id: 'layout', labelKey: 'tab.layout', icon: '▦', panel: <LayoutPanel /> },
+  { id: 'text', labelKey: 'tab.text', icon: 'T', panel: <TextPanel /> },
+  { id: 'stickers', labelKey: 'tab.stickers', icon: '😊', panel: <StickerPanel /> },
+  { id: 'bg', labelKey: 'tab.background', icon: '🎨', panel: <BackgroundPanel /> },
+  { id: 'filters', labelKey: 'tab.filters', icon: '✨', panel: <FilterPanel /> },
 ]
 
 export function Toolbar() {
   const [active, setActive] = useState<string | null>('photos')
-  const current = TABS.find((t) => t.id === active)
+  const t = useT()
+  const current = TABS.find((tab) => tab.id === active)
 
   return (
     <div className="z-10 border-t border-slate-700 bg-slate-900">
@@ -46,7 +48,7 @@ export function Toolbar() {
             }`}
           >
             <span className="text-lg leading-none">{tab.icon}</span>
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>

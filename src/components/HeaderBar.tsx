@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useEditor } from '../store/editorStore'
 import { canShareImage } from '../lib/exportImage'
+import { useT } from '../i18n/useLang'
+import { LangSwitcher } from './LangSwitcher'
 
 export type ExportKind = 'png' | 'jpg' | 'share'
 
 export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }) {
   const [menu, setMenu] = useState(false)
+  const t = useT()
   const clearAll = useEditor((s) => s.clearAll)
   const hasElements = useEditor((s) => s.elements.length > 0)
 
@@ -23,21 +26,22 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
         </span>
       </h1>
       <div className="flex items-center gap-2">
+        <LangSwitcher />
         <button
           onClick={() => {
-            if (hasElements && window.confirm('Clear the whole canvas?')) clearAll()
+            if (hasElements && window.confirm(t('header.clearConfirm'))) clearAll()
           }}
           className="rounded-lg px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-40"
           disabled={!hasElements}
         >
-          New
+          {t('header.new')}
         </button>
         <div className="relative">
           <button
             onClick={() => setMenu((m) => !m)}
             className="rounded-lg bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-400"
           >
-            Export ▾
+            {t('header.export')}
           </button>
           {menu && (
             <>
@@ -47,10 +51,10 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
               />
               <div className="absolute right-0 z-30 mt-1 w-44 overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-2xl">
                 {canShareImage() && (
-                  <MenuItem onClick={() => pick('share')}>📤 Share…</MenuItem>
+                  <MenuItem onClick={() => pick('share')}>{t('export.share')}</MenuItem>
                 )}
-                <MenuItem onClick={() => pick('png')}>⬇️ Download PNG</MenuItem>
-                <MenuItem onClick={() => pick('jpg')}>⬇️ Download JPG</MenuItem>
+                <MenuItem onClick={() => pick('png')}>{t('export.png')}</MenuItem>
+                <MenuItem onClick={() => pick('jpg')}>{t('export.jpg')}</MenuItem>
               </div>
             </>
           )}

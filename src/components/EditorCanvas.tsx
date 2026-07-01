@@ -14,6 +14,7 @@ import { Background } from './Background'
 import { ElementNode } from './CanvasNodes'
 import { GridView } from './GridView'
 import { exportBoard, type ExportFormat } from '../lib/exportImage'
+import { useT } from '../i18n/useLang'
 import type { CanvasElement, PhotoElement } from '../types'
 
 export interface EditorHandle {
@@ -24,6 +25,7 @@ const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v))
 
 export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
+  const t = useT()
   const hostRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const boardRef = useRef<Konva.Group>(null)
@@ -177,7 +179,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
       onEditText={(id) => {
         const current = useEditor.getState().elements.find((x) => x.id === id)
         if (current?.type !== 'text') return
-        const next = window.prompt('Edit text', current.text)
+        const next = window.prompt(t('canvas.editText'), current.text)
         if (next != null) updateElement(id, { text: next })
       }}
     />

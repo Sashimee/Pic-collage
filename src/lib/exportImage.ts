@@ -65,6 +65,7 @@ export function canShareImage(): boolean {
 export async function shareDataURL(
   dataURL: string,
   format: ExportFormat,
+  title = 'My Collage',
 ): Promise<boolean> {
   if (!canShareImage()) return false
   const blob = dataURLToBlob(dataURL)
@@ -73,7 +74,7 @@ export async function shareDataURL(
   })
   if (!navigator.canShare({ files: [file] })) return false
   try {
-    await navigator.share({ files: [file], title: 'My Collage' })
+    await navigator.share({ files: [file], title })
     return true
   } catch {
     return false
