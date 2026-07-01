@@ -1,6 +1,6 @@
-# 🎨 PicCollage
+# 🎨 Pic Collage Maker
 
-A PicCollage-style photo collage & editor that runs **entirely in your browser** —
+A photo collage maker & editor that runs **entirely in your browser** —
 no account, no backend, nothing uploaded. Installable on iPhone and Android as a
 PWA, deployed as static files to GitHub Pages.
 

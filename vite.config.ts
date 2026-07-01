@@ -15,8 +15,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'PicCollage — Photo Collage Editor',
-        short_name: 'PicCollage',
+        name: 'Pic Collage Maker',
+        short_name: 'Collage Maker',
         description:
           'Create photo collages right in your browser. No account, nothing uploaded — everything stays on your device.',
         theme_color: '#6366f1',

@@ -19,10 +19,10 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
 
   return (
     <header className="flex items-center justify-between border-b border-slate-700 bg-slate-900 px-4 py-2.5 pt-[calc(env(safe-area-inset-top)+0.6rem)]">
-      <h1 className="flex items-center gap-1.5 text-base font-bold">
-        <span className="text-lg">🎨</span>
+      <h1 className="flex items-center gap-1.5 whitespace-nowrap text-sm font-bold">
+        <span className="text-base">🎨</span>
         <span className="bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">
-          PicCollage
+          Pic Collage Maker
         </span>
       </h1>
       <div className="flex items-center gap-2">
@@ -39,7 +39,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
         <div className="relative">
           <button
             onClick={() => setMenu((m) => !m)}
-            className="rounded-lg bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-400"
+            className="whitespace-nowrap rounded-lg bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-400"
           >
             {t('header.export')}
           </button>

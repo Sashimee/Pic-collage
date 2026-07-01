@@ -1,6 +1,6 @@
-# PicCollage — project guide
+# Pic Collage Maker — project guide
 
-A PicCollage-style photo collage editor. 100% client-side, no backend. Built as
+A photo collage maker & editor. 100% client-side, no backend. Built as
 an installable PWA from a single codebase, deployed to GitHub Pages.
 
 ## Stack
