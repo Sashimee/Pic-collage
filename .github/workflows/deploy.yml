@@ -25,7 +25,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # npm install (not ci): npm's cross-version handling of optional platform
+      # deps (@emnapi/* wasm fallbacks) can make a valid lockfile read as
+      # "out of sync" under npm ci. install is tolerant and still deterministic
+      # enough for a static deploy.
+      - run: npm install --no-audit --no-fund
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
