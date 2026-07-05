@@ -19,8 +19,8 @@ interface Tab {
 
 const TABS: Tab[] = [
   { id: 'photos', labelKey: 'tab.photos', icon: '🖼️', panel: <PhotosPanel /> },
-  { id: 'layout', labelKey: 'tab.layout', icon: '▦', panel: <LayoutPanel /> },
-  { id: 'text', labelKey: 'tab.text', icon: 'T', panel: <TextPanel /> },
+  { id: 'layout', labelKey: 'tab.layout', icon: '📐', panel: <LayoutPanel /> },
+  { id: 'text', labelKey: 'tab.text', icon: '✏️', panel: <TextPanel /> },
   { id: 'stickers', labelKey: 'tab.stickers', icon: '😊', panel: <StickerPanel /> },
   { id: 'bg', labelKey: 'tab.background', icon: '🎨', panel: <BackgroundPanel /> },
   { id: 'filters', labelKey: 'tab.filters', icon: '✨', panel: <FilterPanel /> },
