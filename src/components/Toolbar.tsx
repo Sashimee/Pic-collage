@@ -41,7 +41,7 @@ export function Toolbar() {
           <button
             key={tab.id}
             onClick={() => setActive((a) => (a === tab.id ? null : tab.id))}
-            className={`flex flex-1 flex-col items-center gap-0.5 rounded-lg py-2 text-[10px] font-medium transition ${
+            className={`flex flex-1 flex-col items-center gap-0.5 rounded-lg py-2 text-xs font-medium transition active:opacity-70 ${
               active === tab.id
                 ? 'bg-slate-800 text-indigo-400'
                 : 'text-slate-400 hover:text-slate-200'

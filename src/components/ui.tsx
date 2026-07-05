@@ -50,7 +50,7 @@ export function ColorField({
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-12 cursor-pointer rounded border border-slate-600 bg-transparent"
+        className="h-10 w-14 cursor-pointer rounded border border-slate-600 bg-transparent"
       />
     </label>
   )
@@ -68,10 +68,10 @@ export function Chip({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+      className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-medium transition active:scale-95 ${
         active
           ? 'bg-indigo-500 text-white'
-          : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+          : 'bg-slate-700 text-slate-200 hover:bg-slate-600 active:bg-slate-500'
       }`}
     >
       {children}
@@ -92,7 +92,7 @@ export function PrimaryButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-40"
+      className="min-h-[44px] rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-400 active:scale-95 active:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>
