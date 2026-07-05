@@ -31,7 +31,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           onClick={() => {
             if (hasElements && window.confirm(t('header.clearConfirm'))) clearAll()
           }}
-          className="rounded-lg px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-40"
+          className="min-h-[44px] rounded-lg px-3 py-2.5 text-sm text-slate-300 transition hover:bg-slate-800 active:scale-95 active:bg-slate-700 disabled:opacity-40"
           disabled={!hasElements}
         >
           {t('header.new')}
@@ -39,7 +39,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
         <div className="relative">
           <button
             onClick={() => setMenu((m) => !m)}
-            className="whitespace-nowrap rounded-lg bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-400"
+            className="min-h-[44px] whitespace-nowrap rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-400 active:scale-95 active:bg-indigo-600"
           >
             {t('header.export')}
           </button>
@@ -74,7 +74,7 @@ function MenuItem({
   return (
     <button
       onClick={onClick}
-      className="block w-full px-4 py-2.5 text-left text-sm text-slate-200 hover:bg-slate-700"
+      className="block min-h-[44px] w-full px-4 py-3 text-left text-sm text-slate-200 transition hover:bg-slate-700 active:bg-slate-600"
     >
       {children}
     </button>

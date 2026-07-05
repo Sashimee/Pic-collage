@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useEditor } from '../store/editorStore'
 import { GRID_LAYOUTS } from '../lib/grids'
 import { FILTER_PRESETS } from '../lib/filters'
@@ -6,6 +6,7 @@ import { loadPhotoMeta } from '../lib/importPhotos'
 import type { PhotoElement, TextElement } from '../types'
 import { Chip, ColorField, PrimaryButton, Slider } from './ui'
 import { useT } from '../i18n/useLang'
+import { EMOJI_CATEGORIES } from '../lib/emojis'
 
 async function importFiles(
   files: FileList,
@@ -132,7 +133,7 @@ export function TextPanel() {
           <input
             value={text.text}
             onChange={(e) => update(selectedId, { text: e.target.value })}
-            className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white"
+            className="min-h-[44px] rounded-lg border border-slate-600 bg-slate-800 px-3 py-2.5 text-sm text-white"
             placeholder={t('text.placeholder')}
           />
           <div className="flex flex-wrap items-center gap-2">
@@ -143,7 +144,7 @@ export function TextPanel() {
                   fontFamily: `${e.target.value}, system-ui, sans-serif`,
                 })
               }
-              className="rounded-lg border border-slate-600 bg-slate-800 px-2 py-2 text-sm text-white"
+              className="min-h-[44px] rounded-lg border border-slate-600 bg-slate-800 px-2 py-2.5 text-sm text-white"
             >
               {FONTS.map((f) => (
                 <option key={f} value={f}>
@@ -157,10 +158,10 @@ export function TextPanel() {
                   fontStyle: text.fontStyle.includes('bold') ? 'normal' : 'bold',
                 })
               }
-              className={`rounded-lg px-3 py-2 text-sm font-bold ${
+              className={`min-h-[44px] rounded-lg px-3 py-2.5 text-sm font-bold transition active:scale-95 ${
                 text.fontStyle.includes('bold')
-                  ? 'bg-indigo-500 text-white'
-                  : 'bg-slate-700 text-slate-200'
+                  ? 'bg-indigo-500 text-white active:bg-indigo-600'
+                  : 'bg-slate-700 text-slate-200 hover:bg-slate-600 active:bg-slate-500'
               }`}
             >
               B
@@ -186,25 +187,38 @@ export function TextPanel() {
 
 // ---- Stickers ------------------------------------------------------------
 
-const EMOJIS = [
-  '❤️','😍','😂','🥳','😎','🔥','✨','🌟','⭐','💯','👍','🙌',
-  '🎉','🎈','🌈','☀️','🌸','🌺','🍕','🍔','🍩','🍦','🐶','🐱',
-  '🦄','🚀','💫','💖','😜','🤩','👑','🎁','🏆','⚡','🌙','🍀',
-]
-
 export function StickerPanel() {
   const addSticker = useEditor((s) => s.addSticker)
+  const [catIndex, setCatIndex] = useState(0)
+  const cat = EMOJI_CATEGORIES[catIndex]
+
   return (
-    <div className="grid grid-cols-8 gap-1 sm:grid-cols-12">
-      {EMOJIS.map((e) => (
-        <button
-          key={e}
-          onClick={() => addSticker(e)}
-          className="rounded-lg py-1.5 text-2xl transition hover:bg-slate-700"
-        >
-          {e}
-        </button>
-      ))}
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {EMOJI_CATEGORIES.map((c, i) => (
+          <button
+            key={c.icon}
+            onClick={() => setCatIndex(i)}
+            title={c.label}
+            className={`flex-shrink-0 rounded-lg px-2 py-2.5 text-xl transition active:scale-95 ${
+              i === catIndex ? 'bg-slate-700 ring-1 ring-indigo-400' : 'hover:bg-slate-800'
+            }`}
+          >
+            {c.icon}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-8 gap-1 sm:grid-cols-12">
+        {cat.emoji.map((e) => (
+          <button
+            key={e}
+            onClick={() => addSticker(e)}
+            className="rounded-lg py-2 text-2xl transition hover:bg-slate-700 active:scale-90"
+          >
+            {e}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -236,7 +250,7 @@ export function BackgroundPanel() {
                 key={c}
                 onClick={() => setBg({ color: c })}
                 style={{ background: c }}
-                className={`h-8 w-8 rounded-full border ${
+                className={`h-11 w-11 rounded-full border transition active:scale-90 ${
                   bg.color === c ? 'border-indigo-400 ring-2 ring-indigo-400' : 'border-slate-500'
                 }`}
               />
@@ -271,7 +285,12 @@ export function FilterPanel() {
   const photo = el?.type === 'photo' ? (el as PhotoElement) : null
 
   if (!photo || !selectedId) {
-    return <p className="text-sm text-slate-400">{t('filter.selectHint')}</p>
+    return (
+      <div className="flex flex-col items-center gap-2 py-4 text-center">
+        <span className="text-4xl opacity-30">✨</span>
+        <p className="text-sm text-slate-400">{t('filter.selectHint')}</p>
+      </div>
+    )
   }
 
   const f = photo.filters

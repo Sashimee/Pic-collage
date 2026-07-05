@@ -19,8 +19,8 @@ interface Tab {
 
 const TABS: Tab[] = [
   { id: 'photos', labelKey: 'tab.photos', icon: '🖼️', panel: <PhotosPanel /> },
-  { id: 'layout', labelKey: 'tab.layout', icon: '▦', panel: <LayoutPanel /> },
-  { id: 'text', labelKey: 'tab.text', icon: 'T', panel: <TextPanel /> },
+  { id: 'layout', labelKey: 'tab.layout', icon: '📐', panel: <LayoutPanel /> },
+  { id: 'text', labelKey: 'tab.text', icon: '✏️', panel: <TextPanel /> },
   { id: 'stickers', labelKey: 'tab.stickers', icon: '😊', panel: <StickerPanel /> },
   { id: 'bg', labelKey: 'tab.background', icon: '🎨', panel: <BackgroundPanel /> },
   { id: 'filters', labelKey: 'tab.filters', icon: '✨', panel: <FilterPanel /> },
@@ -41,7 +41,7 @@ export function Toolbar() {
           <button
             key={tab.id}
             onClick={() => setActive((a) => (a === tab.id ? null : tab.id))}
-            className={`flex flex-1 flex-col items-center gap-0.5 rounded-lg py-2 text-[10px] font-medium transition ${
+            className={`flex flex-1 flex-col items-center gap-0.5 rounded-lg py-2 text-xs font-medium transition active:opacity-70 ${
               active === tab.id
                 ? 'bg-slate-800 text-indigo-400'
                 : 'text-slate-400 hover:text-slate-200'
