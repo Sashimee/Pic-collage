@@ -3,6 +3,7 @@ import { EditorCanvas, type EditorHandle } from './components/EditorCanvas'
 import { HeaderBar, type ExportKind } from './components/HeaderBar'
 import { SelectionBar } from './components/SelectionBar'
 import { Toolbar } from './components/Toolbar'
+import { UpdateBanner } from './components/UpdateBanner'
 import { useEditor } from './store/editorStore'
 import { useT } from './i18n/useLang'
 import {
@@ -44,6 +45,7 @@ export default function App() {
         <EditorCanvas ref={editorRef} />
         <SelectionBar />
       </div>
+      <UpdateBanner />
       <Toolbar />
     </div>
   )
