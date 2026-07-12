@@ -40,6 +40,8 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const elements = useEditor((s) => s.elements)
   const mode = useEditor((s) => s.mode)
   const gridId = useEditor((s) => s.gridId)
+  const gridGap = useEditor((s) => s.gridGap)
+  const gridRadius = useEditor((s) => s.gridRadius)
   const selectedId = useEditor((s) => s.selectedId)
   const select = useEditor((s) => s.select)
   const updateElement = useEditor((s) => s.updateElement)
@@ -207,6 +209,8 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
                   photos={photos}
                   width={boardWidth}
                   height={boardHeight}
+                  gap={gridGap}
+                  radius={gridRadius}
                   selectedId={selectedId}
                   onSelect={select}
                 />

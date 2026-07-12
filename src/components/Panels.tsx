@@ -66,6 +66,8 @@ const ASPECTS = [
   { key: 'portrait', w: 1080, h: 1350 },
   { key: 'story', w: 1080, h: 1920 },
   { key: 'landscape', w: 1350, h: 1080 },
+  { key: 'pin', w: 1080, h: 1620 },
+  { key: 'wide', w: 1080, h: 566 },
 ]
 
 export function LayoutPanel() {
@@ -75,6 +77,12 @@ export function LayoutPanel() {
   const boardWidth = useEditor((s) => s.boardWidth)
   const boardHeight = useEditor((s) => s.boardHeight)
   const gridId = useEditor((s) => s.gridId)
+  const gridGap = useEditor((s) => s.gridGap)
+  const gridRadius = useEditor((s) => s.gridRadius)
+  const setGridGap = useEditor((s) => s.setGridGap)
+  const setGridRadius = useEditor((s) => s.setGridRadius)
+
+  const isPreset = ASPECTS.some((a) => a.w === boardWidth && a.h === boardHeight)
 
   return (
     <div className="flex flex-col gap-3">
@@ -89,6 +97,42 @@ export function LayoutPanel() {
           </Chip>
         ))}
       </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-slate-400">
+          {t('aspect.custom')}
+        </span>
+        <input
+          type="number"
+          min={200}
+          max={4096}
+          value={boardWidth}
+          onChange={(e) =>
+            setBoardSize(
+              Math.max(200, Math.min(4096, Number(e.target.value) || boardWidth)),
+              boardHeight,
+            )
+          }
+          className={`w-20 rounded-lg border bg-slate-800 px-2 py-2 text-sm text-white ${
+            isPreset ? 'border-slate-600' : 'border-indigo-500'
+          }`}
+        />
+        <span className="text-slate-500">×</span>
+        <input
+          type="number"
+          min={200}
+          max={4096}
+          value={boardHeight}
+          onChange={(e) =>
+            setBoardSize(
+              boardWidth,
+              Math.max(200, Math.min(4096, Number(e.target.value) || boardHeight)),
+            )
+          }
+          className={`w-20 rounded-lg border bg-slate-800 px-2 py-2 text-sm text-white ${
+            isPreset ? 'border-slate-600' : 'border-indigo-500'
+          }`}
+        />
+      </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
         <Chip active={gridId === null} onClick={() => setGrid(null)}>
           {t('layout.free')}
@@ -100,7 +144,23 @@ export function LayoutPanel() {
         ))}
       </div>
       {gridId && (
-        <p className="text-xs text-slate-400">{t('grid.hint')}</p>
+        <>
+          <Slider
+            label={t('grid.gap')}
+            min={0}
+            max={80}
+            value={gridGap}
+            onChange={setGridGap}
+          />
+          <Slider
+            label={t('grid.radius')}
+            min={0}
+            max={120}
+            value={gridRadius}
+            onChange={setGridRadius}
+          />
+          <p className="text-xs text-slate-400">{t('grid.hint')}</p>
+        </>
       )}
     </div>
   )

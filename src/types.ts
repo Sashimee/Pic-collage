@@ -66,6 +66,16 @@ export interface Background {
   gradientAngle: number // degrees, 0 = left→right
 }
 
+// ---- Board frame ---------------------------------------------------------
+
+export type FrameStyle = 'none' | 'solid' | 'rounded' | 'polaroid'
+
+export interface Frame {
+  style: FrameStyle
+  color: string
+  width: number // fraction of the board's shorter axis (0..0.15)
+}
+
 // ---- Grid collage mode ---------------------------------------------------
 
 export type EditorMode = 'free' | 'grid'

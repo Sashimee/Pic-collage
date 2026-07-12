@@ -11,6 +11,10 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
   const t = useT()
   const clearAll = useEditor((s) => s.clearAll)
   const hasElements = useEditor((s) => s.elements.length > 0)
+  const undo = useEditor((s) => s.undo)
+  const redo = useEditor((s) => s.redo)
+  const canUndo = useEditor((s) => s.past.length > 0)
+  const canRedo = useEditor((s) => s.future.length > 0)
 
   const pick = (kind: ExportKind) => {
     setMenu(false)
@@ -27,6 +31,24 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
       </h1>
       <div className="flex items-center gap-2">
         <LangSwitcher />
+        <button
+          onClick={undo}
+          disabled={!canUndo}
+          title={t('header.undo')}
+          aria-label={t('header.undo')}
+          className="min-h-[44px] rounded-lg px-3 py-2.5 text-base text-slate-300 transition hover:bg-slate-800 active:scale-95 active:bg-slate-700 disabled:opacity-30"
+        >
+          ↶
+        </button>
+        <button
+          onClick={redo}
+          disabled={!canRedo}
+          title={t('header.redo')}
+          aria-label={t('header.redo')}
+          className="min-h-[44px] rounded-lg px-3 py-2.5 text-base text-slate-300 transition hover:bg-slate-800 active:scale-95 active:bg-slate-700 disabled:opacity-30"
+        >
+          ↷
+        </button>
         <button
           onClick={() => {
             if (hasElements && window.confirm(t('header.clearConfirm'))) clearAll()

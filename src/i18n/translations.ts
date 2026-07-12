@@ -19,6 +19,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'aspect.portrait': 'Portrait',
     'aspect.story': 'Story',
     'aspect.landscape': 'Landscape',
+    'aspect.pin': 'Pin 2:3',
+    'aspect.wide': 'Wide',
+    'aspect.custom': 'Custom',
+    'grid.gap': 'Gutter',
+    'grid.radius': 'Corner radius',
     'layout.free': 'Free',
     'grid.hint':
       'Add photos — they fill the grid cells in order. Tap a cell to select it for filters.',
@@ -50,6 +55,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'filter.selectHint': 'Select a photo to apply filters.',
 
     'header.new': 'New',
+    'header.undo': 'Undo',
+    'header.redo': 'Redo',
     'header.export': 'Export ▾',
     'export.share': '📤 Share…',
     'export.png': '⬇️ Download PNG',
@@ -71,6 +78,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'aspect.portrait': 'Hochformat',
     'aspect.story': 'Story',
     'aspect.landscape': 'Querformat',
+    'aspect.pin': 'Pin 2:3',
+    'aspect.wide': 'Breit',
+    'aspect.custom': 'Eigene',
+    'grid.gap': 'Abstand',
+    'grid.radius': 'Eckenradius',
     'layout.free': 'Frei',
     'grid.hint':
       'Füge Fotos hinzu — sie füllen die Rasterfelder der Reihe nach. Tippe ein Feld an, um es für Filter auszuwählen.',
@@ -102,6 +114,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'filter.selectHint': 'Wähle ein Foto aus, um Filter anzuwenden.',
 
     'header.new': 'Neu',
+    'header.undo': 'Rückgängig',
+    'header.redo': 'Wiederholen',
     'header.export': 'Export ▾',
     'export.share': '📤 Teilen…',
     'export.png': '⬇️ PNG herunterladen',

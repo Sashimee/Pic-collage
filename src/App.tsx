@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { EditorCanvas, type EditorHandle } from './components/EditorCanvas'
 import { HeaderBar, type ExportKind } from './components/HeaderBar'
 import { SelectionBar } from './components/SelectionBar'
@@ -21,6 +21,40 @@ export default function App() {
   const editorRef = useRef<EditorHandle>(null)
   const select = useEditor((s) => s.select)
   const t = useT()
+
+  // Global undo/redo shortcuts (Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z or Ctrl+Y).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return
+      const target = e.target as HTMLElement | null
+      // Don't hijack undo inside text fields.
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
+      const key = e.key.toLowerCase()
+      if (key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) useEditor.getState().redo()
+        else useEditor.getState().undo()
+      } else if (key === 'y') {
+        e.preventDefault()
+        useEditor.getState().redo()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  // Release any leftover object URLs when the page is torn down.
+  useEffect(() => {
+    const cleanup = () => {
+      for (const el of useEditor.getState().elements) {
+        if (el.type === 'photo' && el.src.startsWith('blob:')) {
+          URL.revokeObjectURL(el.src)
+        }
+      }
+    }
+    window.addEventListener('beforeunload', cleanup)
+    return () => window.removeEventListener('beforeunload', cleanup)
+  }, [])
 
   const handleExport = async (kind: ExportKind) => {
     // Drop the selection so transform handles / grid highlight aren't captured,
