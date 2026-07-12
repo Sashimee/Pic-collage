@@ -6,15 +6,15 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Group, Layer, Stage, Transformer } from 'react-konva'
+import { Group, Layer, Line, Stage, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useEditor } from '../store/editorStore'
 import { getGridById } from '../lib/grids'
 import { Background } from './Background'
+import { BoardFrame } from './BoardFrame'
 import { ElementNode } from './CanvasNodes'
 import { GridView } from './GridView'
 import { exportBoard, type ExportFormat } from '../lib/exportImage'
-import { useT } from '../i18n/useLang'
 import type { CanvasElement, PhotoElement } from '../types'
 
 export interface EditorHandle {
@@ -25,7 +25,6 @@ const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v))
 
 export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
-  const t = useT()
   const hostRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const boardRef = useRef<Konva.Group>(null)
@@ -37,14 +36,37 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const boardWidth = useEditor((s) => s.boardWidth)
   const boardHeight = useEditor((s) => s.boardHeight)
   const background = useEditor((s) => s.background)
+  const frame = useEditor((s) => s.frame)
   const elements = useEditor((s) => s.elements)
   const mode = useEditor((s) => s.mode)
   const gridId = useEditor((s) => s.gridId)
+  const gridGap = useEditor((s) => s.gridGap)
+  const gridRadius = useEditor((s) => s.gridRadius)
   const selectedId = useEditor((s) => s.selectedId)
   const select = useEditor((s) => s.select)
   const updateElement = useEditor((s) => s.updateElement)
+  const tool = useEditor((s) => s.tool)
+  const brushColor = useEditor((s) => s.brushColor)
+  const brushSize = useEditor((s) => s.brushSize)
+  const addDrawing = useEditor((s) => s.addDrawing)
 
   const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null)
+  const drawMode = tool === 'draw'
+  const drawing = useRef(false)
+  const ptsRef = useRef<number[]>([])
+  const [, setTick] = useState(0)
+
+  // Inline text editor overlay (replaces window.prompt on double-tap).
+  const [editing, setEditing] = useState<{
+    id: string
+    value: string
+    left: number
+    top: number
+    width: number
+    fontSize: number
+    fontFamily: string
+    fill: string
+  } | null>(null)
 
   // --- responsive board sizing -------------------------------------------
   useLayoutEffect(() => {
@@ -162,6 +184,70 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     }
   }
 
+  // --- freehand drawing ---------------------------------------------------
+  // Convert a container-local pixel to board design units via the view transform.
+  const toBoard = (px: number, py: number) => ({
+    x: (px - tf.x) / tf.scale,
+    y: (py - tf.y) / tf.scale,
+  })
+
+  const startDraw = (px: number, py: number) => {
+    const p = toBoard(px, py)
+    drawing.current = true
+    ptsRef.current = [p.x, p.y]
+    setTick((t) => t + 1)
+  }
+  const moveDraw = (px: number, py: number) => {
+    if (!drawing.current) return
+    const p = toBoard(px, py)
+    ptsRef.current = [...ptsRef.current, p.x, p.y]
+    setTick((t) => t + 1)
+  }
+  const endDraw = () => {
+    if (!drawing.current) return
+    drawing.current = false
+    const pts = ptsRef.current
+    if (pts.length >= 4) addDrawing(pts, brushColor, brushSize)
+    ptsRef.current = []
+    setTick((t) => t + 1)
+  }
+
+  const onStageMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (drawMode) {
+      const p = stageRef.current?.getPointerPosition()
+      if (p) startDraw(p.x, p.y)
+      return
+    }
+    handlePointerDown(e)
+  }
+  const onStageMouseMove = () => {
+    if (!drawMode) return
+    const p = stageRef.current?.getPointerPosition()
+    if (p) moveDraw(p.x, p.y)
+  }
+  const onStageTouchStart = (e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (drawMode && e.evt.touches.length === 1) {
+      e.evt.preventDefault()
+      const p = localPoint(e.evt.touches[0])
+      startDraw(p.x, p.y)
+      return
+    }
+    handlePointerDown(e)
+  }
+  const onStageTouchMove = (e: Konva.KonvaEventObject<TouchEvent>) => {
+    if (drawMode && drawing.current && e.evt.touches.length === 1) {
+      e.evt.preventDefault()
+      const p = localPoint(e.evt.touches[0])
+      moveDraw(p.x, p.y)
+      return
+    }
+    handleTouchMove(e)
+  }
+  const onStageTouchEnd = () => {
+    endDraw()
+    endPinch()
+  }
+
   const gridLayout = gridId ? getGridById(gridId) : undefined
   const photos = elements.filter((e): e is PhotoElement => e.type === 'photo')
   const inGrid = mode === 'grid' && !!gridLayout
@@ -170,18 +256,37 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     ? elements.filter((e) => e.type !== 'photo')
     : elements
 
+  // Open the inline editor positioned over the tapped text node.
+  const openTextEditor = (id: string) => {
+    const stage = stageRef.current
+    const node = stage?.findOne('#' + id)
+    const el = useEditor.getState().elements.find((x) => x.id === id)
+    if (!stage || !node || el?.type !== 'text') return
+    const rect = node.getClientRect({ relativeTo: stage })
+    setEditing({
+      id,
+      value: el.text,
+      left: rect.x,
+      top: rect.y,
+      width: Math.max(rect.width, 120),
+      fontSize: el.fontSize * tf.scale,
+      fontFamily: el.fontFamily,
+      fill: el.fill,
+    })
+  }
+
+  const commitEdit = () => {
+    if (editing) updateElement(editing.id, { text: editing.value })
+    setEditing(null)
+  }
+
   const renderElement = (el: CanvasElement) => (
     <ElementNode
       key={el.id}
       el={el}
       onSelect={() => select(el.id)}
       onChange={(patch) => updateElement(el.id, patch)}
-      onEditText={(id) => {
-        const current = useEditor.getState().elements.find((x) => x.id === id)
-        if (current?.type !== 'text') return
-        const next = window.prompt(t('canvas.editText'), current.text)
-        if (next != null) updateElement(id, { text: next })
-      }}
+      onEditText={openTextEditor}
     />
   )
 
@@ -193,25 +298,45 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           width={size.w}
           height={size.h}
           onWheel={handleWheel}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={endPinch}
-          onMouseDown={handlePointerDown}
-          onTouchStart={handlePointerDown}
+          onMouseDown={onStageMouseDown}
+          onMouseMove={onStageMouseMove}
+          onMouseUp={endDraw}
+          onTouchStart={onStageTouchStart}
+          onTouchMove={onStageTouchMove}
+          onTouchEnd={onStageTouchEnd}
+          style={{ cursor: drawMode ? 'crosshair' : 'default' }}
         >
           <Layer>
             <Group ref={boardRef} x={tf.x} y={tf.y} scaleX={tf.scale} scaleY={tf.scale}>
-              <Background bg={background} width={boardWidth} height={boardHeight} />
-              {inGrid && gridLayout && (
-                <GridView
-                  layout={gridLayout}
-                  photos={photos}
-                  width={boardWidth}
-                  height={boardHeight}
-                  selectedId={selectedId}
-                  onSelect={select}
+              {/* In draw mode elements ignore hits so strokes land on the stage. */}
+              <Group listening={!drawMode}>
+                <Background bg={background} width={boardWidth} height={boardHeight} />
+                {inGrid && gridLayout && (
+                  <GridView
+                    layout={gridLayout}
+                    photos={photos}
+                    width={boardWidth}
+                    height={boardHeight}
+                    gap={gridGap}
+                    radius={gridRadius}
+                    selectedId={selectedId}
+                    onSelect={select}
+                  />
+                )}
+                {freeElements.map(renderElement)}
+              </Group>
+              {drawing.current && ptsRef.current.length >= 2 && (
+                <Line
+                  points={ptsRef.current}
+                  stroke={brushColor}
+                  strokeWidth={brushSize}
+                  lineCap="round"
+                  lineJoin="round"
+                  tension={0.4}
+                  listening={false}
                 />
               )}
-              {freeElements.map(renderElement)}
+              <BoardFrame frame={frame} width={boardWidth} height={boardHeight} />
             </Group>
             <Transformer
               ref={trRef}
@@ -228,6 +353,33 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
             />
           </Layer>
         </Stage>
+      )}
+      {editing && (
+        <textarea
+          autoFocus
+          value={editing.value}
+          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
+          onBlur={commitEdit}
+          onFocus={(e) => e.currentTarget.select()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              commitEdit()
+            } else if (e.key === 'Escape') {
+              setEditing(null)
+            }
+          }}
+          style={{
+            left: editing.left,
+            top: editing.top,
+            width: editing.width,
+            fontSize: editing.fontSize,
+            fontFamily: editing.fontFamily,
+            color: editing.fill,
+            lineHeight: 1.1,
+          }}
+          className="absolute z-40 resize-none overflow-hidden rounded-md border-2 border-accent bg-surface/95 px-1 py-0.5 shadow-xl outline-none"
+        />
       )}
     </div>
   )

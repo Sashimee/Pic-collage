@@ -2,7 +2,7 @@
 // `CanvasElement` — a discriminated union keyed by `type`. New element kinds
 // (text, sticker, …) plug in here without touching the transform/selection code.
 
-export type ElementType = 'photo' | 'text' | 'sticker'
+export type ElementType = 'photo' | 'text' | 'sticker' | 'drawing'
 
 export interface BaseElement {
   id: string
@@ -21,20 +21,45 @@ export type FilterPreset =
   | 'vivid'
   | 'cool'
   | 'warm'
+  | 'fade'
+  | 'noir'
+  | 'punch'
 
 export interface PhotoFilters {
   brightness: number // Konva Brighten:  -1 .. 1
   contrast: number //   Konva Contrast: -100 .. 100
   saturation: number // Konva HSL:        -2 .. 10
+  blur: number //       Konva Blur radius: 0 .. 40
+  vignette: number //   dark-edge overlay strength: 0 .. 0.9
   preset: FilterPreset
+}
+
+// Non-AI "cutout": clip a photo into a decorative shape.
+export type PhotoShape = 'rect' | 'circle' | 'star' | 'heart'
+
+// Source-pixel crop rectangle (Konva Image `crop`).
+export interface CropRect {
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export interface PhotoElement extends BaseElement {
   type: 'photo'
   src: string // object URL created from the imported File
+  photoId?: string // IndexedDB key for the source blob (persistence)
   width: number // intrinsic display size (design units)
   height: number
   filters: PhotoFilters
+  shape?: PhotoShape // defaults to 'rect'
+  crop?: CropRect // source-pixel crop; undefined = whole image
+}
+
+export interface TextChip {
+  color: string
+  padding: number
+  radius: number
 }
 
 export interface TextElement extends BaseElement {
@@ -44,6 +69,12 @@ export interface TextElement extends BaseElement {
   fontSize: number
   fill: string
   fontStyle: string // 'normal' | 'bold' | 'italic' | 'bold italic'
+  stroke?: string //       outline color
+  strokeWidth?: number //  outline width (0 = none)
+  shadowColor?: string
+  shadowBlur?: number //   drop-shadow blur (0 = none)
+  chip?: TextChip //       tape/scrapbook background behind the text
+  curve?: number //        arch depth in px (0 = straight)
 }
 
 export interface StickerElement extends BaseElement {
@@ -52,11 +83,24 @@ export interface StickerElement extends BaseElement {
   fontSize: number
 }
 
-export type CanvasElement = PhotoElement | TextElement | StickerElement
+export interface DrawingElement extends BaseElement {
+  type: 'drawing'
+  points: number[] // flat [x0,y0,x1,y1,…] in board units, relative to x/y
+  stroke: string
+  strokeWidth: number
+}
+
+export type CanvasElement =
+  | PhotoElement
+  | TextElement
+  | StickerElement
+  | DrawingElement
 
 // ---- Background ----------------------------------------------------------
 
-export type BackgroundType = 'solid' | 'gradient'
+export type BackgroundType = 'solid' | 'gradient' | 'pattern'
+
+export type PatternId = 'dots' | 'stripes' | 'grid' | 'checker' | 'hearts'
 
 export interface Background {
   type: BackgroundType
@@ -64,6 +108,18 @@ export interface Background {
   gradientFrom: string
   gradientTo: string
   gradientAngle: number // degrees, 0 = left→right
+  patternId: PatternId
+  patternColor: string // foreground/motif color (background uses `color`)
+}
+
+// ---- Board frame ---------------------------------------------------------
+
+export type FrameStyle = 'none' | 'solid' | 'rounded' | 'polaroid'
+
+export interface Frame {
+  style: FrameStyle
+  color: string
+  width: number // fraction of the board's shorter axis (0..0.15)
 }
 
 // ---- Grid collage mode ---------------------------------------------------
@@ -89,5 +145,7 @@ export const DEFAULT_FILTERS: PhotoFilters = {
   brightness: 0,
   contrast: 0,
   saturation: 0,
+  blur: 0,
+  vignette: 0,
   preset: 'none',
 }

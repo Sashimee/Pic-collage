@@ -9,6 +9,7 @@ export interface FilterConfig {
   hue: number
   saturation: number
   luminance: number
+  blurRadius: number
 }
 
 export interface FilterPresetDef {
@@ -19,9 +20,12 @@ export interface FilterPresetDef {
 export const FILTER_PRESETS: FilterPresetDef[] = [
   { id: 'none', label: 'Original' },
   { id: 'vivid', label: 'Vivid' },
+  { id: 'punch', label: 'Punch' },
   { id: 'warm', label: 'Warm' },
   { id: 'cool', label: 'Cool' },
+  { id: 'fade', label: 'Fade' },
   { id: 'sepia', label: 'Sepia' },
+  { id: 'noir', label: 'Noir' },
   { id: 'grayscale', label: 'B&W' },
 ]
 
@@ -39,12 +43,20 @@ export function computeFilterConfig(f: PhotoFilters): FilterConfig {
     case 'grayscale':
       stack.push(Konva.Filters.Grayscale)
       break
+    case 'noir':
+      stack.push(Konva.Filters.Grayscale)
+      contrast += 40
+      break
     case 'sepia':
       stack.push(Konva.Filters.Sepia)
       break
     case 'vivid':
       contrast += 18
       saturation += 1.6
+      break
+    case 'punch':
+      contrast += 35
+      saturation += 2.4
       break
     case 'warm':
       hue = 18
@@ -54,6 +66,11 @@ export function computeFilterConfig(f: PhotoFilters): FilterConfig {
       hue = -18
       saturation += 0.3
       break
+    case 'fade':
+      contrast -= 22
+      saturation -= 0.7
+      brightness += 0.08
+      break
     case 'none':
     default:
       break
@@ -61,6 +78,15 @@ export function computeFilterConfig(f: PhotoFilters): FilterConfig {
 
   // HSL carries hue + saturation; Brighten and Contrast carry the sliders.
   stack.push(Konva.Filters.HSL, Konva.Filters.Brighten, Konva.Filters.Contrast)
+  if (f.blur > 0) stack.push(Konva.Filters.Blur)
 
-  return { filters: stack, brightness, contrast, hue, saturation, luminance }
+  return {
+    filters: stack,
+    brightness,
+    contrast,
+    hue,
+    saturation,
+    luminance,
+    blurRadius: f.blur,
+  }
 }

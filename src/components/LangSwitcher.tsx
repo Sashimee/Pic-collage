@@ -7,7 +7,7 @@ export function LangSwitcher() {
   const setLang = useLang((s) => s.setLang)
 
   return (
-    <div className="flex items-center gap-0.5 rounded-lg bg-slate-800 p-0.5">
+    <div className="flex items-center gap-0.5 rounded-lg bg-surface-2 p-0.5">
       {LANGS.map((l) => (
         <button
           key={l.id}
@@ -15,7 +15,7 @@ export function LangSwitcher() {
           aria-label={l.label}
           title={l.label}
           className={`rounded-md px-1.5 py-1 text-base leading-none transition ${
-            lang === l.id ? 'bg-slate-600' : 'opacity-50 hover:opacity-100'
+            lang === l.id ? 'bg-surface-3' : 'opacity-50 hover:opacity-100'
           }`}
         >
           {l.flag}

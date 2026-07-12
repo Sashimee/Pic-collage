@@ -21,7 +21,7 @@ export function UpdateBanner() {
 
   if (needsReload) {
     return (
-      <div className="flex items-center justify-between gap-3 bg-indigo-600 px-4 py-2 text-sm text-white">
+      <div className="flex items-center justify-between gap-3 bg-accent px-4 py-2 text-sm text-accent-fg">
         <span>🔄 App updated — reload for the latest version.</span>
         <button
           onClick={() => window.location.reload()}
@@ -35,7 +35,7 @@ export function UpdateBanner() {
 
   if (offlineReady) {
     return (
-      <div className="flex items-center gap-2 bg-emerald-700 px-4 py-2 text-sm text-white">
+      <div className="flex items-center gap-2 bg-emerald-600 px-4 py-2 text-sm text-white">
         <span>✓ App ready for offline use.</span>
       </div>
     )

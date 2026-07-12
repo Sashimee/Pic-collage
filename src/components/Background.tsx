@@ -1,9 +1,11 @@
+import { useMemo } from 'react'
 import { Rect } from 'react-konva'
 import type { Background as Bg } from '../types'
+import { makePatternTile } from '../lib/patterns'
 
-// The board background: a full-bleed rect, either a solid colour or a linear
-// gradient computed from an angle. Named 'background' so the stage can treat a
-// click on it as "deselect".
+// The board background: a full-bleed rect, either a solid colour, a linear
+// gradient computed from an angle, or a repeating pattern. Named 'background'
+// so the stage can treat a click on it as "deselect".
 export function Background({
   bg,
   width,
@@ -13,9 +15,31 @@ export function Background({
   width: number
   height: number
 }) {
+  const patternTile = useMemo(
+    () =>
+      bg.type === 'pattern'
+        ? makePatternTile(bg.patternId, bg.color, bg.patternColor)
+        : null,
+    [bg.type, bg.patternId, bg.color, bg.patternColor],
+  )
+
   if (bg.type === 'solid') {
     return (
       <Rect name="background" x={0} y={0} width={width} height={height} fill={bg.color} />
+    )
+  }
+
+  if (bg.type === 'pattern' && patternTile) {
+    return (
+      <Rect
+        name="background"
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        fillPatternImage={patternTile as unknown as HTMLImageElement}
+        fillPatternRepeat="repeat"
+      />
     )
   }
 
