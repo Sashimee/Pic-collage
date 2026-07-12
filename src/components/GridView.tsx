@@ -62,6 +62,7 @@ function CellPhoto({
     node.hue(cfg.hue)
     node.saturation(cfg.saturation)
     node.luminance(cfg.luminance)
+    node.blurRadius(cfg.blurRadius)
     node.getLayer()?.batchDraw()
   }, [image, el.filters])
 
@@ -96,6 +97,25 @@ function CellPhoto({
         width={dw}
         height={dh}
       />
+      {el.filters.vignette > 0 && (
+        <Rect
+          x={rect.x}
+          y={rect.y}
+          width={rect.w}
+          height={rect.h}
+          listening={false}
+          fillRadialGradientStartPoint={{ x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 }}
+          fillRadialGradientEndPoint={{ x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 }}
+          fillRadialGradientStartRadius={Math.min(rect.w, rect.h) * 0.3}
+          fillRadialGradientEndRadius={Math.max(rect.w, rect.h) * 0.72}
+          fillRadialGradientColorStops={[
+            0,
+            'rgba(0,0,0,0)',
+            1,
+            `rgba(0,0,0,${el.filters.vignette})`,
+          ]}
+        />
+      )}
     </Group>
   )
 }

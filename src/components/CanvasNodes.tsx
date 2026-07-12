@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Image as KonvaImage, Text as KonvaText } from 'react-konva'
+import { Group, Image as KonvaImage, Rect, Text as KonvaText } from 'react-konva'
 import type Konva from 'konva'
 import type {
   CanvasElement,
@@ -9,6 +9,7 @@ import type {
 } from '../types'
 import { useImage } from '../hooks/useImage'
 import { computeFilterConfig } from '../lib/filters'
+import { tracePhotoShape } from '../lib/shapes'
 
 interface NodeProps<T extends CanvasElement> {
   el: T
@@ -43,8 +44,10 @@ function commonHandlers(
 function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
   const image = useImage(el.src)
   const ref = useRef<Konva.Image>(null)
+  const shape = el.shape ?? 'rect'
 
-  // (Re)build the Konva filter cache whenever the bitmap or filter values change.
+  // (Re)build the Konva filter cache whenever the bitmap, filter values, or
+  // crop change. Blur/color filters live on the inner Image node.
   useEffect(() => {
     const node = ref.current
     if (!node || !image) return
@@ -56,27 +59,51 @@ function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
     node.hue(cfg.hue)
     node.saturation(cfg.saturation)
     node.luminance(cfg.luminance)
+    node.blurRadius(cfg.blurRadius)
     node.getLayer()?.batchDraw()
-  }, [image, el.filters])
+  }, [image, el.filters, el.crop, el.width, el.height])
+
+  const v = el.filters.vignette
 
   return (
-    <KonvaImage
-      ref={ref}
+    <Group
       id={el.id}
       name="element"
-      image={image}
       x={el.x}
       y={el.y}
-      width={el.width}
-      height={el.height}
       rotation={el.rotation}
       scaleX={el.scaleX}
       scaleY={el.scaleY}
       draggable
       onClick={onSelect}
       onTap={onSelect}
+      clipFunc={
+        shape !== 'rect'
+          ? (ctx) => tracePhotoShape(ctx, shape, el.width, el.height)
+          : undefined
+      }
       {...commonHandlers(onChange)}
-    />
+    >
+      <KonvaImage
+        ref={ref}
+        image={image}
+        width={el.width}
+        height={el.height}
+        crop={el.crop}
+      />
+      {v > 0 && (
+        <Rect
+          width={el.width}
+          height={el.height}
+          listening={false}
+          fillRadialGradientStartPoint={{ x: el.width / 2, y: el.height / 2 }}
+          fillRadialGradientEndPoint={{ x: el.width / 2, y: el.height / 2 }}
+          fillRadialGradientStartRadius={Math.min(el.width, el.height) * 0.3}
+          fillRadialGradientEndRadius={Math.max(el.width, el.height) * 0.72}
+          fillRadialGradientColorStops={[0, 'rgba(0,0,0,0)', 1, `rgba(0,0,0,${v})`]}
+        />
+      )}
+    </Group>
   )
 }
 

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useEditor } from '../store/editorStore'
 import { GRID_LAYOUTS } from '../lib/grids'
 import { FILTER_PRESETS } from '../lib/filters'
+import { PHOTO_SHAPES } from '../lib/shapes'
 import { loadPhotoMeta } from '../lib/importPhotos'
 import type { PhotoElement, TextElement } from '../types'
 import { Chip, ColorField, PrimaryButton, Slider } from './ui'
@@ -341,7 +342,10 @@ export function FilterPanel() {
   const t = useT()
   const selectedId = useEditor((s) => s.selectedId)
   const el = useEditor((s) => s.elements.find((e) => e.id === s.selectedId))
+  const mode = useEditor((s) => s.mode)
   const updateFilters = useEditor((s) => s.updateFilters)
+  const updateElement = useEditor((s) => s.updateElement)
+  const setCropping = useEditor((s) => s.setCropping)
   const photo = el?.type === 'photo' ? (el as PhotoElement) : null
 
   if (!photo || !selectedId) {
@@ -354,6 +358,10 @@ export function FilterPanel() {
   }
 
   const f = photo.filters
+  const shape = photo.shape ?? 'rect'
+  // Shape cutout + crop only make sense for free-mode photos (grid cells are
+  // rectangular and cover-fit by the layout).
+  const freePhoto = mode === 'free'
   return (
     <div className="flex flex-col gap-3">
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -367,6 +375,31 @@ export function FilterPanel() {
           </Chip>
         ))}
       </div>
+      {freePhoto && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400">{t('filter.shape')}</span>
+          {PHOTO_SHAPES.map((sh) => (
+            <button
+              key={sh.id}
+              onClick={() => updateElement(selectedId, { shape: sh.id })}
+              title={t('shape.' + sh.id)}
+              className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg transition active:scale-90 ${
+                shape === sh.id
+                  ? 'bg-indigo-500 text-white'
+                  : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+              }`}
+            >
+              {sh.glyph}
+            </button>
+          ))}
+          <button
+            onClick={() => setCropping(selectedId)}
+            className="ml-auto min-h-[40px] rounded-lg bg-slate-700 px-3 text-sm text-slate-100 transition hover:bg-slate-600 active:scale-95"
+          >
+            ✂️ {t('filter.crop')}
+          </button>
+        </div>
+      )}
       <Slider
         label={t('filter.brightness')}
         min={-0.5}
@@ -389,6 +422,21 @@ export function FilterPanel() {
         step={0.1}
         value={f.saturation}
         onChange={(v) => updateFilters(selectedId, { saturation: v })}
+      />
+      <Slider
+        label={t('filter.blur')}
+        min={0}
+        max={40}
+        value={f.blur}
+        onChange={(v) => updateFilters(selectedId, { blur: v })}
+      />
+      <Slider
+        label={t('filter.vignette')}
+        min={0}
+        max={0.9}
+        step={0.05}
+        value={f.vignette}
+        onChange={(v) => updateFilters(selectedId, { vignette: v })}
       />
     </div>
   )

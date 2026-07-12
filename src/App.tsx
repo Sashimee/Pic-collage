@@ -3,6 +3,7 @@ import { EditorCanvas, type EditorHandle } from './components/EditorCanvas'
 import { HeaderBar, type ExportKind } from './components/HeaderBar'
 import { SelectionBar } from './components/SelectionBar'
 import { Toolbar } from './components/Toolbar'
+import { CropOverlay } from './components/CropOverlay'
 import { UpdateBanner } from './components/UpdateBanner'
 import { useEditor } from './store/editorStore'
 import { useT } from './i18n/useLang'
@@ -81,6 +82,7 @@ export default function App() {
       </div>
       <UpdateBanner />
       <Toolbar />
+      <CropOverlay />
     </div>
   )
 }

@@ -21,12 +21,28 @@ export type FilterPreset =
   | 'vivid'
   | 'cool'
   | 'warm'
+  | 'fade'
+  | 'noir'
+  | 'punch'
 
 export interface PhotoFilters {
   brightness: number // Konva Brighten:  -1 .. 1
   contrast: number //   Konva Contrast: -100 .. 100
   saturation: number // Konva HSL:        -2 .. 10
+  blur: number //       Konva Blur radius: 0 .. 40
+  vignette: number //   dark-edge overlay strength: 0 .. 0.9
   preset: FilterPreset
+}
+
+// Non-AI "cutout": clip a photo into a decorative shape.
+export type PhotoShape = 'rect' | 'circle' | 'star' | 'heart'
+
+// Source-pixel crop rectangle (Konva Image `crop`).
+export interface CropRect {
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export interface PhotoElement extends BaseElement {
@@ -35,6 +51,8 @@ export interface PhotoElement extends BaseElement {
   width: number // intrinsic display size (design units)
   height: number
   filters: PhotoFilters
+  shape?: PhotoShape // defaults to 'rect'
+  crop?: CropRect // source-pixel crop; undefined = whole image
 }
 
 export interface TextElement extends BaseElement {
@@ -99,5 +117,7 @@ export const DEFAULT_FILTERS: PhotoFilters = {
   brightness: 0,
   contrast: 0,
   saturation: 0,
+  blur: 0,
+  vignette: 0,
   preset: 'none',
 }

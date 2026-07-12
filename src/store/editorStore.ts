@@ -74,6 +74,7 @@ interface EditorState {
   frame: Frame
   elements: CanvasElement[]
   selectedId: string | null
+  croppingId: string | null
 
   past: Snapshot[]
   future: Snapshot[]
@@ -90,6 +91,7 @@ interface EditorState {
   duplicateElement: (id: string) => void
   removeElement: (id: string) => void
   select: (id: string | null) => void
+  setCropping: (id: string | null) => void
 
   // z-order
   bringForward: (id: string) => void
@@ -137,6 +139,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   frame: DEFAULT_FRAME,
   elements: [],
   selectedId: null,
+  croppingId: null,
 
   past: [],
   future: [],
@@ -252,6 +255,8 @@ export const useEditor = create<EditorState>((set, get) => ({
     }),
 
   select: (id) => set({ selectedId: id }),
+
+  setCropping: (id) => set({ croppingId: id }),
 
   bringForward: (id) =>
     set((s) => {
