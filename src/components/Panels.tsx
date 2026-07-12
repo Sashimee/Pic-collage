@@ -3,8 +3,9 @@ import { useEditor } from '../store/editorStore'
 import { GRID_LAYOUTS } from '../lib/grids'
 import { FILTER_PRESETS } from '../lib/filters'
 import { PHOTO_SHAPES } from '../lib/shapes'
+import { PATTERN_GLYPH, PATTERN_IDS } from '../lib/patterns'
 import { loadPhotoMeta } from '../lib/importPhotos'
-import type { PhotoElement, TextElement } from '../types'
+import type { FrameStyle, PhotoElement, TextElement } from '../types'
 import { Chip, ColorField, PrimaryButton, Slider } from './ui'
 import { useT } from '../i18n/useLang'
 import { EMOJI_CATEGORIES } from '../lib/emojis'
@@ -173,10 +174,17 @@ const FONTS = [
   'Poppins',
   'system-ui',
   'Georgia',
+  'Times New Roman',
+  'Palatino',
+  'Trebuchet MS',
+  'Verdana',
   'Impact',
   'Courier New',
   'Comic Sans MS',
+  'Brush Script MT',
 ]
+
+const DEFAULT_CHIP = { color: '#fde68a', padding: 18, radius: 14 }
 
 export function TextPanel() {
   const t = useT()
@@ -240,8 +248,115 @@ export function TextPanel() {
             value={text.fontSize}
             onChange={(v) => update(selectedId, { fontSize: v })}
           />
+
+          {/* Effects */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() =>
+                update(selectedId, {
+                  shadowBlur: text.shadowBlur ? 0 : 14,
+                  shadowColor: text.shadowColor ?? '#000000',
+                })
+              }
+              className={`min-h-[40px] rounded-lg px-3 text-sm transition active:scale-95 ${
+                text.shadowBlur
+                  ? 'bg-indigo-500 text-white'
+                  : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+              }`}
+            >
+              {t('text.shadow')}
+            </button>
+            <button
+              onClick={() =>
+                update(selectedId, { chip: text.chip ? undefined : { ...DEFAULT_CHIP } })
+              }
+              className={`min-h-[40px] rounded-lg px-3 text-sm transition active:scale-95 ${
+                text.chip
+                  ? 'bg-indigo-500 text-white'
+                  : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+              }`}
+            >
+              {t('text.chip')}
+            </button>
+            {text.chip && (
+              <ColorField
+                label={t('common.color')}
+                value={text.chip.color}
+                onChange={(v) =>
+                  update(selectedId, { chip: { ...text.chip!, color: v } })
+                }
+              />
+            )}
+          </div>
+          <Slider
+            label={t('text.outline')}
+            min={0}
+            max={20}
+            value={text.strokeWidth ?? 0}
+            onChange={(v) =>
+              update(selectedId, {
+                strokeWidth: v,
+                stroke: text.stroke ?? '#000000',
+              })
+            }
+          />
+          {(text.strokeWidth ?? 0) > 0 && (
+            <ColorField
+              label={t('text.outlineColor')}
+              value={text.stroke ?? '#000000'}
+              onChange={(v) => update(selectedId, { stroke: v })}
+            />
+          )}
+          <Slider
+            label={t('text.curve')}
+            min={0}
+            max={80}
+            value={text.curve ?? 0}
+            onChange={(v) => update(selectedId, { curve: v })}
+          />
         </div>
       )}
+    </div>
+  )
+}
+
+// ---- Draw ----------------------------------------------------------------
+
+const DRAW_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#0ea5e9', '#6366f1', '#ec4899', '#111827', '#ffffff']
+
+export function DrawPanel() {
+  const t = useT()
+  const brushColor = useEditor((s) => s.brushColor)
+  const brushSize = useEditor((s) => s.brushSize)
+  const setBrush = useEditor((s) => s.setBrush)
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-xs text-slate-400">{t('draw.hint')}</p>
+      <div className="flex flex-wrap gap-2">
+        {DRAW_COLORS.map((c) => (
+          <button
+            key={c}
+            onClick={() => setBrush({ color: c })}
+            style={{ background: c }}
+            className={`h-11 w-11 rounded-full border transition active:scale-90 ${
+              brushColor === c ? 'border-indigo-400 ring-2 ring-indigo-400' : 'border-slate-500'
+            }`}
+          />
+        ))}
+      </div>
+      <ColorField
+        label={t('common.color')}
+        value={brushColor}
+        onChange={(v) => setBrush({ color: v })}
+      />
+      <Slider
+        label={t('draw.size')}
+        min={1}
+        max={60}
+        value={brushSize}
+        onChange={(v) => setBrush({ size: v })}
+      />
     </div>
   )
 }
@@ -288,10 +403,14 @@ export function StickerPanel() {
 
 const PALETTE = ['#ffffff', '#000000', '#f43f5e', '#6366f1', '#22c55e', '#eab308', '#0ea5e9', '#f97316']
 
+const FRAME_STYLES: FrameStyle[] = ['none', 'solid', 'rounded', 'polaroid']
+
 export function BackgroundPanel() {
   const t = useT()
   const bg = useEditor((s) => s.background)
   const setBg = useEditor((s) => s.setBackground)
+  const frame = useEditor((s) => s.frame)
+  const setFrame = useEditor((s) => s.setFrame)
 
   return (
     <div className="flex flex-col gap-3">
@@ -302,8 +421,11 @@ export function BackgroundPanel() {
         <Chip active={bg.type === 'gradient'} onClick={() => setBg({ type: 'gradient' })}>
           {t('bg.gradient')}
         </Chip>
+        <Chip active={bg.type === 'pattern'} onClick={() => setBg({ type: 'pattern' })}>
+          {t('bg.pattern')}
+        </Chip>
       </div>
-      {bg.type === 'solid' ? (
+      {bg.type === 'solid' && (
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
             {PALETTE.map((c) => (
@@ -319,7 +441,8 @@ export function BackgroundPanel() {
           </div>
           <ColorField label={t('bg.custom')} value={bg.color} onChange={(v) => setBg({ color: v })} />
         </div>
-      ) : (
+      )}
+      {bg.type === 'gradient' && (
         <div className="flex flex-col gap-3">
           <ColorField label={t('bg.from')} value={bg.gradientFrom} onChange={(v) => setBg({ gradientFrom: v })} />
           <ColorField label={t('bg.to')} value={bg.gradientTo} onChange={(v) => setBg({ gradientTo: v })} />
@@ -332,6 +455,61 @@ export function BackgroundPanel() {
           />
         </div>
       )}
+      {bg.type === 'pattern' && (
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {PATTERN_IDS.map((p) => (
+              <button
+                key={p}
+                onClick={() => setBg({ patternId: p })}
+                title={p}
+                className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-lg transition active:scale-90 ${
+                  bg.patternId === p
+                    ? 'bg-indigo-500 text-white'
+                    : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                }`}
+              >
+                {PATTERN_GLYPH[p]}
+              </button>
+            ))}
+          </div>
+          <ColorField label={t('bg.custom')} value={bg.color} onChange={(v) => setBg({ color: v })} />
+          <ColorField
+            label={t('bg.patternColor')}
+            value={bg.patternColor}
+            onChange={(v) => setBg({ patternColor: v })}
+          />
+        </div>
+      )}
+
+      {/* Frame */}
+      <div className="mt-1 border-t border-slate-700 pt-3">
+        <p className="mb-2 text-xs font-medium text-slate-400">{t('frame.title')}</p>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {FRAME_STYLES.map((s) => (
+            <Chip key={s} active={frame.style === s} onClick={() => setFrame({ style: s })}>
+              {t('frame.' + s)}
+            </Chip>
+          ))}
+        </div>
+        {frame.style !== 'none' && (
+          <div className="mt-2 flex flex-col gap-3">
+            <ColorField
+              label={t('frame.color')}
+              value={frame.color}
+              onChange={(v) => setFrame({ color: v })}
+            />
+            <Slider
+              label={t('frame.width')}
+              min={0.005}
+              max={0.12}
+              step={0.005}
+              value={frame.width}
+              onChange={(v) => setFrame({ width: v })}
+            />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

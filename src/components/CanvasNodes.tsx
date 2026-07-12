@@ -1,8 +1,16 @@
-import { useEffect, useRef } from 'react'
-import { Group, Image as KonvaImage, Rect, Text as KonvaText } from 'react-konva'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  Group,
+  Image as KonvaImage,
+  Line,
+  Rect,
+  Text as KonvaText,
+  TextPath,
+} from 'react-konva'
 import type Konva from 'konva'
 import type {
   CanvasElement,
+  DrawingElement,
   PhotoElement,
   StickerElement,
   TextElement,
@@ -108,15 +116,45 @@ function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
 }
 
 function TextNode({ el, onSelect, onChange, onEditText }: NodeProps<TextElement>) {
+  const textRef = useRef<Konva.Text>(null)
+  const [dims, setDims] = useState({ w: 0, h: 0 })
+  const curve = el.curve ?? 0
+
+  // Measure the rendered text so the chip background can size to it. The Text
+  // node measures even while hidden (curved mode renders a TextPath instead).
+  useLayoutEffect(() => {
+    const n = textRef.current
+    if (n) setDims({ w: n.width(), h: n.height() })
+  }, [
+    el.text,
+    el.fontSize,
+    el.fontFamily,
+    el.fontStyle,
+    el.strokeWidth,
+  ])
+
+  // Shared visual attrs for both the straight Text and the curved TextPath.
+  const paint = {
+    fontFamily: el.fontFamily,
+    fontSize: el.fontSize,
+    fontStyle: el.fontStyle,
+    fill: el.fill,
+    stroke: el.strokeWidth ? el.stroke : undefined,
+    strokeWidth: el.strokeWidth ?? 0,
+    fillAfterStrokeEnabled: true,
+    shadowColor: el.shadowBlur ? el.shadowColor : undefined,
+    shadowBlur: el.shadowBlur ?? 0,
+    shadowOpacity: el.shadowBlur ? 0.85 : 0,
+  }
+
+  const chip = el.chip
+  // Bow path for curved text: from (0,0) to (w,0), arching up by `curve`.
+  const bow = `M 0 0 Q ${dims.w / 2} ${-curve * 2} ${dims.w} 0`
+
   return (
-    <KonvaText
+    <Group
       id={el.id}
       name="element"
-      text={el.text}
-      fontFamily={el.fontFamily}
-      fontSize={el.fontSize}
-      fontStyle={el.fontStyle}
-      fill={el.fill}
       x={el.x}
       y={el.y}
       rotation={el.rotation}
@@ -127,6 +165,47 @@ function TextNode({ el, onSelect, onChange, onEditText }: NodeProps<TextElement>
       onTap={onSelect}
       onDblClick={() => onEditText?.(el.id)}
       onDblTap={() => onEditText?.(el.id)}
+      {...commonHandlers(onChange)}
+    >
+      {chip && curve === 0 && dims.w > 0 && (
+        <Rect
+          x={-chip.padding}
+          y={-chip.padding}
+          width={dims.w + chip.padding * 2}
+          height={dims.h + chip.padding * 2}
+          fill={chip.color}
+          cornerRadius={chip.radius}
+          listening={false}
+        />
+      )}
+      <KonvaText ref={textRef} text={el.text} visible={curve === 0} {...paint} />
+      {curve > 0 && dims.w > 0 && (
+        <TextPath text={el.text} data={bow} {...paint} />
+      )}
+    </Group>
+  )
+}
+
+function DrawingNode({ el, onSelect, onChange }: NodeProps<DrawingElement>) {
+  return (
+    <Line
+      id={el.id}
+      name="element"
+      points={el.points}
+      stroke={el.stroke}
+      strokeWidth={el.strokeWidth}
+      lineCap="round"
+      lineJoin="round"
+      tension={0.4}
+      hitStrokeWidth={Math.max(el.strokeWidth, 20)}
+      x={el.x}
+      y={el.y}
+      rotation={el.rotation}
+      scaleX={el.scaleX}
+      scaleY={el.scaleY}
+      draggable
+      onClick={onSelect}
+      onTap={onSelect}
       {...commonHandlers(onChange)}
     />
   )
@@ -177,5 +256,7 @@ export function ElementNode({
       )
     case 'sticker':
       return <StickerNode el={el} onSelect={onSelect} onChange={onChange} />
+    case 'drawing':
+      return <DrawingNode el={el} onSelect={onSelect} onChange={onChange} />
   }
 }

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type {
   Background,
   CanvasElement,
+  DrawingElement,
   EditorMode,
   Frame,
   PhotoElement,
@@ -76,6 +77,11 @@ interface EditorState {
   selectedId: string | null
   croppingId: string | null
 
+  // drawing tool (transient — not part of undo history)
+  tool: 'select' | 'draw'
+  brushColor: string
+  brushSize: number
+
   past: Snapshot[]
   future: Snapshot[]
 
@@ -86,6 +92,9 @@ interface EditorState {
   addPhoto: (src: string, naturalWidth: number, naturalHeight: number) => void
   addText: () => void
   addSticker: (emoji: string) => void
+  addDrawing: (points: number[], stroke: string, strokeWidth: number) => void
+  setTool: (tool: 'select' | 'draw') => void
+  setBrush: (patch: { color?: string; size?: number }) => void
   updateElement: (id: string, patch: Partial<CanvasElement>) => void
   updateFilters: (id: string, patch: Partial<PhotoFilters>) => void
   duplicateElement: (id: string) => void
@@ -120,6 +129,8 @@ const DEFAULT_BACKGROUND: Background = {
   gradientFrom: '#6366f1',
   gradientTo: '#ec4899',
   gradientAngle: 45,
+  patternId: 'dots',
+  patternColor: '#6366f1',
 }
 
 const DEFAULT_FRAME: Frame = {
@@ -140,6 +151,10 @@ export const useEditor = create<EditorState>((set, get) => ({
   elements: [],
   selectedId: null,
   croppingId: null,
+
+  tool: 'select',
+  brushColor: '#ef4444',
+  brushSize: 8,
 
   past: [],
   future: [],
@@ -207,6 +222,31 @@ export const useEditor = create<EditorState>((set, get) => ({
       }
       return { elements: [...s.elements, sticker], selectedId: sticker.id, ...record(s) }
     }),
+
+  addDrawing: (points, stroke, strokeWidth) =>
+    set((s) => {
+      const drawing: DrawingElement = {
+        id: uid(),
+        type: 'drawing',
+        points,
+        stroke,
+        strokeWidth,
+        x: 0,
+        y: 0,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+      }
+      return { elements: [...s.elements, drawing], ...record(s) }
+    }),
+
+  setTool: (tool) => set({ tool, selectedId: null }),
+
+  setBrush: (patch) =>
+    set((s) => ({
+      brushColor: patch.color ?? s.brushColor,
+      brushSize: patch.size ?? s.brushSize,
+    })),
 
   updateElement: (id, patch) =>
     set((s) => ({

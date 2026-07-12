@@ -2,7 +2,7 @@
 // `CanvasElement` — a discriminated union keyed by `type`. New element kinds
 // (text, sticker, …) plug in here without touching the transform/selection code.
 
-export type ElementType = 'photo' | 'text' | 'sticker'
+export type ElementType = 'photo' | 'text' | 'sticker' | 'drawing'
 
 export interface BaseElement {
   id: string
@@ -55,6 +55,12 @@ export interface PhotoElement extends BaseElement {
   crop?: CropRect // source-pixel crop; undefined = whole image
 }
 
+export interface TextChip {
+  color: string
+  padding: number
+  radius: number
+}
+
 export interface TextElement extends BaseElement {
   type: 'text'
   text: string
@@ -62,6 +68,12 @@ export interface TextElement extends BaseElement {
   fontSize: number
   fill: string
   fontStyle: string // 'normal' | 'bold' | 'italic' | 'bold italic'
+  stroke?: string //       outline color
+  strokeWidth?: number //  outline width (0 = none)
+  shadowColor?: string
+  shadowBlur?: number //   drop-shadow blur (0 = none)
+  chip?: TextChip //       tape/scrapbook background behind the text
+  curve?: number //        arch depth in px (0 = straight)
 }
 
 export interface StickerElement extends BaseElement {
@@ -70,11 +82,24 @@ export interface StickerElement extends BaseElement {
   fontSize: number
 }
 
-export type CanvasElement = PhotoElement | TextElement | StickerElement
+export interface DrawingElement extends BaseElement {
+  type: 'drawing'
+  points: number[] // flat [x0,y0,x1,y1,…] in board units, relative to x/y
+  stroke: string
+  strokeWidth: number
+}
+
+export type CanvasElement =
+  | PhotoElement
+  | TextElement
+  | StickerElement
+  | DrawingElement
 
 // ---- Background ----------------------------------------------------------
 
-export type BackgroundType = 'solid' | 'gradient'
+export type BackgroundType = 'solid' | 'gradient' | 'pattern'
+
+export type PatternId = 'dots' | 'stripes' | 'grid' | 'checker' | 'hearts'
 
 export interface Background {
   type: BackgroundType
@@ -82,6 +107,8 @@ export interface Background {
   gradientFrom: string
   gradientTo: string
   gradientAngle: number // degrees, 0 = left→right
+  patternId: PatternId
+  patternColor: string // foreground/motif color (background uses `color`)
 }
 
 // ---- Board frame ---------------------------------------------------------

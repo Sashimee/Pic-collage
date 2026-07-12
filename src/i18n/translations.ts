@@ -11,9 +11,30 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tab.photos': 'Photos',
     'tab.layout': 'Layout',
     'tab.text': 'Text',
+    'tab.draw': 'Draw',
     'tab.stickers': 'Stickers',
     'tab.background': 'Background',
     'tab.filters': 'Filters',
+
+    'draw.hint': 'Drag on the canvas to draw. Switch to another tab to stop.',
+    'draw.size': 'Brush size',
+
+    'text.shadow': 'Shadow',
+    'text.chip': 'Label',
+    'text.outline': 'Outline',
+    'text.outlineColor': 'Outline color',
+    'text.curve': 'Curve',
+
+    'bg.pattern': 'Pattern',
+    'bg.patternColor': 'Motif',
+
+    'frame.title': 'Frame',
+    'frame.none': 'None',
+    'frame.solid': 'Solid',
+    'frame.rounded': 'Rounded',
+    'frame.polaroid': 'Polaroid',
+    'frame.color': 'Frame color',
+    'frame.width': 'Frame width',
 
     'aspect.square': 'Square',
     'aspect.portrait': 'Portrait',
@@ -85,9 +106,30 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tab.photos': 'Fotos',
     'tab.layout': 'Layout',
     'tab.text': 'Text',
+    'tab.draw': 'Malen',
     'tab.stickers': 'Sticker',
     'tab.background': 'Hintergrund',
     'tab.filters': 'Filter',
+
+    'draw.hint': 'Zum Zeichnen über die Leinwand ziehen. Zum Beenden anderen Tab wählen.',
+    'draw.size': 'Pinselgröße',
+
+    'text.shadow': 'Schatten',
+    'text.chip': 'Etikett',
+    'text.outline': 'Umriss',
+    'text.outlineColor': 'Umrissfarbe',
+    'text.curve': 'Biegung',
+
+    'bg.pattern': 'Muster',
+    'bg.patternColor': 'Motiv',
+
+    'frame.title': 'Rahmen',
+    'frame.none': 'Keiner',
+    'frame.solid': 'Voll',
+    'frame.rounded': 'Rund',
+    'frame.polaroid': 'Polaroid',
+    'frame.color': 'Rahmenfarbe',
+    'frame.width': 'Rahmenbreite',
 
     'aspect.square': 'Quadrat',
     'aspect.portrait': 'Hochformat',
