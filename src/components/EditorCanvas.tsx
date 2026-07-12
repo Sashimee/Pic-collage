@@ -15,7 +15,6 @@ import { BoardFrame } from './BoardFrame'
 import { ElementNode } from './CanvasNodes'
 import { GridView } from './GridView'
 import { exportBoard, type ExportFormat } from '../lib/exportImage'
-import { useT } from '../i18n/useLang'
 import type { CanvasElement, PhotoElement } from '../types'
 
 export interface EditorHandle {
@@ -26,7 +25,6 @@ const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v))
 
 export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
-  const t = useT()
   const hostRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const boardRef = useRef<Konva.Group>(null)
@@ -57,6 +55,18 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const drawing = useRef(false)
   const ptsRef = useRef<number[]>([])
   const [, setTick] = useState(0)
+
+  // Inline text editor overlay (replaces window.prompt on double-tap).
+  const [editing, setEditing] = useState<{
+    id: string
+    value: string
+    left: number
+    top: number
+    width: number
+    fontSize: number
+    fontFamily: string
+    fill: string
+  } | null>(null)
 
   // --- responsive board sizing -------------------------------------------
   useLayoutEffect(() => {
@@ -246,18 +256,37 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     ? elements.filter((e) => e.type !== 'photo')
     : elements
 
+  // Open the inline editor positioned over the tapped text node.
+  const openTextEditor = (id: string) => {
+    const stage = stageRef.current
+    const node = stage?.findOne('#' + id)
+    const el = useEditor.getState().elements.find((x) => x.id === id)
+    if (!stage || !node || el?.type !== 'text') return
+    const rect = node.getClientRect({ relativeTo: stage })
+    setEditing({
+      id,
+      value: el.text,
+      left: rect.x,
+      top: rect.y,
+      width: Math.max(rect.width, 120),
+      fontSize: el.fontSize * tf.scale,
+      fontFamily: el.fontFamily,
+      fill: el.fill,
+    })
+  }
+
+  const commitEdit = () => {
+    if (editing) updateElement(editing.id, { text: editing.value })
+    setEditing(null)
+  }
+
   const renderElement = (el: CanvasElement) => (
     <ElementNode
       key={el.id}
       el={el}
       onSelect={() => select(el.id)}
       onChange={(patch) => updateElement(el.id, patch)}
-      onEditText={(id) => {
-        const current = useEditor.getState().elements.find((x) => x.id === id)
-        if (current?.type !== 'text') return
-        const next = window.prompt(t('canvas.editText'), current.text)
-        if (next != null) updateElement(id, { text: next })
-      }}
+      onEditText={openTextEditor}
     />
   )
 
@@ -324,6 +353,33 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
             />
           </Layer>
         </Stage>
+      )}
+      {editing && (
+        <textarea
+          autoFocus
+          value={editing.value}
+          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
+          onBlur={commitEdit}
+          onFocus={(e) => e.currentTarget.select()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              commitEdit()
+            } else if (e.key === 'Escape') {
+              setEditing(null)
+            }
+          }}
+          style={{
+            left: editing.left,
+            top: editing.top,
+            width: editing.width,
+            fontSize: editing.fontSize,
+            fontFamily: editing.fontFamily,
+            color: editing.fill,
+            lineHeight: 1.1,
+          }}
+          className="absolute z-40 resize-none overflow-hidden rounded-md border-2 border-accent bg-surface/95 px-1 py-0.5 shadow-xl outline-none"
+        />
       )}
     </div>
   )
