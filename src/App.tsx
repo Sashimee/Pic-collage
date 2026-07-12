@@ -150,9 +150,9 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-slate-900 text-white">
+    <div className="flex h-full flex-col bg-surface text-text">
       <HeaderBar onExport={handleExport} />
-      <div className="relative min-h-0 flex-1 bg-slate-950">
+      <div className="relative min-h-0 flex-1 bg-bg">
         <EditorCanvas ref={editorRef} />
         <SelectionBar />
       </div>
