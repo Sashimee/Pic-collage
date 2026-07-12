@@ -48,6 +48,7 @@ export interface CropRect {
 export interface PhotoElement extends BaseElement {
   type: 'photo'
   src: string // object URL created from the imported File
+  photoId?: string // IndexedDB key for the source blob (persistence)
   width: number // intrinsic display size (design units)
   height: number
   filters: PhotoFilters

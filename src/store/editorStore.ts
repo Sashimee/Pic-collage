@@ -89,7 +89,12 @@ interface EditorState {
   selected: () => CanvasElement | undefined
 
   // element actions
-  addPhoto: (src: string, naturalWidth: number, naturalHeight: number) => void
+  addPhoto: (
+    src: string,
+    naturalWidth: number,
+    naturalHeight: number,
+    photoId?: string,
+  ) => void
   addText: () => void
   addSticker: (emoji: string) => void
   addDrawing: (points: number[], stroke: string, strokeWidth: number) => void
@@ -117,10 +122,24 @@ interface EditorState {
   setFrame: (patch: Partial<Frame>) => void
   setBoardSize: (width: number, height: number) => void
   clearAll: () => void
+  loadDocument: (doc: LoadedDocument) => void
 
   // history
   undo: () => void
   redo: () => void
+}
+
+// Shape accepted by loadDocument when restoring persisted work.
+export interface LoadedDocument {
+  boardWidth: number
+  boardHeight: number
+  background: Background
+  mode: EditorMode
+  gridId: string | null
+  gridGap: number
+  gridRadius: number
+  frame: Frame
+  elements: CanvasElement[]
 }
 
 const DEFAULT_BACKGROUND: Background = {
@@ -161,7 +180,7 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   selected: () => get().elements.find((e) => e.id === get().selectedId),
 
-  addPhoto: (src, naturalWidth, naturalHeight) =>
+  addPhoto: (src, naturalWidth, naturalHeight, photoId) =>
     set((s) => {
       // Fit the new photo to ~55% of the board's shorter axis, centered.
       const target = Math.min(s.boardWidth, s.boardHeight) * 0.55
@@ -176,6 +195,7 @@ export const useEditor = create<EditorState>((set, get) => ({
         id: uid(),
         type: 'photo',
         src,
+        photoId,
         width: w,
         height: h,
         x: s.boardWidth / 2 - w / 2,
@@ -370,6 +390,22 @@ export const useEditor = create<EditorState>((set, get) => ({
         past: [],
         future: [],
       }
+    }),
+
+  loadDocument: (doc) =>
+    set({
+      boardWidth: doc.boardWidth,
+      boardHeight: doc.boardHeight,
+      background: doc.background,
+      mode: doc.mode,
+      gridId: doc.gridId,
+      gridGap: doc.gridGap,
+      gridRadius: doc.gridRadius,
+      frame: doc.frame,
+      elements: doc.elements,
+      selectedId: null,
+      past: [],
+      future: [],
     }),
 
   undo: () =>

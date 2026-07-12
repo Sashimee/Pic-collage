@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EditorCanvas, type EditorHandle } from './components/EditorCanvas'
 import { HeaderBar, type ExportKind } from './components/HeaderBar'
 import { SelectionBar } from './components/SelectionBar'
@@ -12,16 +12,92 @@ import {
   shareDataURL,
   type ExportFormat,
 } from './lib/exportImage'
+import {
+  getPhoto,
+  loadDoc,
+  saveDoc,
+  type StoredDoc,
+} from './lib/persistence'
+import type { CanvasElement } from './types'
 
 const nextFrame = () =>
   new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   )
 
+// Build the persistable snapshot: photo blobs live in IndexedDB by photoId, so
+// the JSON keeps only the id (object URLs are transient and must not be saved).
+function toStoredDoc(): StoredDoc {
+  const s = useEditor.getState()
+  return {
+    boardWidth: s.boardWidth,
+    boardHeight: s.boardHeight,
+    background: s.background,
+    mode: s.mode,
+    gridId: s.gridId,
+    gridGap: s.gridGap,
+    gridRadius: s.gridRadius,
+    frame: s.frame,
+    elements: s.elements.map((el) =>
+      el.type === 'photo' ? { ...el, src: '' } : el,
+    ),
+  }
+}
+
 export default function App() {
   const editorRef = useRef<EditorHandle>(null)
   const select = useEditor((s) => s.select)
+  const loadDocument = useEditor((s) => s.loadDocument)
+  const [hydrated, setHydrated] = useState(false)
   const t = useT()
+
+  // Restore persisted work on startup: rebuild object URLs from stored blobs
+  // (one URL per photoId, so duplicates keep sharing a src). Photos whose blob
+  // is missing are dropped.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const stored = await loadDoc()
+      if (stored && !cancelled && stored.elements.length) {
+        const urlByPhoto = new Map<string, string>()
+        const elements: CanvasElement[] = []
+        for (const el of stored.elements) {
+          if (el.type === 'photo') {
+            if (!el.photoId) continue
+            let url = urlByPhoto.get(el.photoId)
+            if (!url) {
+              const blob = await getPhoto(el.photoId)
+              if (!blob) continue
+              url = URL.createObjectURL(blob)
+              urlByPhoto.set(el.photoId, url)
+            }
+            elements.push({ ...el, src: url })
+          } else {
+            elements.push(el)
+          }
+        }
+        if (!cancelled) loadDocument({ ...stored, elements })
+      }
+      if (!cancelled) setHydrated(true)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [loadDocument])
+
+  // Debounced autosave once the initial restore has run.
+  useEffect(() => {
+    if (!hydrated) return
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const unsub = useEditor.subscribe(() => {
+      clearTimeout(timer)
+      timer = setTimeout(() => void saveDoc(toStoredDoc()), 500)
+    })
+    return () => {
+      unsub()
+      clearTimeout(timer)
+    }
+  }, [hydrated])
 
   // Global undo/redo shortcuts (Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z or Ctrl+Y).
   useEffect(() => {

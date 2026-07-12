@@ -5,20 +5,29 @@ import { FILTER_PRESETS } from '../lib/filters'
 import { PHOTO_SHAPES } from '../lib/shapes'
 import { PATTERN_GLYPH, PATTERN_IDS } from '../lib/patterns'
 import { loadPhotoMeta } from '../lib/importPhotos'
+import { putPhoto } from '../lib/persistence'
 import type { FrameStyle, PhotoElement, TextElement } from '../types'
 import { Chip, ColorField, PrimaryButton, Slider } from './ui'
 import { useT } from '../i18n/useLang'
 import { EMOJI_CATEGORIES } from '../lib/emojis'
 
+const uid = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2)
+
 async function importFiles(
   files: FileList,
-  add: (src: string, w: number, h: number) => void,
+  add: (src: string, w: number, h: number, photoId?: string) => void,
 ) {
   for (const file of Array.from(files)) {
     if (!file.type.startsWith('image/')) continue
     try {
       const meta = await loadPhotoMeta(file)
-      add(meta.src, meta.width, meta.height)
+      // Stash the source blob so the collage survives a reload.
+      const photoId = uid()
+      void putPhoto(photoId, meta.blob)
+      add(meta.src, meta.width, meta.height, photoId)
     } catch {
       /* skip undecodable files */
     }
