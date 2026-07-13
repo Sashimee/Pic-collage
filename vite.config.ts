@@ -12,7 +12,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' surfaces onNeedRefresh when a new SW is waiting; UpdateBanner
+      // then auto-activates it and reloads (see updateServiceWorker(true)).
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Pic Collage Maker',
