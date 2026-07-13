@@ -3,6 +3,7 @@ import { EditorCanvas, type EditorHandle } from './components/EditorCanvas'
 import { HeaderBar, type ExportKind } from './components/HeaderBar'
 import { SelectionBar } from './components/SelectionBar'
 import { MobileSheet, MobileTabBar, ToolRail, SidePanel } from './components/Docks'
+import { EmptyState } from './components/EmptyState'
 import { usePanels } from './components/panels.config'
 import { MotionProvider } from './components/motion'
 import { useIsDesktop } from './hooks/useMediaQuery'
@@ -53,7 +54,9 @@ export default function App() {
   const loadDocument = useEditor((s) => s.loadDocument)
   const [hydrated, setHydrated] = useState(false)
   const isDesktop = useIsDesktop()
-  const panels = usePanels()
+  // Desktop keeps the docked side panel populated; mobile starts with the
+  // sheet closed so the first-run hero isn't covered.
+  const panels = usePanels(isDesktop ? 'photos' : null)
   const t = useT()
 
   // Restore persisted work on startup: rebuild object URLs from stored blobs
@@ -164,6 +167,7 @@ export default function App() {
             <div className="relative min-h-0 flex-1 bg-bg">
               <EditorCanvas ref={editorRef} />
               <SelectionBar />
+              <EmptyState />
             </div>
             <SidePanel panels={panels} />
           </div>
@@ -172,6 +176,7 @@ export default function App() {
             <div className="relative min-h-0 flex-1 bg-bg">
               <EditorCanvas ref={editorRef} />
               <SelectionBar />
+              <EmptyState />
               <MobileSheet panels={panels} />
             </div>
             <MobileTabBar panels={panels} />
