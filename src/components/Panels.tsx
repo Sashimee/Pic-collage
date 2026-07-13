@@ -1,39 +1,16 @@
 import { useRef, useState } from 'react'
+import { ImagePlus, Camera } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { GRID_LAYOUTS } from '../lib/grids'
 import { FILTER_PRESETS } from '../lib/filters'
 import { PHOTO_SHAPES } from '../lib/shapes'
 import { PATTERN_GLYPH, PATTERN_IDS } from '../lib/patterns'
-import { loadPhotoMeta } from '../lib/importPhotos'
-import { putPhoto } from '../lib/persistence'
+import { importFiles } from '../lib/importFiles'
 import type { FrameStyle, PhotoElement, TextElement } from '../types'
 import { Chip, ColorField, PrimaryButton, Section, Slider } from './ui'
 import { LayoutPreview } from './LayoutPreview'
 import { useT } from '../i18n/useLang'
 import { EMOJI_CATEGORIES } from '../lib/emojis'
-
-const uid = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2)
-
-async function importFiles(
-  files: FileList,
-  add: (src: string, w: number, h: number, photoId?: string) => void,
-) {
-  for (const file of Array.from(files)) {
-    if (!file.type.startsWith('image/')) continue
-    try {
-      const meta = await loadPhotoMeta(file)
-      // Stash the source blob so the collage survives a reload.
-      const photoId = uid()
-      void putPhoto(photoId, meta.blob)
-      add(meta.src, meta.width, meta.height, photoId)
-    } catch {
-      /* skip undecodable files */
-    }
-  }
-}
 
 // ---- Photos --------------------------------------------------------------
 
@@ -62,10 +39,16 @@ export function PhotosPanel() {
         onChange={(e) => e.target.files && importFiles(e.target.files, addPhoto)}
       />
       <PrimaryButton onClick={() => galleryRef.current?.click()}>
-        {t('photos.add')}
+        <span className="flex items-center gap-2">
+          <ImagePlus size={16} strokeWidth={2.5} />
+          {t('photos.add')}
+        </span>
       </PrimaryButton>
       <PrimaryButton onClick={() => cameraRef.current?.click()}>
-        {t('photos.camera')}
+        <span className="flex items-center gap-2">
+          <Camera size={16} strokeWidth={2.5} />
+          {t('photos.camera')}
+        </span>
       </PrimaryButton>
     </div>
   )

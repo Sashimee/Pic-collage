@@ -1,4 +1,17 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
+import {
+  Undo2,
+  Redo2,
+  Sun,
+  Moon,
+  Trash2,
+  Download,
+  Share2,
+  FileImage,
+  Image as ImageIcon,
+  Sparkles,
+} from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { canShareImage } from '../lib/exportImage'
 import { clearPersisted } from '../lib/persistence'
@@ -28,28 +41,25 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
 
   return (
     <header className="flex items-center justify-between gap-2 border-b border-border bg-surface px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.55rem)]">
-      <h1 className="flex items-center gap-1.5 whitespace-nowrap text-sm font-bold">
-        <span className="text-base">🎨</span>
-        <span className="hidden bg-gradient-to-r from-accent to-accent-2 bg-clip-text text-transparent sm:inline">
-          Pic Collage Maker
+      <h1 className="flex items-center gap-2 whitespace-nowrap text-sm font-bold">
+        <span className="bg-grad-accent flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-[var(--shadow-accent)]">
+          <Sparkles size={17} strokeWidth={2.5} />
         </span>
+        <span className="text-grad-accent hidden sm:inline">Pic Collage Maker</span>
       </h1>
 
       <div className="flex items-center gap-1">
         <IconButton onClick={undo} disabled={!canUndo} label={t('header.undo')}>
-          ↶
+          <Undo2 size={18} />
         </IconButton>
         <IconButton onClick={redo} disabled={!canRedo} label={t('header.redo')}>
-          ↷
+          <Redo2 size={18} />
         </IconButton>
 
         <span className="mx-0.5 h-6 w-px bg-border" />
 
-        <IconButton
-          onClick={toggleTheme}
-          label={t('header.theme')}
-        >
-          {theme === 'dark' ? '☀️' : '🌙'}
+        <IconButton onClick={toggleTheme} label={t('header.theme')}>
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </IconButton>
         <LangSwitcher />
 
@@ -63,14 +73,15 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           disabled={!hasElements}
           label={t('header.new')}
         >
-          🗑️
+          <Trash2 size={18} />
         </IconButton>
 
         <div className="relative">
           <button
             onClick={() => setMenu((m) => !m)}
-            className="min-h-[40px] whitespace-nowrap rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent-fg shadow-sm shadow-accent/30 transition hover:brightness-110 active:scale-95"
+            className="bg-grad-accent flex min-h-[40px] items-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95"
           >
+            <Download size={16} strokeWidth={2.5} />
             {t('header.export')}
           </button>
           {menu && (
@@ -78,10 +89,16 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
               <div className="fixed inset-0 z-20" onClick={() => setMenu(false)} />
               <div className="absolute right-0 z-30 mt-1.5 w-48 overflow-hidden rounded-xl border border-border bg-surface-2 shadow-2xl">
                 {canShareImage() && (
-                  <MenuItem onClick={() => pick('share')}>{t('export.share')}</MenuItem>
+                  <MenuItem onClick={() => pick('share')} icon={<Share2 size={16} />}>
+                    {t('export.share')}
+                  </MenuItem>
                 )}
-                <MenuItem onClick={() => pick('png')}>{t('export.png')}</MenuItem>
-                <MenuItem onClick={() => pick('jpg')}>{t('export.jpg')}</MenuItem>
+                <MenuItem onClick={() => pick('png')} icon={<ImageIcon size={16} />}>
+                  {t('export.png')}
+                </MenuItem>
+                <MenuItem onClick={() => pick('jpg')} icon={<FileImage size={16} />}>
+                  {t('export.jpg')}
+                </MenuItem>
               </div>
             </>
           )}
@@ -94,15 +111,18 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
 function MenuItem({
   onClick,
   children,
+  icon,
 }: {
   onClick: () => void
   children: string
+  icon?: ReactNode
 }) {
   return (
     <button
       onClick={onClick}
-      className="block min-h-[44px] w-full px-4 py-3 text-left text-sm text-text/90 transition hover:bg-surface-3"
+      className="flex min-h-[44px] w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-text/90 transition hover:bg-surface-3"
     >
+      <span className="text-muted">{icon}</span>
       {children}
     </button>
   )

@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { EditorCanvas, type EditorHandle } from './components/EditorCanvas'
 import { HeaderBar, type ExportKind } from './components/HeaderBar'
 import { SelectionBar } from './components/SelectionBar'
-import { Toolbar } from './components/Toolbar'
+import { MobileSheet, MobileTabBar, ToolRail, SidePanel } from './components/Docks'
+import { EmptyState } from './components/EmptyState'
+import { usePanels } from './components/panels.config'
+import { MotionProvider } from './components/motion'
+import { useIsDesktop } from './hooks/useMediaQuery'
 import { CropOverlay } from './components/CropOverlay'
 import { UpdateBanner } from './components/UpdateBanner'
 import { useEditor } from './store/editorStore'
@@ -49,6 +53,10 @@ export default function App() {
   const select = useEditor((s) => s.select)
   const loadDocument = useEditor((s) => s.loadDocument)
   const [hydrated, setHydrated] = useState(false)
+  const isDesktop = useIsDesktop()
+  // Desktop keeps the docked side panel populated; mobile starts with the
+  // sheet closed so the first-run hero isn't covered.
+  const panels = usePanels(isDesktop ? 'photos' : null)
   const t = useT()
 
   // Restore persisted work on startup: rebuild object URLs from stored blobs
@@ -150,15 +158,33 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-surface text-text">
-      <HeaderBar onExport={handleExport} />
-      <div className="relative min-h-0 flex-1 bg-bg">
-        <EditorCanvas ref={editorRef} />
-        <SelectionBar />
+    <MotionProvider>
+      <div className="flex h-full flex-col bg-surface text-text">
+        <HeaderBar onExport={handleExport} />
+        {isDesktop ? (
+          <div className="flex min-h-0 flex-1">
+            <ToolRail panels={panels} />
+            <div className="relative min-h-0 flex-1 bg-bg">
+              <EditorCanvas ref={editorRef} />
+              <SelectionBar />
+              <EmptyState />
+            </div>
+            <SidePanel panels={panels} />
+          </div>
+        ) : (
+          <>
+            <div className="relative min-h-0 flex-1 bg-bg">
+              <EditorCanvas ref={editorRef} />
+              <SelectionBar />
+              <EmptyState />
+              <MobileSheet panels={panels} />
+            </div>
+            <MobileTabBar panels={panels} />
+          </>
+        )}
+        <UpdateBanner />
+        <CropOverlay />
       </div>
-      <UpdateBanner />
-      <Toolbar />
-      <CropOverlay />
-    </div>
+    </MotionProvider>
   )
 }

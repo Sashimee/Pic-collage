@@ -6,34 +6,41 @@
    via `@theme inline` below so utilities like `bg-surface` / `text-muted`
    follow the active theme at runtime. */
 :root {
-  --bg: #0b1020;
-  --surface: #151b2e;
-  --surface-2: #1e2740;
-  --surface-3: #29344f;
-  --border: #2a3450;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
-  --accent: #6366f1;
-  --accent-2: #ec4899;
+  --bg: #080b18;
+  --surface: #131a2e;
+  --surface-2: #1c2540;
+  --surface-3: #283253;
+  --border: #2c3760;
+  --text: #f3f5fb;
+  --muted: #93a0c0;
+  --accent: #7c6cff;
+  --accent-2: #f65bab;
   --accent-fg: #ffffff;
-  --danger: #f43f5e;
+  --danger: #fb5679;
   --ring: color-mix(in srgb, var(--accent) 55%, transparent);
+  /* Playful gradient + accent-tinted elevation, reused across the UI. */
+  --grad-accent: linear-gradient(135deg, #7c6cff 0%, #a45bf6 45%, #f65bab 100%);
+  --shadow-accent: 0 10px 30px -10px color-mix(in srgb, var(--accent) 55%, transparent);
+  --shadow-card: 0 12px 40px -18px rgba(0, 0, 0, 0.65);
   color-scheme: dark;
 }
 
 [data-theme="light"] {
-  --bg: #eef1f8;
+  --bg: #eef0fb;
   --surface: #ffffff;
-  --surface-2: #f4f6fb;
-  --surface-3: #e8ecf5;
-  --border: #dbe2ee;
-  --text: #0f172a;
-  --muted: #64748b;
-  --accent: #6366f1;
+  --surface-2: #f5f6fd;
+  --surface-3: #e9ecfa;
+  --border: #e0e3f2;
+  --text: #14172b;
+  --muted: #6b7391;
+  --accent: #6d5cf5;
   --accent-2: #ec4899;
   --accent-fg: #ffffff;
   --danger: #e11d48;
   --ring: color-mix(in srgb, var(--accent) 40%, transparent);
+  --grad-accent: linear-gradient(135deg, #6d5cf5 0%, #a35bf0 45%, #ec4899 100%);
+  --shadow-accent: 0 12px 30px -12px color-mix(in srgb, var(--accent) 45%, transparent);
+  --shadow-card: 0 16px 40px -24px rgba(76, 84, 140, 0.45);
   color-scheme: light;
 }
 
@@ -49,6 +56,19 @@
   --color-accent-2: var(--accent-2);
   --color-accent-fg: var(--accent-fg);
   --color-danger: var(--danger);
+  --shadow-accent: var(--shadow-accent);
+  --shadow-card: var(--shadow-card);
+}
+
+/* Reusable gradient helpers driven by the active theme's --grad-accent. */
+.bg-grad-accent {
+  background-image: var(--grad-accent);
+}
+.text-grad-accent {
+  background-image: var(--grad-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 html,
@@ -72,9 +92,54 @@ body {
   touch-action: none;
 }
 
-/* Sliders + native color inputs track the accent. */
+/* Sliders + native color inputs track the accent. Custom track/thumb for a
+   more modern, vibrant feel (gradient fill + soft glowing thumb). */
 input[type="range"] {
   accent-color: var(--accent);
+  -webkit-appearance: none;
+  appearance: none;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--surface-3);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  margin-top: -6px;
+  border-radius: 9999px;
+  background: var(--grad-accent);
+  border: 2px solid var(--surface);
+  box-shadow: var(--shadow-accent);
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--surface-3);
+}
+input[type="range"]::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: var(--grad-accent);
+  border: 2px solid var(--surface);
+  box-shadow: var(--shadow-accent);
+}
+
+/* Honor reduced-motion globally for framer-motion + CSS transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 /* Thin, unobtrusive scrollbars for the horizontal pickers. */

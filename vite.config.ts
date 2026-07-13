@@ -19,8 +19,8 @@ export default defineConfig({
         short_name: 'Collage Maker',
         description:
           'Create photo collages right in your browser. No account, nothing uploaded — everything stays on your device.',
-        theme_color: '#6366f1',
-        background_color: '#0f172a',
+        theme_color: '#131a2e',
+        background_color: '#080b18',
         display: 'standalone',
         orientation: 'portrait',
         start_url: BASE,

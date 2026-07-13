@@ -163,19 +163,19 @@ function CropModal({ el }: { el: PhotoElement }) {
       <div className="flex gap-2">
         <button
           onClick={reset}
-          className="min-h-[44px] rounded-lg bg-slate-700 px-4 text-sm text-slate-100 transition hover:bg-slate-600 active:scale-95"
+          className="min-h-[44px] rounded-lg bg-surface-2 px-4 text-sm text-text transition hover:bg-surface-3 active:scale-95"
         >
           {t('crop.reset')}
         </button>
         <button
           onClick={() => setCropping(null)}
-          className="min-h-[44px] rounded-lg bg-slate-700 px-4 text-sm text-slate-100 transition hover:bg-slate-600 active:scale-95"
+          className="min-h-[44px] rounded-lg bg-surface-2 px-4 text-sm text-text transition hover:bg-surface-3 active:scale-95"
         >
           {t('crop.cancel')}
         </button>
         <button
           onClick={apply}
-          className="min-h-[44px] rounded-lg bg-indigo-500 px-5 text-sm font-semibold text-white transition hover:bg-indigo-400 active:scale-95"
+          className="bg-grad-accent min-h-[44px] rounded-lg px-5 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95"
         >
           {t('crop.apply')}
         </button>
