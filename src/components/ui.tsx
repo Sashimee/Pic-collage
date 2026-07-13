@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react'
+import { m } from './motion'
+
+const TAP = { scale: 0.94 }
 
 export function Slider({
   label,
@@ -68,16 +71,17 @@ export function Chip({
   children: ReactNode
 }) {
   return (
-    <button
+    <m.button
+      whileTap={TAP}
       onClick={onClick}
-      className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-medium transition active:scale-95 ${
+      className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-medium transition ${
         active
-          ? 'bg-accent text-accent-fg shadow-sm shadow-accent/30'
+          ? 'bg-grad-accent text-white shadow-[var(--shadow-accent)]'
           : 'bg-surface-2 text-text/80 hover:bg-surface-3'
       }`}
     >
       {children}
-    </button>
+    </m.button>
   )
 }
 
@@ -91,13 +95,14 @@ export function PrimaryButton({
   disabled?: boolean
 }) {
   return (
-    <button
+    <m.button
+      whileTap={TAP}
       onClick={onClick}
       disabled={disabled}
-      className="min-h-[44px] rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-fg shadow-sm shadow-accent/30 transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+      className="bg-grad-accent min-h-[44px] rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
-    </button>
+    </m.button>
   )
 }
 
@@ -140,15 +145,16 @@ export function IconButton({
   variant?: 'ghost' | 'accent'
 }) {
   const base =
-    'flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl px-2.5 text-base font-medium transition active:scale-95 disabled:opacity-30 disabled:active:scale-100'
+    'flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl px-2.5 text-base font-medium transition disabled:opacity-30'
   const styles =
     variant === 'accent'
-      ? 'bg-accent text-accent-fg shadow-sm shadow-accent/30 hover:brightness-110'
+      ? 'bg-grad-accent text-white shadow-[var(--shadow-accent)] hover:brightness-110'
       : active
         ? 'bg-surface-3 text-text'
         : 'text-text/70 hover:bg-surface-2 hover:text-text'
   return (
-    <button
+    <m.button
+      whileTap={disabled ? undefined : TAP}
       onClick={onClick}
       disabled={disabled}
       title={label}
@@ -156,6 +162,6 @@ export function IconButton({
       className={`${base} ${styles}`}
     >
       {children}
-    </button>
+    </m.button>
   )
 }

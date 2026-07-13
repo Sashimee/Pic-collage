@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
+import { m, AnimatePresence } from './motion'
 
 // Floating contextual actions for the currently selected element.
 export function SelectionBar() {
@@ -22,8 +23,6 @@ export function SelectionBar() {
   const forward = useEditor((s) => s.bringForward)
   const backward = useEditor((s) => s.sendBackward)
   const updateElement = useEditor((s) => s.updateElement)
-
-  if (!selectedId) return null
 
   const el = selected()
   const isGridPhoto = mode === 'grid' && el?.type === 'photo'
@@ -48,24 +47,34 @@ export function SelectionBar() {
     label?: string
     danger?: boolean
   }) => (
-    <button
+    <m.button
+      whileTap={{ scale: 0.88 }}
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-11 w-11 items-center justify-center rounded-full shadow-lg backdrop-blur transition active:scale-90 ${
+      className={`flex h-11 w-11 items-center justify-center rounded-full shadow-lg backdrop-blur transition ${
         danger
           ? 'bg-danger/90 text-white'
           : 'bg-surface-2/90 text-text hover:bg-surface-3'
       }`}
     >
       {children}
-    </button>
+    </m.button>
   )
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
-      <div className="pointer-events-auto flex gap-2 rounded-full bg-surface/80 p-1.5 shadow-xl ring-1 ring-border backdrop-blur">
-        {mode === 'free' && (
+      <AnimatePresence>
+        {selectedId && (
+          <m.div
+            key="selbar"
+            initial={{ opacity: 0, y: 16, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.9 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 340 }}
+            className="pointer-events-auto flex gap-2 rounded-full bg-surface/80 p-1.5 shadow-xl ring-1 ring-border backdrop-blur"
+          >
+            {mode === 'free' && (
           <>
             <Btn onClick={() => duplicate(selectedId)} label={t('sel.duplicate')}>
               <Copy size={18} />
@@ -91,10 +100,12 @@ export function SelectionBar() {
             </Btn>
           </>
         )}
-        <Btn onClick={() => remove(selectedId)} label={t('sel.delete')} danger>
-          <Trash2 size={18} />
-        </Btn>
-      </div>
+            <Btn onClick={() => remove(selectedId)} label={t('sel.delete')} danger>
+              <Trash2 size={18} />
+            </Btn>
+          </m.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
