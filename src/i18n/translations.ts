@@ -15,6 +15,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tab.stickers': 'Stickers',
     'tab.background': 'Background',
     'tab.filters': 'Filters',
+    'panel.pickTool': 'Pick a tool to get started.',
+    'empty.title': 'Create your collage',
+    'empty.subtitle': 'Add your photos, then arrange, style and export — all right here on your device.',
+    'empty.startLayout': 'Or start from a layout',
 
     'draw.hint': 'Drag on the canvas to draw. Switch to another tab to stop.',
     'draw.size': 'Brush size',
@@ -55,8 +59,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'grid.hint':
       'Add photos — they fill the grid cells in order. Tap a cell to select it for filters.',
 
-    'photos.add': '🖼️ Add photos',
-    'photos.camera': '📷 Camera',
+    'photos.add': 'Add photos',
+    'photos.camera': 'Camera',
 
     'text.add': '＋ Add text',
     'text.placeholder': 'Type your text',
@@ -107,11 +111,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     'header.undo': 'Undo',
     'header.redo': 'Redo',
     'header.theme': 'Toggle theme',
-    'header.export': 'Export ▾',
-    'export.share': '📤 Share…',
-    'export.png': '⬇️ Download PNG',
-    'export.jpg': '⬇️ Download JPG',
+    'header.export': 'Export',
+    'export.share': 'Share…',
+    'export.png': 'Download PNG',
+    'export.jpg': 'Download JPG',
     'header.clearConfirm': 'Clear the whole canvas?',
+    'sel.duplicate': 'Duplicate',
+    'sel.backward': 'Send backward',
+    'sel.forward': 'Bring forward',
+    'sel.delete': 'Delete',
 
     'canvas.editText': 'Edit text',
     'share.title': 'My Collage',
@@ -124,6 +132,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tab.stickers': 'Sticker',
     'tab.background': 'Hintergrund',
     'tab.filters': 'Filter',
+    'panel.pickTool': 'Wähle ein Werkzeug, um zu starten.',
+    'empty.title': 'Erstelle deine Collage',
+    'empty.subtitle': 'Füge deine Fotos hinzu, ordne sie an, gestalte und exportiere — alles direkt auf deinem Gerät.',
+    'empty.startLayout': 'Oder mit einem Layout starten',
 
     'draw.hint': 'Zum Zeichnen über die Leinwand ziehen. Zum Beenden anderen Tab wählen.',
     'draw.size': 'Pinselgröße',
@@ -164,8 +176,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'grid.hint':
       'Füge Fotos hinzu — sie füllen die Rasterfelder der Reihe nach. Tippe ein Feld an, um es für Filter auszuwählen.',
 
-    'photos.add': '🖼️ Fotos hinzufügen',
-    'photos.camera': '📷 Kamera',
+    'photos.add': 'Fotos hinzufügen',
+    'photos.camera': 'Kamera',
 
     'text.add': '＋ Text hinzufügen',
     'text.placeholder': 'Text eingeben',
@@ -216,11 +228,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     'header.undo': 'Rückgängig',
     'header.redo': 'Wiederholen',
     'header.theme': 'Design wechseln',
-    'header.export': 'Export ▾',
-    'export.share': '📤 Teilen…',
-    'export.png': '⬇️ PNG herunterladen',
-    'export.jpg': '⬇️ JPG herunterladen',
+    'header.export': 'Export',
+    'export.share': 'Teilen…',
+    'export.png': 'PNG herunterladen',
+    'export.jpg': 'JPG herunterladen',
     'header.clearConfirm': 'Die ganze Leinwand leeren?',
+    'sel.duplicate': 'Duplizieren',
+    'sel.backward': 'Nach hinten',
+    'sel.forward': 'Nach vorne',
+    'sel.delete': 'Löschen',
 
     'canvas.editText': 'Text bearbeiten',
     'share.title': 'Meine Collage',
