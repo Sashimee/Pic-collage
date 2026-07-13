@@ -1,3 +1,13 @@
+import type { ReactNode } from 'react'
+import {
+  Copy,
+  SendToBack,
+  BringToFront,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
 
@@ -34,7 +44,7 @@ export function SelectionBar() {
     danger,
   }: {
     onClick: () => void
-    children: string
+    children: ReactNode
     label?: string
     danger?: boolean
   }) => (
@@ -42,7 +52,7 @@ export function SelectionBar() {
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-11 w-11 items-center justify-center rounded-full text-lg shadow-lg backdrop-blur transition active:scale-90 ${
+      className={`flex h-11 w-11 items-center justify-center rounded-full shadow-lg backdrop-blur transition active:scale-90 ${
         danger
           ? 'bg-danger/90 text-white'
           : 'bg-surface-2/90 text-text hover:bg-surface-3'
@@ -57,26 +67,32 @@ export function SelectionBar() {
       <div className="pointer-events-auto flex gap-2 rounded-full bg-surface/80 p-1.5 shadow-xl ring-1 ring-border backdrop-blur">
         {mode === 'free' && (
           <>
-            <Btn onClick={() => duplicate(selectedId)}>⧉</Btn>
-            <Btn onClick={() => backward(selectedId)}>⤵</Btn>
-            <Btn onClick={() => forward(selectedId)}>⤴</Btn>
+            <Btn onClick={() => duplicate(selectedId)} label={t('sel.duplicate')}>
+              <Copy size={18} />
+            </Btn>
+            <Btn onClick={() => backward(selectedId)} label={t('sel.backward')}>
+              <SendToBack size={18} />
+            </Btn>
+            <Btn onClick={() => forward(selectedId)} label={t('sel.forward')}>
+              <BringToFront size={18} />
+            </Btn>
           </>
         )}
         {isGridPhoto && (
           <>
             <Btn onClick={() => stepZoom(-0.2)} label={t('cell.zoomOut')}>
-              －
+              <ZoomOut size={18} />
             </Btn>
             <Btn onClick={() => stepZoom(0.2)} label={t('cell.zoomIn')}>
-              ＋
+              <ZoomIn size={18} />
             </Btn>
             <Btn onClick={resetCell} label={t('cell.reset')}>
-              ⟲
+              <RotateCcw size={18} />
             </Btn>
           </>
         )}
-        <Btn onClick={() => remove(selectedId)} danger>
-          🗑️
+        <Btn onClick={() => remove(selectedId)} label={t('sel.delete')} danger>
+          <Trash2 size={18} />
         </Btn>
       </div>
     </div>
