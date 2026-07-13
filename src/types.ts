@@ -54,6 +54,9 @@ export interface PhotoElement extends BaseElement {
   filters: PhotoFilters
   shape?: PhotoShape // defaults to 'rect'
   crop?: CropRect // source-pixel crop; undefined = whole image
+  // Per-cell framing in grid mode (ignored in free mode):
+  cellZoom?: number // zoom within the cell, >= 1; default 1 = plain cover-fit
+  cellPan?: { x: number; y: number } // normalised pan, each axis in [-1, 1]; default centred
 }
 
 export interface TextChip {

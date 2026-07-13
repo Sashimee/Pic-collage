@@ -156,16 +156,24 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     const cy = (p1.y + p2.y) / 2
     const prev = pinch.current
     if (prev) {
-      setTf((t) => {
-        const factor = clamp(dist / prev.dist, 0.5, 2)
-        const newScale = clamp(t.scale * factor, 0.2, 6)
-        const pointTo = { x: (cx - t.x) / t.scale, y: (cy - t.y) / t.scale }
-        return {
-          scale: newScale,
-          x: cx - pointTo.x * newScale + (cx - prev.cx),
-          y: cy - pointTo.y * newScale + (cy - prev.cy),
-        }
-      })
+      const factor = clamp(dist / prev.dist, 0.5, 2)
+      // A selected photo in grid mode captures the pinch as per-cell zoom;
+      // otherwise the gesture zooms the board view.
+      const sel = elements.find((el) => el.id === selectedId)
+      if (mode === 'grid' && sel?.type === 'photo') {
+        const newZoom = clamp((sel.cellZoom ?? 1) * factor, 1, 4)
+        updateElement(sel.id, { cellZoom: newZoom })
+      } else {
+        setTf((t) => {
+          const newScale = clamp(t.scale * factor, 0.2, 6)
+          const pointTo = { x: (cx - t.x) / t.scale, y: (cy - t.y) / t.scale }
+          return {
+            scale: newScale,
+            x: cx - pointTo.x * newScale + (cx - prev.cx),
+            y: cy - pointTo.y * newScale + (cy - prev.cy),
+          }
+        })
+      }
     }
     pinch.current = { dist, cx, cy }
   }
@@ -321,6 +329,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
                     radius={gridRadius}
                     selectedId={selectedId}
                     onSelect={select}
+                    onUpdate={updateElement}
                   />
                 )}
                 {freeElements.map(renderElement)}
