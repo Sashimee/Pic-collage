@@ -120,6 +120,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sel.backward': 'Send backward',
     'sel.forward': 'Bring forward',
     'sel.delete': 'Delete',
+    'update.updating': '🔄 Updating to the latest version…',
+    'update.offline': '✓ App ready for offline use.',
 
     'canvas.editText': 'Edit text',
     'share.title': 'My Collage',
@@ -237,6 +239,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'sel.backward': 'Nach hinten',
     'sel.forward': 'Nach vorne',
     'sel.delete': 'Löschen',
+    'update.updating': '🔄 Aktualisiere auf die neueste Version…',
+    'update.offline': '✓ App offline verfügbar.',
 
     'canvas.editText': 'Text bearbeiten',
     'share.title': 'Meine Collage',

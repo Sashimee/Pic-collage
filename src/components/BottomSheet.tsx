@@ -37,16 +37,11 @@ export function BottomSheet({
   return (
     <AnimatePresence onExitComplete={() => setExpanded(false)}>
       {open && (
-        <>
-          <m.div
-            className="absolute inset-0 z-20 bg-black/40"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-          <m.div
-            className="absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-3xl border-t border-border bg-surface shadow-[0_-12px_40px_-16px_rgba(0,0,0,0.6)]"
+        // No backdrop scrim: the canvas stays interactive so you can select a
+        // photo/cell while a panel is open (e.g. to apply filters). Dismiss via
+        // the drag handle, the close button, or re-tapping the active tab.
+        <m.div
+          className="absolute inset-x-0 bottom-0 z-30 flex max-h-full flex-col overflow-hidden rounded-t-3xl border-t border-border bg-surface shadow-[0_-12px_40px_-16px_rgba(0,0,0,0.6)]"
             style={{ height: expanded ? '86%' : '46%' }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
@@ -78,8 +73,7 @@ export function BottomSheet({
             <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-1">
               {children}
             </div>
-          </m.div>
-        </>
+        </m.div>
       )}
     </AnimatePresence>
   )
