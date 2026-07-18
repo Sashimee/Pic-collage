@@ -1,0 +1,10 @@
+{
+  "steps": [
+    {"id": "test-framework", "description": "Add Vitest testing framework and sample test", "done": true},
+    {"id": "eslint", "description": "Add ESLint + Prettier config and CI lint step", "done": true},
+    {"id": "ci-pr", "description": "Add PR‑triggered CI workflow with lint, test, build", "done": true},
+    {"id": "dependabot", "description": "Enable Dependabot security alerts", "done": true},
+    {"id": "csp", "description": "Add CSP meta tag to index.html", "done": true},
+    {"id": "bundle-size", "description": "Add size‑report step and enforce <1 MB gzipped", "done": true}
+  ]
+}
