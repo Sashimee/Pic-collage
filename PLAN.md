@@ -21,21 +21,19 @@
 
 ---
 
-## Phase 1: Architecture Redesign
-**Goal:** Establish a foundation that supports layers, sync, collaboration, and scale.
+## Phase 1: Architecture Redesign (Client‑Only)
+**Goal:** Refine the client‑side foundation to support layers, rich editing, and a scalable static deployment on GitHub Pages.
 
 | Task | Detail |
 |---|---|
-| Define canvas engine | Move to a layer-based scene graph (e.g., Konva.js, Fabric.js, or custom WebGL/Canvas2D renderer) |
-| Client architecture | Adopt component framework if not already (React/Vue), state management (Zustand/Redux) for editor state |
-| Backend architecture | Introduce/redesign backend: API gateway, auth service, project/asset storage service, decide monolith vs. modular services |
-| Data model v2 | Design schema for Projects → Layers → Assets, with versioning support |
-| Storage strategy | Object storage (S3/GCS) for images, DB (Postgres) for metadata, CDN for delivery |
-| API contract design | REST/GraphQL for project CRUD, asset upload, sharing |
-| Extensibility hooks | Plugin/filter system architecture for future effects, stickers, templates |
+| Define canvas engine | Choose a robust layer‑based scene graph (Konva.js is already used) and prototype any missing features (e.g., grouping, filters). |
+| Client architecture | Consolidate on React 19 + TypeScript, improve state management (Zustand) for editor state, add a plug‑in system for future extensions. |
+| Data model (client‑only) | Design a JSON schema for Projects → Layers → Assets stored locally (IndexedDB) and exportable as a portable `.piccollage` file. |
+| Storage strategy | All assets stay in the browser (Blob URLs, IndexedDB) – no external cloud storage. Optional optional export‑to‑GitHub Gist for sharing. |
+| Extensibility hooks | Define a lightweight plug‑in API (JS modules) for future filters, stickers, and templates, loaded dynamically at runtime. |
 
-**Deliverables:** Architecture Decision Records (ADRs), system diagram, API spec (OpenAPI/GraphQL schema), data model ERD, chosen canvas engine with PoC.
-**Effort:** 3–4 weeks (2 engineers)
+**Deliverables:** Architecture Decision Record (ADR) focusing on client‑only design, updated system diagram, prototype of the new layer engine, updated TypeScript typings for the project schema.
+**Effort:** 2–3 weeks (2 engineers)
 
 ---
 
