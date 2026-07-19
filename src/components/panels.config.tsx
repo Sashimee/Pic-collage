@@ -8,8 +8,8 @@ import {
   Smile,
   Palette,
   Wand2,
-  type LucideProps,
 } from 'lucide-react'
+import type { LucideProps } from 'lucide-react'
 import {
   BackgroundPanel,
   DrawPanel,

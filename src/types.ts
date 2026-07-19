@@ -28,6 +28,10 @@ export interface BaseElement {
    * Konva globalCompositeOperation blend mode.
    */
   blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten'
+  /**
+   * If set, this element belongs to a group. Grouped items move together.
+   */
+  groupId?: string
 }
 
 export type FilterPreset =

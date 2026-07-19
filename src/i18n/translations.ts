@@ -29,6 +29,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'template.moodboard': 'Mood Board',
     'template.celebration': 'Celebration',
 
+    'template.comic': 'Comic Strip',
+    'template.travel': 'Travel Mood',
+    'template.family': 'Family Wall',
+    'template.recipe': 'Recipe Card',
+
     'draw.hint': 'Drag on the canvas to draw. Switch to another tab to stop.',
     'draw.size': 'Brush size',
 
@@ -153,6 +158,20 @@ export const translations: Record<Lang, Record<string, string>> = {
     'project.open': 'Open',
     'header.projects': 'Projects',
     'project.saved': 'Project saved',
+
+    'layer.title': 'Layers',
+    'layer.show': 'Show',
+    'layer.hide': 'Hide',
+    'layer.lock': 'Lock',
+    'layer.unlock': 'Unlock',
+    'layer.group': 'Group',
+    'layer.ungroup': 'Ungroup',
+    'layer.selectHint': 'Select layers (with Ctrl/Cmd) to group or reorder.',
+
+    'error.title': 'Something went wrong',
+    'error.message': 'The app crashed. You can try reloading or reset the app to its initial state.',
+    'error.reload': 'Reload',
+    'error.reset': 'Reset App',
   },
   de: {
     'tab.photos': 'Fotos',
@@ -175,6 +194,11 @@ export const translations: Record<Lang, Record<string, string>> = {
     'template.photobooth': 'Fotoautomat',
     'template.moodboard': 'Moodboard',
     'template.celebration': 'Feier',
+
+    'template.comic': 'Comic Strip',
+    'template.travel': 'Reise-Mood',
+    'template.family': 'Familienwand',
+    'template.recipe': 'Rezeptkarte',
 
     'draw.hint': 'Zum Zeichnen über die Leinwand ziehen. Zum Beenden anderen Tab wählen.',
     'draw.size': 'Pinselgröße',
@@ -300,5 +324,19 @@ export const translations: Record<Lang, Record<string, string>> = {
     'project.open': 'Öffnen',
     'header.projects': 'Projekte',
     'project.saved': 'Projekt gespeichert',
+
+    'layer.title': 'Ebenen',
+    'layer.show': 'Anzeigen',
+    'layer.hide': 'Ausblenden',
+    'layer.lock': 'Sperren',
+    'layer.unlock': 'Entsperren',
+    'layer.group': 'Gruppieren',
+    'layer.ungroup': 'Gruppierung aufheben',
+    'layer.selectHint': 'Ebenen (mit Strg/Cmd) auswählen, um zu gruppieren oder neu anzuordnen.',
+
+    'error.title': 'Etwas ist schiefgelaufen',
+    'error.message': 'Die App ist abgestürzt. Du kannst sie neu laden oder auf den Ausgangszustand zurücksetzen.',
+    'error.reload': 'Neu laden',
+    'error.reset': 'App zurücksetzen',
   },
 }

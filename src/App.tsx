@@ -8,10 +8,13 @@ import { usePanels } from './components/panels.config'
 import { MotionProvider } from './components/motion'
 import { useIsDesktop } from './hooks/useMediaQuery'
 import { useVersionCheck } from './hooks/useVersionCheck'
+import { useShortcuts } from './hooks/useShortcuts'
 import { CropOverlay } from './components/CropOverlay'
 import { UpdateBanner } from './components/UpdateBanner'
 import { useEditor } from './store/editorStore'
 import { useT } from './i18n/useLang'
+import { useProjects } from './store/projectsStore'
+import type { CanvasElement } from './types'
 import {
   downloadDataURL,
   shareDataURL,
@@ -23,7 +26,6 @@ import {
   saveDoc,
   type StoredDoc,
 } from './lib/persistence'
-import type { CanvasElement } from './types'
 
 const nextFrame = () =>
   new Promise<void>((resolve) =>
@@ -110,26 +112,24 @@ export default function App() {
     }
   }, [hydrated])
 
-  // Global undo/redo shortcuts (Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z or Ctrl+Y).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return
-      const target = e.target as HTMLElement | null
-      // Don't hijack undo inside text fields.
-      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
-      const key = e.key.toLowerCase()
-      if (key === 'z') {
-        e.preventDefault()
-        if (e.shiftKey) useEditor.getState().redo()
-        else useEditor.getState().undo()
-      } else if (key === 'y') {
-        e.preventDefault()
-        useEditor.getState().redo()
-      }
+  const activeProjectId = useProjects((s) => s.activeProjectId)
+  const saveActiveProject = useProjects((s) => s.saveActiveProject)
+  const [_projectManagerOpen, setProjectManagerOpen] = useState(false)
+
+  const handleSave = async () => {
+    if (activeProjectId) {
+      await saveActiveProject()
+      window.alert(t('project.saved'))
+    } else {
+      setProjectManagerOpen(true)
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }
+
+  useShortcuts({
+    onExport: () => handleExport('png'),
+    onSave: handleSave,
+    onOpenProject: () => setProjectManagerOpen(true),
+  })
 
   // Release any leftover object URLs when the page is torn down.
   useEffect(() => {

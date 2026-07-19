@@ -118,6 +118,13 @@ interface EditorState {
   setElementHidden: (id: string, hidden: boolean) => void
   setElementLocked: (id: string, locked: boolean) => void
 
+  // grouping
+  groupElements: (ids: string[]) => void
+  ungroupElements: (groupId: string) => void
+
+  // reorder
+  setElements: (elements: CanvasElement[]) => void
+
   // board / background / mode / frame / grid style
   setBackground: (patch: Partial<Background>) => void
   setMode: (mode: EditorMode) => void
@@ -378,6 +385,29 @@ export const useEditor = create<EditorState>((set, get) => ({
         ...record(s, 'locked'),
       }
     }),
+
+  // grouping
+  groupElements: (ids) =>
+    set((s) => {
+      if (ids.length < 2) return {}
+      const groupId = uid()
+      return {
+        elements: s.elements.map((e) => (ids.includes(e.id) ? { ...e, groupId } : e)),
+        ...record(s, 'group'),
+      }
+    }),
+  ungroupElements: (groupId) =>
+    set((s) => ({
+      elements: s.elements.map((e) => (e.groupId === groupId ? { ...e, groupId: undefined } : e)),
+      ...record(s, 'ungroup'),
+    })),
+
+  // reorder
+  setElements: (elements) =>
+    set((s) => ({
+      elements,
+      ...record(s, 'reorder'),
+    })),
 
   setBackground: (patch) =>
     set((s) => ({ background: { ...s.background, ...patch }, ...record(s, 'bg') })),
