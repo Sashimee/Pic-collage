@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
@@ -16,10 +16,11 @@ import { IconButton } from './ui'
 
 export type ExportKind = 'png' | 'jpg' | 'share'
 
+const FILE_INPUT_ID = 'header-file-upload'
+
 export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }) {
   const [menu, setMenu] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
   const t = useT()
   const clearAll = useEditor((s) => s.clearAll)
   const hasElements = useEditor((s) => s.elements.length > 0)
@@ -36,16 +37,14 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
     onExport(kind)
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[HeaderBar] file input onChange fired', e.target.files?.length, 'files')
     if (e.target.files && e.target.files.length > 0) {
       importFiles(e.target.files, addPhoto)
     }
+    // Reset so same file can be picked again
     e.currentTarget.value = ''
-  }
-
-  const handleAddPhotos = () => {
-    fileRef.current?.click()
-  }
+  }, [addPhoto])
 
   const handleRefresh = async () => {
     if ('serviceWorker' in navigator) {
@@ -55,13 +54,13 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
     window.location.reload()
   }
 
-  // Accent button (icon + text on sm+, icon-only on mobile)
+  // Accent button base classes
   const accentBtn =
-    'bg-grad-accent flex min-h-[36px] sm:min-h-[40px] items-center gap-1.5 rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95'
+    'bg-grad-accent flex min-h-[36px] sm:min-h-[40px] items-center gap-1.5 rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95 cursor-pointer'
 
   return (
     <header className="flex items-center justify-between gap-1.5 sm:gap-2 border-b border-border bg-surface px-2 sm:px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.55rem)]">
-      {/* Logo — icon only on mobile */}
+      {/* Logo */}
       <h1 className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <span className="bg-grad-accent flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-[var(--shadow-accent)]">
           <Sparkles size={17} strokeWidth={2.5} />
@@ -69,9 +68,9 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
         <span className="text-grad-accent hidden sm:inline text-sm font-bold">Pic Collage Maker</span>
       </h1>
 
-      {/* Right side: scrollable on mobile */}
+      {/* Right side */}
       <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto no-scrollbar">
-        {/* On sm+ show inline icons */}
+        {/* Desktop: inline icons */}
         <div className="hidden sm:flex items-center gap-1">
           <IconButton onClick={undo} disabled={!canUndo} label={t('header.undo')}>
             <Undo2 size={18} />
@@ -98,7 +97,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           </IconButton>
         </div>
 
-        {/* Mobile "More" dropdown with undo/redo/theme/lang/clear */}
+        {/* Mobile More dropdown */}
         <div className="sm:hidden relative">
           <button
             onClick={() => setMoreOpen((o) => !o)}
@@ -121,13 +120,14 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
                   {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                   {t('header.theme')}
                 </MenuItem>
-                <MenuItem onClick={() => {
-                  if (hasElements && window.confirm(t('header.clearConfirm'))) {
-                    clearAll()
-                    void clearPersisted()
-                  }
-                }}
-                disabled={!hasElements}
+                <MenuItem
+                  onClick={() => {
+                    if (hasElements && window.confirm(t('header.clearConfirm'))) {
+                      clearAll()
+                      void clearPersisted()
+                    }
+                  }}
+                  disabled={!hasElements}
                 >
                   <Trash2 size={16} /> {t('header.new')}
                 </MenuItem>
@@ -163,23 +163,20 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           )}
         </div>
 
-        {/* File input — sr-only keeps it clickable but visually hidden */}
+        {/* ─── Add photos — native label activation (most reliable on mobile) ─── */}
         <input
-          ref={fileRef}
+          id={FILE_INPUT_ID}
           type="file"
           accept="image/*"
           multiple
           className="sr-only"
-          aria-hidden="true"
           onChange={handleFileChange}
         />
-
-        {/* Add photos */}
-        <button onClick={handleAddPhotos} className={accentBtn}>
+        <label htmlFor={FILE_INPUT_ID} className={accentBtn}>
           <ImagePlus size={14} className="sm:hidden" strokeWidth={2.5} />
           <ImagePlus size={16} className="hidden sm:block" strokeWidth={2.5} />
           <span className="hidden sm:inline">{t('header.addPhotos')}</span>
-        </button>
+        </label>
 
         {/* Refresh */}
         <button onClick={handleRefresh} className={accentBtn}>
