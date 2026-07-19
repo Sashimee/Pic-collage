@@ -94,7 +94,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
               // Force a hard reload, bypassing the Service Worker cache
               window.location.reload();
             }}
-            className="ml-2 rounded bg-gray-700 px-3 py-1.5 text-sm text-white hover:bg-gray-600"
+            className="ml-2 rounded bg-grad-accent px-3 py-1.5 text-sm text-white hover:bg-grad-accent/80"
           >
             {t('header.refresh')}
           </button>
