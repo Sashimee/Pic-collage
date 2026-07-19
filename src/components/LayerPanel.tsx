@@ -1,4 +1,3 @@
-import React from 'react'
 import { useEditor } from '../store/editorStore'
 
 export default function LayerPanel() {
