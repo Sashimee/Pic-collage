@@ -1,17 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import {
-  Undo2,
-  Redo2,
-  Sun,
-  Moon,
-  Trash2,
-  Download,
-  Share2,
-  FileImage,
-  Image as ImageIcon,
-  Sparkles,
-} from 'lucide-react'
+import { Undo2, Redo2, Sun, Moon, Trash2, Download, Share2, FileImage, Image as ImageIcon, Sparkles, RefreshCcw, ImagePlus } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { canShareImage } from '../lib/exportImage'
 import { clearPersisted } from '../lib/persistence'
@@ -84,6 +73,17 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
             <Download size={16} strokeWidth={2.5} />
             {t('header.export')}
           </button>
+          <button
+            onClick={() => {
+              console.log('Add photos clicked')
+              const input = document.querySelector<HTMLInputElement>('input[type="file"]')
+              input?.click()
+            }}
+            className="ml-2 flex min-h-[40px] items-center gap-1.5 rounded-xl bg-grad-accent px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95"
+          >
+            <ImagePlus size={16} strokeWidth={2.5} />
+            {t('header.addPhotos')}
+          </button>
           {/* Mobile refresh button – clears cached Service Worker and reloads */}
           <button
             onClick={async () => {
@@ -94,8 +94,9 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
               // Force a hard reload, bypassing the Service Worker cache
               window.location.reload();
             }}
-            className="ml-2 rounded bg-grad-accent px-3 py-1.5 text-sm text-white hover:bg-grad-accent/80"
+            className="ml-2 flex min-h-[40px] items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white bg-grad-accent shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95"
           >
+            <RefreshCcw size={16} strokeWidth={2.5} className="mr-1" />
             {t('header.refresh')}
           </button>
           {menu && (
