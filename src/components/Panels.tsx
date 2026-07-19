@@ -20,16 +20,24 @@ export function PhotosPanel() {
   const t = useT()
   const addPhoto = useEditor((s) => s.addPhoto)
 
-  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      importFiles(e.target.files, addPhoto)
+      try {
+        await importFiles(e.target.files, addPhoto)
+      } catch {
+        window.alert('Failed to load image. Please try a different file.')
+      }
     }
     e.currentTarget.value = ''
   }
 
-  const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      importFiles(e.target.files, addPhoto)
+      try {
+        await importFiles(e.target.files, addPhoto)
+      } catch {
+        window.alert('Failed to load camera photo. Please try again.')
+      }
     }
     e.currentTarget.value = ''
   }

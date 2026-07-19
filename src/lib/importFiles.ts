@@ -25,11 +25,13 @@ export async function importFiles(
     try {
       const meta = await loadPhotoMeta(file)
       const photoId = uid()
-      console.log('[importFiles] loaded', meta.width, 'x', meta.height, 'photoId', photoId, 'src', meta.src.slice(0, 40))
+      console.log('[importFiles] loaded', meta.width, 'x', meta.height, 'photoId', photoId)
       void putPhoto(photoId, meta.blob)
       add(meta.src, meta.width, meta.height, photoId)
     } catch (err) {
-      console.error('[importFiles] failed to process file:', file.name, err)
+      console.error('[importFiles] FAILED to process file:', file.name, err)
+      // DO NOT swallow the error — let it propagate so the UI can show feedback
+      throw err
     }
   }
 }
