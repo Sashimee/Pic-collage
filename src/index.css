@@ -154,3 +154,12 @@ input[type="range"]::-moz-range-thumb {
   background: var(--surface-3);
   border-radius: 9999px;
 }
+
+/* Hide scrollbar utility (keeps scroll behaviour, hides the visual bar) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
