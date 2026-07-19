@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Undo2, Redo2, Sun, Moon, Trash2, Download, Share2, FileImage, Image as ImageIcon, Sparkles, RefreshCcw, ImagePlus } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { canShareImage } from '../lib/exportImage'
 import { clearPersisted } from '../lib/persistence'
+import { importFiles } from '../lib/importFiles'
 import { useT } from '../i18n/useLang'
 import { useTheme } from '../i18n/useTheme'
 import { LangSwitcher } from './LangSwitcher'
@@ -13,6 +14,7 @@ export type ExportKind = 'png' | 'jpg' | 'share'
 
 export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }) {
   const [menu, setMenu] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
   const t = useT()
   const clearAll = useEditor((s) => s.clearAll)
   const hasElements = useEditor((s) => s.elements.length > 0)
@@ -20,6 +22,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
   const redo = useEditor((s) => s.redo)
   const canUndo = useEditor((s) => s.past.length > 0)
   const canRedo = useEditor((s) => s.future.length > 0)
+  const addPhoto = useEditor((s) => s.addPhoto)
   const theme = useTheme((s) => s.theme)
   const toggleTheme = useTheme((s) => s.toggleTheme)
 
@@ -27,6 +30,27 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
     setMenu(false)
     onExport(kind)
   }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      importFiles(e.target.files, addPhoto)
+    }
+  }
+
+  const handleAddPhotos = () => {
+    fileRef.current?.click()
+  }
+
+  const handleRefresh = async () => {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(regs.map((r) => r.unregister()))
+    }
+    window.location.reload()
+  }
+
+  const btnBase =
+    'bg-grad-accent flex min-h-[40px] items-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95'
 
   return (
     <header className="flex items-center justify-between gap-2 border-b border-border bg-surface px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.55rem)]">
@@ -65,39 +89,11 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           <Trash2 size={18} />
         </IconButton>
 
+        {/* Export button with its own relative container for the dropdown */}
         <div className="relative">
-          <button
-            onClick={() => setMenu((m) => !m)}
-            className="bg-grad-accent flex min-h-[40px] items-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95"
-          >
+          <button onClick={() => setMenu((m) => !m)} className={btnBase}>
             <Download size={16} strokeWidth={2.5} />
             {t('header.export')}
-          </button>
-          <button
-            onClick={() => {
-              console.log('Add photos clicked')
-              const input = document.querySelector<HTMLInputElement>('input[type="file"]')
-              input?.click()
-            }}
-            className="ml-2 flex min-h-[40px] items-center gap-1.5 rounded-xl bg-grad-accent px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95"
-          >
-            <ImagePlus size={16} strokeWidth={2.5} />
-            {t('header.addPhotos')}
-          </button>
-          {/* Mobile refresh button – clears cached Service Worker and reloads */}
-          <button
-            onClick={async () => {
-              if ('serviceWorker' in navigator) {
-                const regs = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(regs.map((r) => r.unregister()));
-              }
-              // Force a hard reload, bypassing the Service Worker cache
-              window.location.reload();
-            }}
-            className="ml-2 flex min-h-[40px] items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white bg-grad-accent shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95"
-          >
-            <RefreshCcw size={16} strokeWidth={2.5} className="mr-1" />
-            {t('header.refresh')}
           </button>
           {menu && (
             <>
@@ -118,6 +114,26 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
             </>
           )}
         </div>
+
+        {/* Add photos */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={handleFileChange}
+        />
+        <button onClick={handleAddPhotos} className={btnBase}>
+          <ImagePlus size={16} strokeWidth={2.5} />
+          {t('header.addPhotos')}
+        </button>
+
+        {/* Refresh */}
+        <button onClick={handleRefresh} className={btnBase}>
+          <RefreshCcw size={16} strokeWidth={2.5} />
+          {t('header.refresh')}
+        </button>
       </div>
     </header>
   )
