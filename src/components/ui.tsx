@@ -89,17 +89,36 @@ export function PrimaryButton({
   onClick,
   children,
   disabled,
+  as,
+  htmlFor,
 }: {
-  onClick: () => void
+  onClick?: () => void
   children: ReactNode
   disabled?: boolean
+  as?: 'button' | 'label'
+  htmlFor?: string
 }) {
+  const className =
+    'bg-grad-accent min-h-[44px] rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer inline-flex items-center justify-center'
+
+  if (as === 'label') {
+    return (
+      <m.label
+        whileTap={TAP}
+        htmlFor={htmlFor}
+        className={className}
+      >
+        {children}
+      </m.label>
+    )
+  }
+
   return (
     <m.button
       whileTap={TAP}
       onClick={onClick}
       disabled={disabled}
-      className="bg-grad-accent min-h-[44px] rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+      className={className}
     >
       {children}
     </m.button>

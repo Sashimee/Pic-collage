@@ -8,10 +8,16 @@ export function useImage(src: string): HTMLImageElement | undefined {
   useEffect(() => {
     if (!src) return
     const img = new Image()
-    img.crossOrigin = 'anonymous'
+    // blob: and data: URLs are same-origin — adding crossOrigin breaks them
+    if (src.startsWith('http')) {
+      img.crossOrigin = 'anonymous'
+    }
     let active = true
     img.onload = () => {
       if (active) setImage(img)
+    }
+    img.onerror = () => {
+      console.error('[useImage] failed to load:', src.slice(0, 80))
     }
     img.src = src
     return () => {

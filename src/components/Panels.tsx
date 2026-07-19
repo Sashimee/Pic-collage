@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { ImagePlus, Camera } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { GRID_LAYOUTS } from '../lib/grids'
@@ -14,37 +14,52 @@ import { EMOJI_CATEGORIES } from '../lib/emojis'
 
 // ---- Photos --------------------------------------------------------------
 
+const PANEL_GALLERY_ID = 'panel-gallery-input'
+const PANEL_CAMERA_ID = 'panel-camera-input'
+
 export function PhotosPanel() {
   const t = useT()
   const addPhoto = useEditor((s) => s.addPhoto)
-  const galleryRef = useRef<HTMLInputElement>(null)
-  const cameraRef = useRef<HTMLInputElement>(null)
+
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      importFiles(e.target.files, addPhoto)
+    }
+    e.currentTarget.value = ''
+  }
+
+  const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      importFiles(e.target.files, addPhoto)
+    }
+    e.currentTarget.value = ''
+  }
 
   return (
     <div className="flex gap-3">
       <input
-        ref={galleryRef}
+        id={PANEL_GALLERY_ID}
         type="file"
         accept="image/*"
         multiple
-        hidden
-        onChange={(e) => e.target.files && importFiles(e.target.files, addPhoto)}
+        className="sr-only"
+        onChange={handleGalleryChange}
       />
       <input
-        ref={cameraRef}
+        id={PANEL_CAMERA_ID}
         type="file"
         accept="image/*"
         capture="environment"
-        hidden
-        onChange={(e) => e.target.files && importFiles(e.target.files, addPhoto)}
+        className="sr-only"
+        onChange={handleCameraChange}
       />
-      <PrimaryButton onClick={() => galleryRef.current?.click()}>
+      <PrimaryButton as="label" htmlFor={PANEL_GALLERY_ID}>
         <span className="flex items-center gap-2">
           <ImagePlus size={16} strokeWidth={2.5} />
           {t('photos.add')}
         </span>
       </PrimaryButton>
-      <PrimaryButton onClick={() => cameraRef.current?.click()}>
+      <PrimaryButton as="label" htmlFor={PANEL_CAMERA_ID}>
         <span className="flex items-center gap-2">
           <Camera size={16} strokeWidth={2.5} />
           {t('photos.camera')}

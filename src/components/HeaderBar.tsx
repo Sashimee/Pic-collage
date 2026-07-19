@@ -1,22 +1,19 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
   Share2, FileImage, Image as ImageIcon, Sparkles,
-  RefreshCcw, ImagePlus, MoreHorizontal,
+  RefreshCcw, MoreHorizontal,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { canShareImage } from '../lib/exportImage'
 import { clearPersisted } from '../lib/persistence'
-import { importFiles } from '../lib/importFiles'
 import { useT } from '../i18n/useLang'
 import { useTheme } from '../i18n/useTheme'
 import { LangSwitcher } from './LangSwitcher'
 import { IconButton } from './ui'
 
 export type ExportKind = 'png' | 'jpg' | 'share'
-
-const FILE_INPUT_ID = 'header-file-upload'
 
 export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }) {
   const [menu, setMenu] = useState(false)
@@ -28,7 +25,6 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
   const redo = useEditor((s) => s.redo)
   const canUndo = useEditor((s) => s.past.length > 0)
   const canRedo = useEditor((s) => s.future.length > 0)
-  const addPhoto = useEditor((s) => s.addPhoto)
   const theme = useTheme((s) => s.theme)
   const toggleTheme = useTheme((s) => s.toggleTheme)
 
@@ -36,15 +32,6 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
     setMenu(false)
     onExport(kind)
   }
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('[HeaderBar] file input onChange fired', e.target.files?.length, 'files')
-    if (e.target.files && e.target.files.length > 0) {
-      importFiles(e.target.files, addPhoto)
-    }
-    // Reset so same file can be picked again
-    e.currentTarget.value = ''
-  }, [addPhoto])
 
   const handleRefresh = async () => {
     if ('serviceWorker' in navigator) {
@@ -54,13 +41,11 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
     window.location.reload()
   }
 
-  // Accent button base classes
   const accentBtn =
     'bg-grad-accent flex min-h-[36px] sm:min-h-[40px] items-center gap-1.5 rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95 cursor-pointer'
 
   return (
     <header className="flex items-center justify-between gap-1.5 sm:gap-2 border-b border-border bg-surface px-2 sm:px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.55rem)]">
-      {/* Logo */}
       <h1 className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <span className="bg-grad-accent flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-[var(--shadow-accent)]">
           <Sparkles size={17} strokeWidth={2.5} />
@@ -68,9 +53,8 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
         <span className="text-grad-accent hidden sm:inline text-sm font-bold">Pic Collage Maker</span>
       </h1>
 
-      {/* Right side */}
       <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto no-scrollbar">
-        {/* Desktop: inline icons */}
+        {/* Desktop */}
         <div className="hidden sm:flex items-center gap-1">
           <IconButton onClick={undo} disabled={!canUndo} label={t('header.undo')}>
             <Undo2 size={18} />
@@ -97,7 +81,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           </IconButton>
         </div>
 
-        {/* Mobile More dropdown */}
+        {/* Mobile More */}
         <div className="sm:hidden relative">
           <button
             onClick={() => setMoreOpen((o) => !o)}
@@ -136,7 +120,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           )}
         </div>
 
-        {/* Export dropdown */}
+        {/* Export */}
         <div className="relative shrink-0">
           <button onClick={() => setMenu((m) => !m)} className={accentBtn}>
             <Download size={14} className="sm:hidden" strokeWidth={2.5} />
@@ -163,21 +147,6 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           )}
         </div>
 
-        {/* ─── Add photos — native label activation (most reliable on mobile) ─── */}
-        <input
-          id={FILE_INPUT_ID}
-          type="file"
-          accept="image/*"
-          multiple
-          className="sr-only"
-          onChange={handleFileChange}
-        />
-        <label htmlFor={FILE_INPUT_ID} className={accentBtn}>
-          <ImagePlus size={14} className="sm:hidden" strokeWidth={2.5} />
-          <ImagePlus size={16} className="hidden sm:block" strokeWidth={2.5} />
-          <span className="hidden sm:inline">{t('header.addPhotos')}</span>
-        </label>
-
         {/* Refresh */}
         <button onClick={handleRefresh} className={accentBtn}>
           <RefreshCcw size={14} className="sm:hidden" strokeWidth={2.5} />
@@ -188,8 +157,6 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
     </header>
   )
 }
-
-/* ─── helpers ─── */
 
 function MenuItem({
   onClick,

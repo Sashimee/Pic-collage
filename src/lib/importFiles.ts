@@ -13,15 +13,17 @@ export async function importFiles(
   files: FileList,
   add: (src: string, w: number, h: number, photoId?: string) => void,
 ) {
+  console.log('[importFiles] processing', files.length, 'files')
   for (const file of Array.from(files)) {
     if (!file.type.startsWith('image/')) continue
     try {
       const meta = await loadPhotoMeta(file)
       const photoId = uid()
+      console.log('[importFiles] loaded', meta.width, 'x', meta.height, 'photoId', photoId)
       void putPhoto(photoId, meta.blob)
       add(meta.src, meta.width, meta.height, photoId)
-    } catch {
-      /* skip undecodable files */
+    } catch (err) {
+      console.error('[importFiles] failed to process file:', file.name, err)
     }
   }
 }

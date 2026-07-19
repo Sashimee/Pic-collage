@@ -1,4 +1,3 @@
-import { useRef } from 'react'
 import { ImagePlus, Camera, Sparkles } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
@@ -7,27 +6,42 @@ import { GRID_LAYOUTS } from '../lib/grids'
 import { LayoutPreview } from './LayoutPreview'
 import { m, AnimatePresence } from './motion'
 
-// A few starter layouts surfaced on the first-run hero.
 const STARTERS = ['2-v', '2-h', '3-col', '4-grid', '4-pinwheel'].flatMap((id) => {
   const l = GRID_LAYOUTS.find((g) => g.id === id)
   return l ? [l] : []
 })
 
-// Friendly first-run overlay shown while the board is empty. Dismisses itself
-// (with an exit animation) as soon as the first element exists.
+const GALLERY_ID = 'empty-gallery-input'
+const CAMERA_ID = 'empty-camera-input'
+
 export function EmptyState() {
   const t = useT()
   const isEmpty = useEditor((s) => s.elements.length === 0)
   const addPhoto = useEditor((s) => s.addPhoto)
   const setGrid = useEditor((s) => s.setGrid)
   const setMode = useEditor((s) => s.setMode)
-  const galleryRef = useRef<HTMLInputElement>(null)
-  const cameraRef = useRef<HTMLInputElement>(null)
+
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      importFiles(e.target.files, addPhoto)
+    }
+    e.currentTarget.value = ''
+  }
+
+  const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      importFiles(e.target.files, addPhoto)
+    }
+    e.currentTarget.value = ''
+  }
 
   const startLayout = (id: string) => {
     setMode('grid')
     setGrid(id)
-    galleryRef.current?.click()
+    // Trigger the gallery label click after a tick so the grid is set
+    setTimeout(() => {
+      document.getElementById(GALLERY_ID)?.click()
+    }, 50)
   }
 
   return (
@@ -40,21 +54,22 @@ export function EmptyState() {
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.25 }}
         >
+          {/* Hidden file inputs — sr-only so label activation works on mobile */}
           <input
-            ref={galleryRef}
+            id={GALLERY_ID}
             type="file"
             accept="image/*"
             multiple
-            hidden
-            onChange={(e) => e.target.files && importFiles(e.target.files, addPhoto)}
+            className="sr-only"
+            onChange={handleGalleryChange}
           />
           <input
-            ref={cameraRef}
+            id={CAMERA_ID}
             type="file"
             accept="image/*"
             capture="environment"
-            hidden
-            onChange={(e) => e.target.files && importFiles(e.target.files, addPhoto)}
+            className="sr-only"
+            onChange={handleCameraChange}
           />
 
           <m.div
@@ -72,20 +87,20 @@ export function EmptyState() {
             </p>
 
             <div className="mt-5 flex justify-center gap-3">
-              <button
-                onClick={() => galleryRef.current?.click()}
-                className="bg-grad-accent flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95"
+              <label
+                htmlFor={GALLERY_ID}
+                className="bg-grad-accent flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95 cursor-pointer"
               >
                 <ImagePlus size={17} strokeWidth={2.5} />
                 {t('photos.add')}
-              </button>
-              <button
-                onClick={() => cameraRef.current?.click()}
-                className="flex items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-sm font-semibold text-text transition hover:bg-surface-3 active:scale-95"
+              </label>
+              <label
+                htmlFor={CAMERA_ID}
+                className="flex items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-sm font-semibold text-text transition hover:bg-surface-3 active:scale-95 cursor-pointer"
               >
                 <Camera size={17} strokeWidth={2.5} />
                 {t('photos.camera')}
-              </button>
+              </label>
             </div>
 
             <div className="mt-6">
