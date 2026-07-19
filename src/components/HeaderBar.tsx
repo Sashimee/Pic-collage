@@ -84,6 +84,20 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
             <Download size={16} strokeWidth={2.5} />
             {t('header.export')}
           </button>
+          {/* Mobile refresh button – clears cached Service Worker and reloads */}
+          <button
+            onClick={async () => {
+              if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map((r) => r.unregister()));
+              }
+              // Force a hard reload, bypassing the Service Worker cache
+              window.location.reload();
+            }}
+            className="ml-2 rounded bg-grad-accent px-3 py-1.5 text-sm text-white hover:bg-grad-accent/80"
+          >
+            {t('header.refresh')}
+          </button>
           {menu && (
             <>
               <div className="fixed inset-0 z-20" onClick={() => setMenu(false)} />

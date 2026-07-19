@@ -10,7 +10,9 @@ import type {
   StickerElement,
   TextElement,
 } from '../types'
+import { saveProject } from '../services/cloudSync'
 import { DEFAULT_FILTERS } from '../types'
+
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -112,6 +114,10 @@ interface EditorState {
   sendBackward: (id: string) => void
   bringToFront: (id: string) => void
   sendToBack: (id: string) => void
+
+  // visibility & lock actions
+  setElementHidden: (id: string, hidden: boolean) => void
+  setElementLocked: (id: string, locked: boolean) => void
 
   // board / background / mode / frame / grid style
   setBackground: (patch: Partial<Background>) => void
@@ -313,11 +319,17 @@ export const useEditor = create<EditorState>((set, get) => ({
         ...record(s),
       }
     }),
-
-  select: (id) => set({ selectedId: id }),
+  select: (id) =>
+    set((s) => {
+      // Do not select locked elements
+      const el = s.elements.find((e) => e.id === id)
+      if (el && (el as any).locked) return {}
+      return { selectedId: id }
+    }),
 
   setCropping: (id) => set({ croppingId: id }),
 
+  // z-order
   bringForward: (id) =>
     set((s) => {
       const i = s.elements.findIndex((e) => e.id === id)
@@ -327,14 +339,16 @@ export const useEditor = create<EditorState>((set, get) => ({
       return { elements: els, ...record(s) }
     }),
 
+  // move element one step backward
   sendBackward: (id) =>
     set((s) => {
       const i = s.elements.findIndex((e) => e.id === id)
       if (i <= 0) return {}
       const els = [...s.elements]
-      ;[els[i], els[i - 1]] = [els[i - 1], els[i]]
+      ;[els[i - 1], els[i]] = [els[i], els[i - 1]]
       return { elements: els, ...record(s) }
     }),
+
 
   bringToFront: (id) =>
     set((s) => {
@@ -348,6 +362,22 @@ export const useEditor = create<EditorState>((set, get) => ({
       const el = s.elements.find((e) => e.id === id)
       if (!el) return {}
       return { elements: [el, ...s.elements.filter((e) => e.id !== id)], ...record(s) }
+    }),
+
+  // visibility & lock actions
+  setElementHidden: (id, hidden) =>
+    set((s) => {
+      return {
+        elements: s.elements.map((e) => (e.id === id ? { ...e, hidden } : e)),
+        ...record(s, 'hidden'),
+      }
+    }),
+  setElementLocked: (id, locked) =>
+    set((s) => {
+      return {
+        elements: s.elements.map((e) => (e.id === id ? { ...e, locked } : e)),
+        ...record(s, 'locked'),
+      }
     }),
 
   setBackground: (patch) =>
@@ -436,6 +466,29 @@ export const useEditor = create<EditorState>((set, get) => ({
 }))
 
 // Dev-only handle so the editor state can be driven from the console / tests.
-if (import.meta.env.DEV) {
+// Auto‑save on persistent changes (ignore transient UI fields)
+useEditor.subscribe((state) => {
+  const snapshot = {
+    elements: state.elements,
+    background: state.background,
+    mode: state.mode,
+    gridId: state.gridId,
+    gridGap: state.gridGap,
+    gridRadius: state.gridRadius,
+    frame: state.frame,
+    boardWidth: state.boardWidth,
+    boardHeight: state.boardHeight,
+  };
+  // Persist without awaiting to avoid blocking UI
+  saveProject({
+    id: 'auto',
+    name: 'Auto‑saved project',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    data: snapshot,
+  });
+});
+
+if (import.meta.env.DEV && typeof window !== 'undefined') {
   ;(window as unknown as { __editor?: typeof useEditor }).__editor = useEditor
 }
