@@ -1,261 +1,179 @@
-# Pic-Collage Full Implementation — Master Execution Prompt
+You are implementing the remaining features for the Pic-Collage project at /home/alex/projects/Pic-collage.
 
-You are executing the remaining phases of the Pic-Collage transformation plan. The project is at `/home/alex/projects/Pic-collage`. CLAUDE.md in that directory contains the full project guide.
+CRITICAL RULES — NO EXCEPTIONS:
+1. Work on branch `dev`. Commit after every major task with clear messages.
+2. Run `npm run lint` and `npx vitest run` after every change. Fix errors immediately.
+3. Add DE+EN translations for ALL new UI strings in src/i18n/translations.ts.
+4. NO questions to the user. Make decisions and execute.
+5. If a task is blocked, skip it and move to the next one.
 
-## Current State
-- Phase 0 (Audit): ✅ Complete
-- Phase 1 (Architecture): 🔄 Partial — undo/redo ✅, layer panel ✅, tests ✅, BUT missing: multi-project UI, `.piccollage` file format, plugin registry, ADR docs
-- Phases 2-8: ❌ Not started
+CURRENT STATE (already implemented):
+- Undo/redo with snapshot-based history
+- Layer panel (z-order, visibility, lock)
+- Drawing tool
+- Auto-save to IndexedDB via cloudSync.ts
+- Photo shapes (rect, circle, star, heart)
+- Templates gallery
+- Background gradients + patterns + photo background
+- Grid mode with gap/radius controls
+- Frame styles (none, solid, rounded, polaroid)
 
-## Global Rules
-1. Read CLAUDE.md before touching anything. Follow its git workflow: branch off `dev`, commit locally, NO push/merge without explicit user approval.
-2. Run `npm run lint` and `npx vitest run` after EVERY significant change. Fix errors immediately.
-3. Run `npm run build` before declaring a phase complete.
-4. Write German+English translations for ALL new UI strings in `src/i18n/translations.ts`.
-5. Keep the client-only architecture — no backend, no server, no auth.
-
-## Execution Order
+WHAT IS MISSING — IMPLEMENT IN THIS ORDER:
 
 ---
 
-## PHASE 1 COMPLETION — Project System + File Format + Plugins + ADR
+TASK 1: Multi-Project Save/Load System
 
-### Task 1.1: Project Manager UI
-Create `src/store/projectsStore.ts`:
-- Zustand store keyed by project ID
+Create src/store/projectsStore.ts:
+- Zustand store with: projects list (id, name, createdAt, updatedAt), activeProjectId
 - Actions: createProject(name), openProject(id), renameProject(id, name), duplicateProject(id), deleteProject(id), listProjects()
-- Each project stores: id, name, createdAt, updatedAt, data (LoadedDocument)
-- Integrate with existing `cloudSync.ts` (idb-based) for persistence
+- Save project data via cloudSync.ts saveProject / loadProject / deleteProject / listProjects
+- On createProject: capture current editor state as the project data
 
-Create `src/components/ProjectManager.tsx`:
-- Modal/sheet UI listing all saved projects
-- New project button
-- Rename, duplicate, delete actions per project
-- Open project action
-- Triggered from HeaderBar (replace "New" button with a menu: New / Open / Save As)
+Create src/components/ProjectManager.tsx:
+- Bottom sheet / modal UI listing all saved projects
+- Each project shows name, date, thumbnail placeholder
+- Actions: Open, Rename, Duplicate, Delete
+- "New Project" button at top
+- Close button
 
-Modify `src/components/HeaderBar.tsx`:
-- Add project menu (New / Open / Save As .piccollage / Export)
-- Remove redundant "Add photos" button if overlay + bottom panel already provide it (check current state)
+Modify src/components/HeaderBar.tsx:
+- Replace the "New" button with a dropdown/menu: New / Open / Save / Export
+- "New" → clearAll() after confirming if unsaved changes exist
+- "Open" → opens ProjectManager
+- "Save" → saves current state to active project (or prompts for name if no active project)
 
-Modify `src/store/editorStore.ts`:
-- The auto-save subscription should save to the ACTIVE project id, not just 'auto'
-- On `clearAll()`, offer to "Save current?" before wiping (only if elements exist)
+Modify src/store/editorStore.ts:
+- The auto-save subscription at the bottom should save to activeProjectId if set, otherwise skip (the 'auto' project is redundant once we have named projects)
 
-Write tests in `src/store/projectsStore.test.ts`.
+Write tests in src/store/projectsStore.test.ts.
 
-### Task 1.2: Portable `.piccollage` File Format
-Create `src/lib/projectFile.ts`:
-- Export function `packProject(project)` → returns a Blob
-  - JSON manifest (project metadata + element data WITHOUT blob URLs)
-  - For each photo element: look up its `photoId` in IndexedDB (`getPhoto`), base64-encode the blob, embed in manifest
-  - For background photo: same treatment
-- Import function `unpackProject(blob)` → returns a LoadedDocument + photo blobs to re-inject into IndexedDB
-- File extension: `.piccollage` (but it's just JSON under the hood — MIME type `application/json`)
+---
 
-Wire into HeaderBar: "Save as .piccollage" downloads the file, "Open .piccollage" uses a hidden file input.
+TASK 2: Portable .piccollage File Format
 
-### Task 1.3: Plugin / Extensibility Registry
-Create `src/lib/plugins/types.ts`:
-```typescript
-export interface FilterPlugin {
-  id: string;
-  name: string;
-  nameDe: string;
-  apply: (filters: PhotoFilters) => Partial<PhotoFilters>;
-}
+Create src/lib/projectFile.ts:
+- export function packProject(project: Project): Blob
+  - Build a JSON object with project metadata + elements (replace blob URLs with photoId references)
+  - Look up each photoId in IndexedDB (getPhoto), base64-encode the blob
+  - Include background photo if present
+  - Return as Blob with MIME application/json
+- export async function unpackProject(blob: Blob): Promise<{ doc: LoadedDocument; photos: { id: string; blob: Blob }[] }>
+  - Parse JSON
+  - Decode base64 photos back to Blobs
+  - Return document + photos to be stored via putPhoto
 
-export interface StickerPackPlugin {
-  id: string;
-  name: string;
-  nameDe: string;
-  emojis: string[];
-}
-```
+Wire into HeaderBar:
+- "Save as .piccollage" downloads the packed file
+- "Open .piccollage" uses a hidden file input, unpacks, loads document, stores photos, calls loadDocument()
 
-Create `src/lib/plugins/registry.ts`:
-- In-memory Map registries for filters and sticker packs
-- `registerFilter(plugin)`, `registerStickerPack(pack)`
-- `getRegisteredFilters()`, `getRegisteredStickerPacks()`
+Write tests in src/lib/projectFile.test.ts.
 
-Modify `src/lib/filters.ts`:
-- At module init, register all `FILTER_PRESETS` through the registry
+---
 
-Modify `src/components/Panels.tsx`:
-- Read sticker packs from registry instead of hardcoded list
+TASK 3: Plugin Registry
+
+Create src/lib/plugins/types.ts:
+- FilterPlugin interface: id, name, nameDe, apply(filters) => patch
+- StickerPackPlugin interface: id, name, nameDe, emojis
+
+Create src/lib/plugins/registry.ts:
+- Maps for filters and sticker packs
+- registerFilter, registerStickerPack, getRegisteredFilters, getRegisteredStickerPacks
+
+Modify src/lib/filters.ts:
+- At module load, register all FILTER_PRESETS through the registry
+
+Modify src/components/Panels.tsx:
+- Read sticker list from registry instead of hardcoded
 - Read filter presets from registry
 
-Modify `src/lib/emojis.ts`:
-- Register default emoji packs through registry
-
-### Task 1.4: Architecture Decision Records
-Create `docs/adr/0001-client-only-architecture.md`:
-- Decision: Keep client-only (no backend)
-- Context: User requirement, GitHub Pages hosting
-- Consequences: Limited sharing, no real-time collab, full privacy
-
-Create `docs/adr/0002-konva-stays.md`:
-- Decision: Keep Konva instead of migrating to HTML Canvas 2D or WebGL
-- Rationale: Existing investment, react-konva integration, sufficient for 2D compositing
-
-Update `CLAUDE.md` directory map to include all new files.
+Write tests in src/lib/plugins/registry.test.ts.
 
 ---
 
-## PHASE 2 — CORE NEW FEATURES
+TASK 4: Layer Opacity + Blend Modes
 
-### Task 2.1: Layer Opacity + Blend Modes
-Modify `src/types.ts`:
-- Add `opacity?: number` (0-1) to `BaseElement`
-- Add `blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay'` to `BaseElement`
+Modify src/types.ts:
+- Add opacity?: number (0-1, default 1) to BaseElement
+- Add blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' to BaseElement
 
-Modify `src/components/CanvasNodes.tsx`:
-- Apply `opacity` prop to Konva nodes
-- Apply `blendMode` using Konva's `globalCompositeOperation` (set on the node before drawing)
+Modify src/components/CanvasNodes.tsx:
+- Apply opacity to all node types
+- Apply globalCompositeOperation for blend modes (Konva supports this via the shape)
 
-Modify `src/components/Panels.tsx`:
-- Add opacity slider and blend mode dropdown in a "Layer" panel or integrate into existing panels
+Modify src/components/Panels.tsx or add to SelectionBar:
+- Opacity slider (0-100%)
+- Blend mode dropdown
 
-### Task 2.2: Enhanced Export Pipeline
-Modify `src/lib/exportImage.ts`:
-- Add `exportFormat` option: 'png' | 'jpeg' | 'webp'
-- Add `quality` option (0-1) for lossy formats
-- Add platform-specific presets: 'instagram-square' (1080×1080), 'instagram-portrait' (1080×1350), 'instagram-story' (1080×1920), 'a4' (2480×3508 @ 300dpi)
-- Implement `exportBoard(format, quality, preset)` that resizes/crops the output to the preset dimensions
-
-Modify `src/components/HeaderBar.tsx`:
-- Export menu with format options + platform presets
-- Use Web Share API when available (mobile)
-
-### Task 2.3: Template System Foundation
-Create `src/lib/templates.ts` (already exists — check and extend):
-- Add 10 built-in collage templates with pre-placed text, stickers, and photo placeholders
-- Template structure: `{ id, name, nameDe, boardWidth, boardHeight, background, elements: CanvasElement[] (with placeholder src) }`
-
-Create `src/components/TemplateGallery.tsx`:
-- Bottom sheet / modal showing template thumbnails
-- Tap to apply: replaces current document with template, prompts user to replace placeholder photos
-
-Wire into `Panels.tsx` or `Toolbar.tsx`.
-
-### Task 2.4: Drawing Tool Polish
-Check `src/store/editorStore.ts` — `addDrawing` exists.
-Modify `src/components/EditorCanvas.tsx`:
-- Add freehand drawing mode (already has tool state)
-- Drawing should capture points during mouse/touch drag
-- Add brush size + color controls to UI when in draw mode
-
-### Task 2.5: Shape Overlay Expansion
-Check `src/lib/shapes.ts` — extend with more shapes: hexagon, triangle, cloud, arrow, badge
-Modify `src/components/CropOverlay.tsx` to support shape-based clipping on photos.
+Write tests verifying opacity/blend are rendered correctly.
 
 ---
 
-## PHASE 3 — PERFORMANCE OPTIMIZATION
+TASK 5: Enhanced Export
 
-### Task 3.1: Lazy Loading + Code Splitting
-Modify `vite.config.ts`:
-- Enable `manualChunks` to split: vendor (react, konva), editor (editor canvas + components), panels (panel UIs)
-- Add `build.chunkSizeWarningLimit: 600` to suppress the 500KB warning
+Modify src/lib/exportImage.ts:
+- Add format option: 'png' | 'jpeg' | 'webp'
+- Add quality option (0-1) for lossy formats
+- Add platform presets: 'instagram-square' (1080x1080), 'instagram-portrait' (1080x1350), 'instagram-story' (1080x1920), 'a4' (2480x3508)
+- exportBoard(format, quality, preset) should resize/crop output accordingly
 
-Modify `src/App.tsx`:
-- Lazy import `EditorCanvas` and `Panels` using `React.lazy()` + `Suspense`
-- Show a lightweight spinner during load
-
-### Task 3.2: Image Optimization
-Modify `src/lib/importPhotos.ts`:
-- Resize oversized images before creating object URLs (max 2048px on longest side)
-- Use `createImageBitmap` + `OffscreenCanvas` for resizing
-
-Modify `src/hooks/useImage.ts`:
-- Add a simple LRU cache to avoid re-decoding the same URL
-
-### Task 3.3: Layer Caching in Konva
-Modify `src/components/CanvasNodes.tsx`:
-- Set `perfectDrawEnabled={false}` and `shadowForStrokeEnabled={false}` on photo nodes for performance
-- Use `sceneFunc` sparingly — prefer built-in Konva shapes
+Modify src/components/HeaderBar.tsx:
+- Export dropdown: Format (PNG/JPEG/WebP) + Platform preset
+- Web Share API integration for mobile
 
 ---
 
-## PHASE 4 — TESTING STRATEGY
+TASK 6: Performance — Code Splitting + Lazy Loading
 
-### Task 4.1: Expand Unit Tests
-Create `src/store/editorStore.test.ts` additions:
-- Test undo/redo across all action types
-- Test `loadDocument` round-trip
-- Test `clearAll` revokes blob URLs
+Modify vite.config.ts:
+- Add manualChunks: vendor (react, react-dom, framer-motion), editor (konva, react-konva), ui (lucide-react, components)
+- Set chunkSizeWarningLimit: 600
 
-Create `src/lib/projectFile.test.ts`:
-- Test pack/unpack round-trip preserves all data
-
-Create `src/lib/plugins/registry.test.ts`:
-- Test filter/sticker registration and retrieval
-
-### Task 4.2: Integration Tests
-Create `src/lib/exportImage.test.ts`:
-- Test exportBoard produces a valid Blob
-- Test different format/quality options
-
-### Task 4.3: E2E Tests Setup
-Create `playwright.config.ts`:
-- Basic Playwright config for 1-2 critical flows
-
-Create `e2e/collage-flow.spec.ts`:
-- "Create collage → add photo → add text → export" smoke test
+Modify src/App.tsx:
+- React.lazy() import for EditorCanvas and Panels
+- Suspense with simple spinner
 
 ---
 
-## PHASE 5 — CI/CD IMPROVEMENTS
+TASK 7: More Tests
 
-### Task 5.1: Enhanced GitHub Actions
-Modify `.github/workflows/deploy.yml`:
-- Add `workflow_dispatch` trigger for manual deploys
-- Add a `preview` job that builds on PRs (but doesn't deploy to Pages — just verifies build)
-- Cache `node_modules` between runs
+Add to src/store/editorStore.test.ts:
+- Undo/redo round-trip for all action types
+- loadDocument round-trip
+- clearAll revokes blob URLs
 
-### Task 5.2: Feature Flags (Runtime)
-Create `src/lib/features.ts`:
-- Simple feature flag system: `isEnabled(flag)` checks URL params (`?flag=drawing`) then localStorage
-- Use for experimental features (drawing tool, template gallery)
+Create src/lib/exportImage.test.ts:
+- exportBoard returns valid Blob
 
 ---
 
-## PHASE 6 — DOCUMENTATION + DEPLOYMENT
+TASK 8: CI/CD + Feature Flags
 
-### Task 6.1: User Docs
-Create `docs/user-guide.md`:
-- Quick start (DE + EN)
-- How to create a collage
-- How to save/open projects
-- How to export
+Modify .github/workflows/deploy.yml:
+- Add workflow_dispatch trigger
+- Add preview job (build on PRs, don't deploy)
+- Cache node_modules
 
-### Task 6.2: Developer Docs
-Create `docs/api.md`:
-- Store API reference
-- Plugin API reference
-- File format spec
-
-### Task 6.3: Production Checklist
-Create `docs/production-checklist.md`:
-- Pre-deploy verification steps
-- Post-deploy smoke tests
+Create src/lib/features.ts:
+- Feature flag system: isEnabled(flag) checks URL params then localStorage
+- Use for drawing tool and template gallery (mark as experimental)
 
 ---
 
-## PHASE 7 — FINAL VERIFICATION
+TASK 9: ADR + Docs
 
-Before finishing:
-1. `npm run lint` must pass
-2. `npx vitest run` must pass (all tests green)
-3. `npm run build` must succeed with no errors
-4. `npm run preview` should serve successfully (check manually if possible)
-5. All new UI strings must have DE+EN translations
-6. Commit all changes with clear messages (one per phase or major task)
+Create docs/adr/0001-client-only-architecture.md
+Create docs/adr/0002-konva-stays.md
+Create docs/user-guide.md (DE + EN)
+Create docs/api.md (plugin API, store API)
 
 ---
 
-## START EXECUTION NOW
+TASK 10: Final Verification
+- npm run lint → pass
+- npx vitest run → all green
+- npm run build → success
+- Commit everything
 
-Begin with Phase 1 Task 1.1 and work through sequentially. After each task, run lint + tests. If you encounter blockers, note them and move to the next task — don't get stuck.
-
-GO.
+GO. Start with Task 1 NOW. Do not ask questions. Execute.
