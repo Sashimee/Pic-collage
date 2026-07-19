@@ -17,6 +17,13 @@ type Path2DLike = {
     y: number,
   ) => void
   closePath: () => void
+  arc: (
+    x: number,
+    y: number,
+    r: number,
+    startAngle: number,
+    endAngle: number,
+  ) => void
   ellipse?: (
     x: number,
     y: number,
@@ -46,6 +53,21 @@ export function tracePhotoShape(
     case 'heart':
       traceHeart(c, w, h)
       break
+    case 'arch':
+      traceArch(c, w, h)
+      break
+    case 'diamond':
+      traceDiamond(c, w, h)
+      break
+    case 'cloud':
+      traceCloud(c, w, h)
+      break
+    case 'hexagon':
+      traceHexagon(c, w, h)
+      break
+    case 'triangle':
+      traceTriangle(c, w, h)
+      break
     case 'rect':
     default:
       c.beginPath()
@@ -62,7 +84,6 @@ function traceEllipse(c: Path2DLike, w: number, h: number) {
   if (c.ellipse) {
     c.ellipse(w / 2, h / 2, w / 2, h / 2, 0, 0, Math.PI * 2)
   } else {
-    // Bezier ellipse fallback.
     const kx = (w / 2) * 0.5523
     const ky = (h / 2) * 0.5523
     const cx = w / 2
@@ -95,7 +116,6 @@ function traceStar(c: Path2DLike, w: number, h: number) {
 }
 
 function traceHeart(c: Path2DLike, w: number, h: number) {
-  // Parametric heart scaled into the box, drawn with cubic beziers.
   const x = (t: number) => (t + 1) * 0.5 * w
   const y = (t: number) => (1 - t) * 0.5 * h
   c.beginPath()
@@ -107,9 +127,88 @@ function traceHeart(c: Path2DLike, w: number, h: number) {
   c.closePath()
 }
 
+function traceArch(c: Path2DLike, w: number, h: number) {
+  // Arch doorway shape: rectangle bottom, ellipse top
+  c.beginPath()
+  const r = w / 2
+  const archH = h * 0.6
+  if (c.ellipse) {
+    c.ellipse(w / 2, archH, r, archH, 0, Math.PI, 0)
+  } else {
+    // Bezier arch fallback
+    const kx = r * 0.5523
+    const ky = archH * 0.5523
+    c.moveTo(0, archH)
+    c.bezierCurveTo(0, archH - ky, w / 2 - kx, 0, w / 2, 0)
+    c.bezierCurveTo(w / 2 + kx, 0, w, archH - ky, w, archH)
+  }
+  c.lineTo(w, h)
+  c.lineTo(0, h)
+  c.closePath()
+}
+
+function traceDiamond(c: Path2DLike, w: number, h: number) {
+  c.beginPath()
+  c.moveTo(w / 2, 0)
+  c.lineTo(w, h / 2)
+  c.lineTo(w / 2, h)
+  c.lineTo(0, h / 2)
+  c.closePath()
+}
+
+function traceCloud(c: Path2DLike, w: number, h: number) {
+  // Three overlapping circles forming a cloud
+  c.beginPath()
+  const cx = w / 2
+  const cy = h / 2
+  const r = Math.min(w, h) * 0.28
+  // Left puff
+  c.moveTo(cx - w * 0.35 + r, cy)
+  c.arc(cx - w * 0.35, cy, r, 0, Math.PI * 2)
+  // Top-center puff
+  c.moveTo(cx + r * 0.7, cy - h * 0.15)
+  c.arc(cx, cy - h * 0.15, r * 0.9, 0, Math.PI * 2)
+  // Right puff
+  c.moveTo(cx + w * 0.35 + r, cy)
+  c.arc(cx + w * 0.35, cy, r, 0, Math.PI * 2)
+  // Bottom connector
+  c.moveTo(cx - w * 0.35, cy + r * 0.5)
+  c.lineTo(cx + w * 0.35, cy + r * 0.5)
+  c.closePath()
+}
+
+function traceHexagon(c: Path2DLike, w: number, h: number) {
+  c.beginPath()
+  const cx = w / 2
+  const cy = h / 2
+  const rx = w / 2
+  const ry = h / 2
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 2
+    const x = cx + Math.cos(a) * rx
+    const y = cy + Math.sin(a) * ry
+    if (i === 0) c.moveTo(x, y)
+    else c.lineTo(x, y)
+  }
+  c.closePath()
+}
+
+function traceTriangle(c: Path2DLike, w: number, h: number) {
+  c.beginPath()
+  c.moveTo(w / 2, 0)
+  c.lineTo(w, h)
+  c.lineTo(0, h)
+  c.closePath()
+}
+
 export const PHOTO_SHAPES: { id: PhotoShape; glyph: string }[] = [
   { id: 'rect', glyph: '▢' },
   { id: 'circle', glyph: '●' },
   { id: 'star', glyph: '★' },
   { id: 'heart', glyph: '♥' },
+  { id: 'arch', glyph: '⌒' },
+  { id: 'diamond', glyph: '◆' },
+  { id: 'cloud', glyph: '☁' },
+  { id: 'hexagon', glyph: '⬡' },
+  { id: 'triangle', glyph: '▲' },
 ]

@@ -125,6 +125,11 @@ interface EditorState {
   // reorder
   setElements: (elements: CanvasElement[]) => void
 
+  // shape & zoom
+  applyShapeToAll: (shape: string) => void
+  setCanvasZoom: (zoom: number) => void
+  canvasZoom: number
+
   // board / background / mode / frame / grid style
   setBackground: (patch: Partial<Background>) => void
   setMode: (mode: EditorMode) => void
@@ -186,6 +191,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   tool: 'select',
   brushColor: '#ef4444',
   brushSize: 8,
+  canvasZoom: 1,
 
   past: [],
   future: [],
@@ -409,7 +415,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       ...record(s, 'reorder'),
     })),
 
-  setBackground: (patch) =>
+  setBackground: (patch: Partial<Background>) =>
     set((s) => ({ background: { ...s.background, ...patch }, ...record(s, 'bg') })),
 
   setMode: (mode) => set((s) => ({ mode, ...record(s) })),
@@ -492,6 +498,16 @@ export const useEditor = create<EditorState>((set, get) => ({
         selectedId: null,
       }
     }),
+
+  applyShapeToAll: (shape) =>
+    set((s) => ({
+      elements: s.elements.map((e) =>
+        e.type === 'photo' ? { ...e, shape: shape as any } : e,
+      ),
+      ...record(s, 'shapeAll'),
+    })),
+
+  setCanvasZoom: (zoom) => set({ canvasZoom: Math.max(0.25, Math.min(3, zoom)) }),
 }))
 
 // Dev-only handle so the editor state can be driven from the console / tests.

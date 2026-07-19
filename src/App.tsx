@@ -11,6 +11,7 @@ import { useVersionCheck } from './hooks/useVersionCheck'
 import { useShortcuts } from './hooks/useShortcuts'
 import { CropOverlay } from './components/CropOverlay'
 import { UpdateBanner } from './components/UpdateBanner'
+import { ZoomControls } from './components/ZoomControls'
 import { useEditor } from './store/editorStore'
 import { useT } from './i18n/useLang'
 import { useProjects } from './store/projectsStore'
@@ -20,6 +21,7 @@ import {
   shareDataURL,
   type ExportFormat,
 } from './lib/exportImage'
+import { fireConfetti } from './lib/confetti'
 import {
   getPhoto,
   loadDoc,
@@ -151,12 +153,14 @@ export default function App() {
     await nextFrame()
     const format: ExportFormat = kind === 'jpg' ? 'jpg' : 'png'
     const url = editorRef.current?.exportImage(format)
-    if (!url) return
-    if (kind === 'share') {
-      const shared = await shareDataURL(url, format, t('share.title'))
-      if (!shared) downloadDataURL(url, format)
-    } else {
-      downloadDataURL(url, format)
+    if (url) {
+      fireConfetti()
+      if (kind === 'share') {
+        const shared = await shareDataURL(url, format, t('share.title'))
+        if (!shared) downloadDataURL(url, format)
+      } else {
+        downloadDataURL(url, format)
+      }
     }
   }
 
@@ -172,6 +176,7 @@ export default function App() {
               <SelectionBar />
               <EmptyState />
               <CropOverlay />
+              <ZoomControls />
             </div>
             <SidePanel panels={panels} />
           </div>
@@ -183,6 +188,7 @@ export default function App() {
               <EmptyState />
               <MobileSheet panels={panels} />
               <CropOverlay />
+              <ZoomControls />
             </div>
             <MobileTabBar panels={panels} />
           </>

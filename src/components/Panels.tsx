@@ -10,6 +10,7 @@ import { Chip, ColorField, PrimaryButton, Section, Slider } from './ui'
 import { LayoutPreview } from './LayoutPreview'
 import { useT } from '../i18n/useLang'
 import { EMOJI_CATEGORIES } from '../lib/emojis'
+import { PHOTO_SHAPES } from '../lib/shapes'
 
 // ---- Photos --------------------------------------------------------------
 
@@ -101,6 +102,58 @@ function AspectThumb({ w, h, active }: { w: number; h: number; active: boolean }
         className={`rounded-[3px] ${active ? 'bg-accent' : 'bg-muted/60'}`}
       />
     </span>
+  )
+}
+
+// ---- Shape Picker --------------------------------------------------------
+
+function ShapePicker() {
+  const t = useT()
+  const selectedId = useEditor((s) => s.selectedId)
+  const elements = useEditor((s) => s.elements)
+  const updateElement = useEditor((s) => s.updateElement)
+  const applyShapeToAll = useEditor((s) => s.applyShapeToAll)
+
+  const selected = elements.find((e) => e.id === selectedId)
+  const isPhoto = selected?.type === 'photo'
+  const currentShape = isPhoto ? (selected as any).shape ?? 'rect' : 'rect'
+  const hasPhotos = elements.some((e) => e.type === 'photo')
+
+  if (!isPhoto && !hasPhotos) return null
+
+  return (
+    <Section title={t('shape.title')}>
+      <div className="flex flex-wrap gap-1.5">
+        {PHOTO_SHAPES.map((s) => (
+          <button
+            key={s.id}
+            title={t('shape.' + s.id)}
+            onClick={() => {
+              if (isPhoto && selectedId) {
+                updateElement(selectedId, { shape: s.id })
+              }
+            }}
+            className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg transition active:scale-90 ${
+              currentShape === s.id
+                ? 'bg-accent text-accent-fg'
+                : 'bg-surface-2 text-text/80 hover:bg-surface-3'
+            }`}
+            aria-label={t('shape.' + s.id)}
+          >
+            {s.glyph}
+          </button>
+        ))}
+      </div>
+      {hasPhotos && (
+        <button
+          onClick={() => applyShapeToAll(currentShape)}
+          className="mt-2 w-full rounded-lg bg-surface-2 px-3 py-2 text-sm font-medium text-text transition hover:bg-surface-3 active:scale-95"
+          title={t('shape.applyToAll')}
+        >
+          {t('shape.applyToAll')}
+        </button>
+      )}
+    </Section>
   )
 }
 
@@ -214,6 +267,8 @@ export function LayoutPanel() {
           <p className="text-xs text-muted">{t('grid.hint')}</p>
         </Section>
       )}
+
+      <ShapePicker />
     </div>
   )
 }

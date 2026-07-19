@@ -55,7 +55,7 @@ export interface PhotoFilters {
 }
 
 // Non-AI "cutout": clip a photo into a decorative shape.
-export type PhotoShape = 'rect' | 'circle' | 'star' | 'heart'
+export type PhotoShape = 'rect' | 'circle' | 'star' | 'heart' | 'arch' | 'diamond' | 'cloud' | 'hexagon' | 'triangle'
 
 // Source-pixel crop rectangle (Konva Image `crop`).
 export interface CropRect {
