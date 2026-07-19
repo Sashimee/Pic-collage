@@ -12,6 +12,14 @@ export interface BaseElement {
   rotation: number
   scaleX: number
   scaleY: number
+  /**
+   * If true, the element is hidden from the canvas.
+   */
+  hidden?: boolean
+  /**
+   * If true, the element cannot be selected or edited.
+   */
+  locked?: boolean
 }
 
 export type FilterPreset =
