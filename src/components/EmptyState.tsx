@@ -2,14 +2,9 @@ import { ImagePlus, Camera, Sparkles } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
 import { importFiles } from '../lib/importFiles'
-import { GRID_LAYOUTS } from '../lib/grids'
+import { getTemplateLayout, TEMPLATES, type Template } from '../lib/templates'
 import { LayoutPreview } from './LayoutPreview'
 import { m, AnimatePresence } from './motion'
-
-const STARTERS = ['2-v', '2-h', '3-col', '4-grid', '4-pinwheel'].flatMap((id) => {
-  const l = GRID_LAYOUTS.find((g) => g.id === id)
-  return l ? [l] : []
-})
 
 const GALLERY_ID = 'empty-gallery-input'
 const CAMERA_ID = 'empty-camera-input'
@@ -20,6 +15,10 @@ export function EmptyState() {
   const addPhoto = useEditor((s) => s.addPhoto)
   const setGrid = useEditor((s) => s.setGrid)
   const setMode = useEditor((s) => s.setMode)
+  const setGridGap = useEditor((s) => s.setGridGap)
+  const setGridRadius = useEditor((s) => s.setGridRadius)
+  const setFrame = useEditor((s) => s.setFrame)
+  const setBoardSize = useEditor((s) => s.setBoardSize)
 
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -35,13 +34,13 @@ export function EmptyState() {
     e.currentTarget.value = ''
   }
 
-  const startLayout = (id: string) => {
+  const startTemplate = (tpl: Template) => {
+    if (tpl.boardWidth && tpl.boardHeight) setBoardSize(tpl.boardWidth, tpl.boardHeight)
     setMode('grid')
-    setGrid(id)
-    // Trigger the gallery label click after a tick so the grid is set
-    setTimeout(() => {
-      document.getElementById(GALLERY_ID)?.click()
-    }, 50)
+    setGrid(tpl.gridId)
+    if (tpl.gridGap !== undefined) setGridGap(tpl.gridGap)
+    if (tpl.gridRadius !== undefined) setGridRadius(tpl.gridRadius)
+    if (tpl.frame) setFrame(tpl.frame)
   }
 
   return (
@@ -73,7 +72,7 @@ export function EmptyState() {
           />
 
           <m.div
-            className="pointer-events-auto w-full max-w-sm rounded-3xl border border-border bg-surface/80 p-7 text-center shadow-[var(--shadow-card)] backdrop-blur"
+            className="pointer-events-auto w-full max-w-md rounded-3xl border border-border bg-surface/80 p-7 text-center shadow-[var(--shadow-card)] backdrop-blur"
             initial={{ y: 16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: 'spring', damping: 26, stiffness: 300 }}
@@ -103,21 +102,28 @@ export function EmptyState() {
               </label>
             </div>
 
-            <div className="mt-6">
-              <p className="mb-2.5 text-[0.7rem] font-semibold uppercase tracking-wide text-muted">
+            <div className="mt-6 text-left">
+              <p className="mb-2.5 text-center text-[0.7rem] font-semibold uppercase tracking-wide text-muted">
                 {t('empty.startLayout')}
               </p>
-              <div className="flex justify-center gap-2.5">
-                {STARTERS.map((layout) => (
-                  <button
-                    key={layout.id}
-                    onClick={() => startLayout(layout.id)}
-                    aria-label={layout.id}
-                    className="rounded-lg ring-border transition hover:ring-2 hover:ring-accent active:scale-95"
-                  >
-                    <LayoutPreview layout={layout} width={44} height={55} active={false} />
-                  </button>
-                ))}
+              <div className="scroll-x flex gap-3 overflow-x-auto px-1 pb-2">
+                {TEMPLATES.map((tpl) => {
+                  const layout = getTemplateLayout(tpl)
+                  if (!layout) return null
+                  return (
+                    <button
+                      key={tpl.id}
+                      onClick={() => startTemplate(tpl)}
+                      aria-label={t(tpl.titleKey)}
+                      className="flex shrink-0 flex-col items-center gap-1.5 rounded-xl p-1 transition active:scale-95"
+                    >
+                      <LayoutPreview layout={layout} width={64} height={80} active={false} />
+                      <span className="max-w-[64px] text-[0.65rem] font-medium leading-tight text-muted">
+                        {t(tpl.titleKey)}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </m.div>

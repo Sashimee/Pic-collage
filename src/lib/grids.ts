@@ -265,6 +265,31 @@ export const GRID_LAYOUTS: GridLayout[] = [
       { x: 2 / 3, y: 2 / 3, width: 1 / 3, height: 1 / 3 },
     ],
   },
+  // ---- Template-specific asymmetric layouts ----
+  {
+    id: 'moodboard',
+    label: '5',
+    count: 5,
+    cells: [
+      { x: 0, y: 0, width: 0.55, height: 0.5 },
+      { x: 0.55, y: 0, width: 0.45, height: 0.3 },
+      { x: 0.55, y: 0.3, width: 0.45, height: 0.2 },
+      { x: 0, y: 0.5, width: 0.3, height: 0.5 },
+      { x: 0.3, y: 0.5, width: 0.7, height: 0.5 },
+    ],
+  },
+  {
+    id: 'celebration',
+    label: '5',
+    count: 5,
+    cells: [
+      { x: 0.35, y: 0.35, width: 0.3, height: 0.3 },
+      { x: 0.35, y: 0.02, width: 0.3, height: 0.28 },
+      { x: 0.35, y: 0.7, width: 0.3, height: 0.28 },
+      { x: 0.02, y: 0.35, width: 0.28, height: 0.3 },
+      { x: 0.7, y: 0.35, width: 0.28, height: 0.3 },
+    ],
+  },
 ]
 
 export function getGridById(id: string): GridLayout | undefined {

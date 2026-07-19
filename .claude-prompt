@@ -1,0 +1,37 @@
+Add three new features to the Pic-Collage project at /home/alex/projects/Pic-collage.
+
+## Feature 1: Photo Crop & Shape Mask Overlay
+When a photo is selected, add a "Crop & Shape" button in the SelectionBar. Tapping it opens an inline overlay panel (not a modal — use the existing bottom-sheet or side-panel pattern) with:
+- A rectangular cropper with drag handles (reuse or extend the existing CropOverlay component)
+- A row of shape buttons: rect (default), circle, star, heart (already defined as PhotoShape in types.ts)
+- The crop and shape are applied to the selected photo element via updateElement
+- The clipFunc in CanvasNodes.tsx PhotoNode already handles shape clipping — just need to set el.shape
+- The Konva Image crop prop already handles cropping — just need to set el.crop
+
+## Feature 2: Collage Templates Gallery
+Replace the tiny STARTERS grid in EmptyState.tsx with a proper template gallery:
+- On first launch (empty board), show a scrollable horizontal gallery of pre-made collage templates
+- Templates should include: 2-photo vertical, 2-photo horizontal, 3-photo column, 4-photo grid, 4-photo pinwheel (already defined in GRID_LAYOUTS), plus NEW templates: story layout (3 photos stacked), photo-booth strip (4 photos in a row), mood board (asymmetric grid), celebration (circular photos around center)
+- Each template shows a visual preview AND a title
+- Tapping a template:
+  1. Sets grid mode
+  2. Sets the grid layout
+  3. Opens the file picker so user immediately adds photos to the slots
+- Add the templates to a new file src/lib/templates.ts with full grid + frame presets
+
+## Feature 3: Rich Background Presets
+Replace the current BackgroundPanel (which only shows solid color swatches) with:
+- Tab sections: Solid Colors, Gradients, Patterns, Photo Background
+- Solid Colors: keep the existing color swatches but add a custom color picker (native `<input type="color">`)
+- Gradients: 8 preset gradients (linear 45deg in various color combos), apply as CSS background-image on the board
+- Patterns: reuse the existing PATTERN_IDS from src/lib/patterns.ts, render as repeating background
+- Photo Background: allow user to pick a photo from their gallery to use as the full-board background (dimmed/blurred automatically)
+- Background type in types.ts already supports `type: 'solid' | 'gradient' | 'pattern' | 'photo'` — extend the BackgroundPanel to support all four
+
+## Important rules
+- All UI must be mobile-first and touch-friendly (min 44px tap targets)
+- Use existing design tokens: bg-surface, border-border, text-text, accent colors
+- Keep translations in src/i18n/translations.ts — add English and German keys for new UI text
+- Run npm run build after all changes
+- Do NOT break existing functionality
+- Reuse existing components (Chip, Section, PrimaryButton, Slider, ColorField) from src/components/ui.tsx where possible

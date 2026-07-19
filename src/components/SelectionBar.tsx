@@ -7,6 +7,7 @@ import {
   ZoomOut,
   RotateCcw,
   Trash2,
+  Crop,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
@@ -23,9 +24,11 @@ export function SelectionBar() {
   const forward = useEditor((s) => s.bringForward)
   const backward = useEditor((s) => s.sendBackward)
   const updateElement = useEditor((s) => s.updateElement)
+  const setCropping = useEditor((s) => s.setCropping)
 
   const el = selected()
   const isGridPhoto = mode === 'grid' && el?.type === 'photo'
+  const isFreePhoto = mode === 'free' && el?.type === 'photo'
 
   const stepZoom = (delta: number) => {
     if (el?.type !== 'photo') return
@@ -86,6 +89,11 @@ export function SelectionBar() {
               <BringToFront size={18} />
             </Btn>
           </>
+        )}
+        {isFreePhoto && (
+          <Btn onClick={() => setCropping(selectedId)} label={t('sel.cropShape')}>
+            <Crop size={18} />
+          </Btn>
         )}
         {isGridPhoto && (
           <>

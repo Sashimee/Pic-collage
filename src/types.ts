@@ -109,7 +109,7 @@ export type CanvasElement =
 
 // ---- Background ----------------------------------------------------------
 
-export type BackgroundType = 'solid' | 'gradient' | 'pattern'
+export type BackgroundType = 'solid' | 'gradient' | 'pattern' | 'photo'
 
 export type PatternId = 'dots' | 'stripes' | 'grid' | 'checker' | 'hearts'
 
@@ -121,6 +121,8 @@ export interface Background {
   gradientAngle: number // degrees, 0 = left→right
   patternId: PatternId
   patternColor: string // foreground/motif color (background uses `color`)
+  photoSrc?: string // object URL for a full-board photo background
+  photoId?: string // IndexedDB key for the source blob (persistence)
 }
 
 // ---- Board frame ---------------------------------------------------------

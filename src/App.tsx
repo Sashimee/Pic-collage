@@ -171,6 +171,7 @@ export default function App() {
               <EditorCanvas ref={editorRef} />
               <SelectionBar />
               <EmptyState />
+              <CropOverlay />
             </div>
             <SidePanel panels={panels} />
           </div>
@@ -181,12 +182,12 @@ export default function App() {
               <SelectionBar />
               <EmptyState />
               <MobileSheet panels={panels} />
+              <CropOverlay />
             </div>
             <MobileTabBar panels={panels} />
           </>
         )}
         <UpdateBanner />
-        <CropOverlay />
       </div>
     </MotionProvider>
   )

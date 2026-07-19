@@ -3,7 +3,6 @@ import { ImagePlus, Camera } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { GRID_LAYOUTS } from '../lib/grids'
 import { FILTER_PRESETS } from '../lib/filters'
-import { PHOTO_SHAPES } from '../lib/shapes'
 import { PATTERN_GLYPH, PATTERN_IDS } from '../lib/patterns'
 import { importFiles } from '../lib/importFiles'
 import type { FrameStyle, PhotoElement, TextElement } from '../types'
@@ -566,10 +565,7 @@ export function FilterPanel() {
   const t = useT()
   const selectedId = useEditor((s) => s.selectedId)
   const el = useEditor((s) => s.elements.find((e) => e.id === s.selectedId))
-  const mode = useEditor((s) => s.mode)
   const updateFilters = useEditor((s) => s.updateFilters)
-  const updateElement = useEditor((s) => s.updateElement)
-  const setCropping = useEditor((s) => s.setCropping)
   const photo = el?.type === 'photo' ? (el as PhotoElement) : null
 
   if (!photo || !selectedId) {
@@ -577,8 +573,6 @@ export function FilterPanel() {
   }
 
   const f = photo.filters
-  const shape = photo.shape ?? 'rect'
-  const freePhoto = mode === 'free'
   return (
     <div className="flex flex-col gap-4">
       <Section title={t('filter.presets')}>
@@ -594,33 +588,6 @@ export function FilterPanel() {
           ))}
         </div>
       </Section>
-
-      {freePhoto && (
-        <Section title={t('filter.shapeCrop')}>
-          <div className="flex items-center gap-2">
-            {PHOTO_SHAPES.map((sh) => (
-              <button
-                key={sh.id}
-                onClick={() => updateElement(selectedId, { shape: sh.id })}
-                title={t('shape.' + sh.id)}
-                className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg transition active:scale-90 ${
-                  shape === sh.id
-                    ? 'bg-accent text-accent-fg'
-                    : 'bg-surface-2 text-text/80 hover:bg-surface-3'
-                }`}
-              >
-                {sh.glyph}
-              </button>
-            ))}
-            <button
-              onClick={() => setCropping(selectedId)}
-              className="ml-auto min-h-[40px] rounded-lg bg-surface-2 px-3 text-sm text-text transition hover:bg-surface-3 active:scale-95"
-            >
-              ✂️ {t('filter.crop')}
-            </button>
-          </div>
-        </Section>
-      )}
 
       <Section title={t('filter.adjust')}>
         <Slider

@@ -4,6 +4,8 @@ import type Konva from 'konva'
 import { useEditor } from '../store/editorStore'
 import { useImage } from '../hooks/useImage'
 import { useT } from '../i18n/useLang'
+import { BottomSheet } from './BottomSheet'
+import { PHOTO_SHAPES } from '../lib/shapes'
 import type { PhotoElement } from '../types'
 
 interface Box {
@@ -13,32 +15,44 @@ interface Box {
   height: number
 }
 
-// A self-contained crop modal: its own Konva stage shows the selected photo at
-// a fitted size with a draggable/resizable crop window. Applying writes the crop
-// rectangle (in source pixels) back to the element and matches its board aspect.
+// Inline "Crop & Shape" panel, opened from the SelectionBar for the selected
+// photo. Rendered in the same bottom-sheet pattern as the other tool panels
+// (not a full-screen modal) so the board stays visible underneath. Shape
+// changes apply live via updateElement; the crop rectangle is only committed
+// to the store when "Apply" is pressed.
 export function CropOverlay() {
+  const t = useT()
   const croppingId = useEditor((s) => s.croppingId)
+  const setCropping = useEditor((s) => s.setCropping)
   const el = useEditor((s) =>
     s.elements.find((e) => e.id === s.croppingId && e.type === 'photo'),
   ) as PhotoElement | undefined
 
-  if (!croppingId || !el) return null
-  return <CropModal el={el} />
+  return (
+    <BottomSheet
+      open={!!croppingId && !!el}
+      title={t('crop.title')}
+      onClose={() => setCropping(null)}
+    >
+      {el && <CropPanel el={el} />}
+    </BottomSheet>
+  )
 }
 
-function CropModal({ el }: { el: PhotoElement }) {
+function CropPanel({ el }: { el: PhotoElement }) {
   const t = useT()
   const image = useImage(el.src)
   const setCropping = useEditor((s) => s.setCropping)
   const updateElement = useEditor((s) => s.updateElement)
   const rectRef = useRef<Konva.Rect>(null)
   const trRef = useRef<Konva.Transformer>(null)
+  const shape = el.shape ?? 'rect'
 
-  // Fit the natural image into the available modal area.
+  // Fit the natural image into the available sheet width.
   const fit = useMemo(() => {
     if (!image) return { w: 0, h: 0, scale: 1 }
-    const maxW = Math.min(window.innerWidth * 0.9, 820)
-    const maxH = window.innerHeight * 0.6
+    const maxW = Math.min(window.innerWidth - 40, 480)
+    const maxH = 300
     const scale = Math.min(maxW / image.naturalWidth, maxH / image.naturalHeight)
     return { w: image.naturalWidth * scale, h: image.naturalHeight * scale, scale }
   }, [image])
@@ -98,80 +112,103 @@ function CropModal({ el }: { el: PhotoElement }) {
   const reset = () => setBox({ x: 0, y: 0, width: fit.w, height: fit.h })
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/80 p-4">
-      <h2 className="text-sm font-semibold text-white">{t('crop.title')}</h2>
-      {image && box && (
-        <Stage width={fit.w} height={fit.h} className="rounded-lg shadow-2xl">
-          <Layer>
-            <KonvaImage image={image} width={fit.w} height={fit.h} opacity={0.45} />
-            <KonvaImage
-              image={image}
-              x={box.x}
-              y={box.y}
-              width={box.width}
-              height={box.height}
-              crop={{
-                x: box.x / fit.scale,
-                y: box.y / fit.scale,
-                width: box.width / fit.scale,
-                height: box.height / fit.scale,
-              }}
-              listening={false}
-            />
-            <Rect
-              ref={rectRef}
-              x={box.x}
-              y={box.y}
-              width={box.width}
-              height={box.height}
-              stroke="#6366f1"
-              strokeWidth={2}
-              draggable
-              onDragEnd={(e) =>
-                setBox((b) =>
-                  b ? clamp({ ...b, x: e.target.x(), y: e.target.y() }) : b,
-                )
-              }
-              onTransformEnd={() => {
-                const node = rectRef.current
-                if (!node) return
-                const next = clamp({
-                  x: node.x(),
-                  y: node.y(),
-                  width: node.width() * node.scaleX(),
-                  height: node.height() * node.scaleY(),
-                })
-                node.scaleX(1)
-                node.scaleY(1)
-                setBox(next)
-              }}
-            />
-            <Transformer
-              ref={trRef}
-              rotateEnabled={false}
-              keepRatio={false}
-              anchorSize={14}
-              borderStroke="#6366f1"
-              anchorStroke="#6366f1"
-              boundBoxFunc={(oldB, newB) =>
-                newB.width < 24 || newB.height < 24 ? oldB : newB
-              }
-            />
-          </Layer>
-        </Stage>
-      )}
-      <div className="flex gap-2">
+    <div className="flex flex-col gap-4">
+      <div>
+        <h3 className="mb-2.5 text-[0.7rem] font-semibold uppercase tracking-wide text-muted">
+          {t('filter.shape')}
+        </h3>
+        <div className="flex items-center gap-2">
+          {PHOTO_SHAPES.map((sh) => (
+            <button
+              key={sh.id}
+              onClick={() => updateElement(el.id, { shape: sh.id })}
+              title={t('shape.' + sh.id)}
+              className={`flex h-11 w-11 items-center justify-center rounded-lg text-lg transition active:scale-90 ${
+                shape === sh.id
+                  ? 'bg-accent text-accent-fg'
+                  : 'bg-surface-2 text-text/80 hover:bg-surface-3'
+              }`}
+            >
+              {sh.glyph}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2.5 text-[0.7rem] font-semibold uppercase tracking-wide text-muted">
+          {t('filter.crop')}
+        </h3>
+        <div className="flex justify-center">
+          {image && box && (
+            <Stage width={fit.w} height={fit.h} className="rounded-lg shadow-lg">
+              <Layer>
+                <KonvaImage image={image} width={fit.w} height={fit.h} opacity={0.45} />
+                <KonvaImage
+                  image={image}
+                  x={box.x}
+                  y={box.y}
+                  width={box.width}
+                  height={box.height}
+                  crop={{
+                    x: box.x / fit.scale,
+                    y: box.y / fit.scale,
+                    width: box.width / fit.scale,
+                    height: box.height / fit.scale,
+                  }}
+                  listening={false}
+                />
+                <Rect
+                  ref={rectRef}
+                  x={box.x}
+                  y={box.y}
+                  width={box.width}
+                  height={box.height}
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  draggable
+                  onDragEnd={(e) =>
+                    setBox((b) =>
+                      b ? clamp({ ...b, x: e.target.x(), y: e.target.y() }) : b,
+                    )
+                  }
+                  onTransformEnd={() => {
+                    const node = rectRef.current
+                    if (!node) return
+                    const next = clamp({
+                      x: node.x(),
+                      y: node.y(),
+                      width: node.width() * node.scaleX(),
+                      height: node.height() * node.scaleY(),
+                    })
+                    node.scaleX(1)
+                    node.scaleY(1)
+                    setBox(next)
+                  }}
+                />
+                <Transformer
+                  ref={trRef}
+                  rotateEnabled={false}
+                  keepRatio={false}
+                  anchorSize={14}
+                  borderStroke="#6366f1"
+                  anchorStroke="#6366f1"
+                  boundBoxFunc={(oldB, newB) =>
+                    newB.width < 24 || newB.height < 24 ? oldB : newB
+                  }
+                />
+              </Layer>
+            </Stage>
+          )}
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2">
         <button
           onClick={reset}
           className="min-h-[44px] rounded-lg bg-surface-2 px-4 text-sm text-text transition hover:bg-surface-3 active:scale-95"
         >
           {t('crop.reset')}
-        </button>
-        <button
-          onClick={() => setCropping(null)}
-          className="min-h-[44px] rounded-lg bg-surface-2 px-4 text-sm text-text transition hover:bg-surface-3 active:scale-95"
-        >
-          {t('crop.cancel')}
         </button>
         <button
           onClick={apply}
