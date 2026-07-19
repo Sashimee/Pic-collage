@@ -44,6 +44,18 @@ function buildVersionPlugin(): Plugin {
 
 export default defineConfig({
   base: BASE,
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/zustand')) return 'vendor'
+          if (id.includes('node_modules/konva') || id.includes('node_modules/react-konva')) return 'konva'
+          if (id.includes('node_modules/lucide-react') || id.includes('node_modules/framer-motion')) return 'ui'
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
