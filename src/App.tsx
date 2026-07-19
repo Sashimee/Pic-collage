@@ -7,6 +7,7 @@ import { EmptyState } from './components/EmptyState'
 import { usePanels } from './components/panels.config'
 import { MotionProvider } from './components/motion'
 import { useIsDesktop } from './hooks/useMediaQuery'
+import { useVersionCheck } from './hooks/useVersionCheck'
 import { CropOverlay } from './components/CropOverlay'
 import { UpdateBanner } from './components/UpdateBanner'
 import { useEditor } from './store/editorStore'
@@ -58,6 +59,8 @@ export default function App() {
   // sheet closed so the first-run hero isn't covered.
   const panels = usePanels(isDesktop ? 'photos' : null)
   const t = useT()
+
+  useVersionCheck()
 
   // Restore persisted work on startup: rebuild object URLs from stored blobs
   // (one URL per photoId, so duplicates keep sharing a src). Photos whose blob

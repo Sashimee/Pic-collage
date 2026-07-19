@@ -1,4 +1,5 @@
-import { defineConfig } from 'vite'
+import { execSync } from 'node:child_process'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -6,15 +7,58 @@ import { VitePWA } from 'vite-plugin-pwa'
 // Repo is served from https://<user>.github.io/Pic-collage/
 const BASE = '/Pic-collage/'
 
+// A per-deploy id: prefer the CI commit SHA, fall back to the local git HEAD,
+// then a timestamp so `npm run build` still works outside of git (e.g. a
+// tarball checkout). Baked into index.html and dist/version.json so the app
+// can detect a new deployment even if the service worker never updates.
+const BUILD_ID =
+  process.env.GITHUB_SHA?.slice(0, 8) ??
+  (() => {
+    try {
+      return execSync('git rev-parse --short HEAD').toString().trim()
+    } catch {
+      return Date.now().toString(36)
+    }
+  })()
+
+// Stamps index.html with the build id and emits version.json next to it so
+// runtime code can poll for a mismatch (see src/hooks/useVersionCheck.ts).
+function buildVersionPlugin(): Plugin {
+  return {
+    name: 'build-version',
+    transformIndexHtml(html) {
+      return html.replace(
+        '</head>',
+        `    <meta name="app-build" content="${BUILD_ID}" />\n  </head>`,
+      )
+    },
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({ build: BUILD_ID }),
+      })
+    },
+  }
+}
+
 export default defineConfig({
   base: BASE,
   plugins: [
     react(),
     tailwindcss(),
+    buildVersionPlugin(),
     VitePWA({
-      // 'prompt' surfaces onNeedRefresh when a new SW is waiting; UpdateBanner
-      // then auto-activates it and reloads (see updateServiceWorker(true)).
-      registerType: 'prompt',
+      // 'autoUpdate' makes vite-plugin-pwa set workbox.skipWaiting +
+      // clientsClaim to true (below, explicit for clarity). Without
+      // clientsClaim the new worker never claims the *already open* tab, so
+      // its 'controllerchange' never fires and the page never reloads — that
+      // was the root cause of updates only landing after a manual refresh.
+      registerType: 'autoUpdate',
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+      },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Pic Collage Maker',
