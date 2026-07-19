@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
-import { Rect } from 'react-konva'
+import { Rect, Image as KonvaImage } from 'react-konva'
 import type { Background as Bg } from '../types'
 import { makePatternTile } from '../lib/patterns'
+import { useImage } from '../hooks/useImage'
 
 // The board background: a full-bleed rect, either a solid colour, a linear
-// gradient computed from an angle, or a repeating pattern. Named 'background'
-// so the stage can treat a click on it as "deselect".
+// gradient computed from an angle, a repeating pattern, or a dimmed photo.
 export function Background({
   bg,
   width,
@@ -23,8 +23,27 @@ export function Background({
     [bg.type, bg.patternId, bg.color, bg.patternColor],
   )
 
+  const photoImage = useImage(bg.type === 'photo' ? (bg.photoSrc ?? '') : '')
+
   if (bg.type === 'solid') {
     return (
+      <Rect name="background" x={0} y={0} width={width} height={height} fill={bg.color} />
+    )
+  }
+
+  if (bg.type === 'photo') {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    return photoImage ? (
+      <KonvaImage
+        name="background"
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        image={photoImage}
+        opacity={0.4}
+      />
+    ) : (
       <Rect name="background" x={0} y={0} width={width} height={height} fill={bg.color} />
     )
   }
