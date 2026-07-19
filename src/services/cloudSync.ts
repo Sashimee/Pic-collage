@@ -13,6 +13,9 @@ const STORE_NAME = 'projects';
 let dbPromise: Promise<IDBPDatabase<any>> | null = null;
 
 export async function initDB() {
+  if (typeof indexedDB === 'undefined') {
+    throw new Error('indexedDB not available')
+  }
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, 1, {
       upgrade(db) {

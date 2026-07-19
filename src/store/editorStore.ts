@@ -466,8 +466,10 @@ export const useEditor = create<EditorState>((set, get) => ({
 }))
 
 // Dev-only handle so the editor state can be driven from the console / tests.
-// Auto‑save on persistent changes (ignore transient UI fields)
+// Auto-save on persistent changes (ignore transient UI fields)
 useEditor.subscribe((state) => {
+  // Skip in Node.js / test environments where IndexedDB is not available
+  if (typeof indexedDB === 'undefined') return
   const snapshot = {
     elements: state.elements,
     background: state.background,
@@ -486,7 +488,7 @@ useEditor.subscribe((state) => {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     data: snapshot,
-  });
+  }).catch(() => { /* persistence is best-effort */ });
 });
 
 if (import.meta.env.DEV && typeof window !== 'undefined') {
