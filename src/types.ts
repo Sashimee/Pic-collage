@@ -20,6 +20,14 @@ export interface BaseElement {
    * If true, the element cannot be selected or edited.
    */
   locked?: boolean
+  /**
+   * Opacity 0..1 (default 1)
+   */
+  opacity?: number
+  /**
+   * Konva globalCompositeOperation blend mode.
+   */
+  blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten'
 }
 
 export type FilterPreset =

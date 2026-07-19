@@ -4,6 +4,7 @@ import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
   Share2, FileImage, Image as ImageIcon, Sparkles,
   RefreshCcw, MoreHorizontal, FolderOpen, Save, Plus,
+  Upload,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -18,7 +19,7 @@ import ProjectManager from './ProjectManager'
 export type ExportKind = 'png' | 'jpg' | 'share'
 
 export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }) {
-  const [menu, setMenu] = useState(false)
+  const [exportMenu, setExportMenu] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [projectManagerOpen, setProjectManagerOpen] = useState(false)
   const t = useT()
@@ -33,8 +34,38 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
   const activeProjectId = useProjects((s) => s.activeProjectId)
   const saveActiveProject = useProjects((s) => s.saveActiveProject)
 
-  const pick = (kind: ExportKind) => {
-    setMenu(false)
+  const handleSaveAsFile = async () => {
+    const { packProject } = await import('../lib/projectFile')
+    const doc = {
+      boardWidth: useEditor.getState().boardWidth,
+      boardHeight: useEditor.getState().boardHeight,
+      background: useEditor.getState().background,
+      mode: useEditor.getState().mode,
+      gridId: useEditor.getState().gridId,
+      gridGap: useEditor.getState().gridGap,
+      gridRadius: useEditor.getState().gridRadius,
+      frame: useEditor.getState().frame,
+      elements: useEditor.getState().elements,
+    }
+    const blob = await packProject(activeProjectId ? 'Project' : 'Collage', doc)
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `collage-${Date.now()}.piccollage`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
+  const handleOpenFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const { unpackProject } = await import('../lib/projectFile')
+    const { doc } = await unpackProject(file)
+    useEditor.getState().loadDocument(doc)
+    e.target.value = ''
+  }
+
+  const handleExport = async (kind: ExportKind) => {
+    setExportMenu(false)
     onExport(kind)
   }
 
@@ -140,26 +171,40 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
 
           {/* Export */}
           <div className="relative shrink-0">
-            <button onClick={() => setMenu((m) => !m)} className={accentBtn}>
+            <button onClick={() => setExportMenu((m) => !m)} className={accentBtn}>
               <Download size={14} className="sm:hidden" strokeWidth={2.5} />
               <Download size={16} className="hidden sm:block" strokeWidth={2.5} />
               <span className="hidden sm:inline">{t('header.export')}</span>
             </button>
-            {menu && (
+            {exportMenu && (
               <>
-                <div className="fixed inset-0 z-20" onClick={() => setMenu(false)} />
+                <div className="fixed inset-0 z-20" onClick={() => setExportMenu(false)} />
                 <div className="absolute right-0 z-30 mt-1.5 w-48 overflow-hidden rounded-xl border border-border bg-surface-2 shadow-2xl">
                   {canShareImage() && (
-                    <MenuItem onClick={() => pick('share')} icon={<Share2 size={16} />}>
+                    <MenuItem onClick={() => handleExport('share')} icon={<Share2 size={16} />}>
                       {t('export.share')}
                     </MenuItem>
                   )}
-                  <MenuItem onClick={() => pick('png')} icon={<ImageIcon size={16} />}>
+                  <MenuItem onClick={() => handleExport('png')} icon={<ImageIcon size={16} />}>
                     {t('export.png')}
                   </MenuItem>
-                  <MenuItem onClick={() => pick('jpg')} icon={<FileImage size={16} />}>
+                  <MenuItem onClick={() => handleExport('jpg')} icon={<FileImage size={16} />}>
                     {t('export.jpg')}
                   </MenuItem>
+                  <div className="mx-3 my-1 h-px bg-border" />
+                  <MenuItem onClick={handleSaveAsFile} icon={<Upload size={16} />}>
+                    Save as .piccollage
+                  </MenuItem>
+                  <label className="flex min-h-[44px] w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-left text-sm text-text/90 transition hover:bg-surface-3">
+                    <Upload size={16} className="text-muted" />
+                    <span>Open .piccollage</span>
+                    <input
+                      type="file"
+                      accept=".piccollage,application/json"
+                      onChange={handleOpenFile}
+                      className="sr-only"
+                    />
+                  </label>
                 </div>
               </>
             )}

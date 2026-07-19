@@ -19,6 +19,11 @@ import { useImage } from '../hooks/useImage'
 import { computeFilterConfig } from '../lib/filters'
 import { tracePhotoShape } from '../lib/shapes'
 
+function toBlend(mode: string | undefined): any {
+  if (!mode || mode === 'normal') return 'source-over'
+  return mode as any
+}
+
 interface NodeProps<T extends CanvasElement> {
   el: T
   onSelect: () => void
@@ -82,6 +87,8 @@ function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
       rotation={el.rotation}
       scaleX={el.scaleX}
       scaleY={el.scaleY}
+      opacity={el.opacity ?? 1}
+      globalCompositeOperation={toBlend(el.blendMode)}
       draggable
       onClick={onSelect}
       onTap={onSelect}
@@ -153,19 +160,21 @@ function TextNode({ el, onSelect, onChange, onEditText }: NodeProps<TextElement>
 
   return (
     <Group
-      id={el.id}
-      name="element"
-      x={el.x}
-      y={el.y}
-      rotation={el.rotation}
-      scaleX={el.scaleX}
-      scaleY={el.scaleY}
-      draggable
-      onClick={onSelect}
-      onTap={onSelect}
-      onDblClick={() => onEditText?.(el.id)}
-      onDblTap={() => onEditText?.(el.id)}
-      {...commonHandlers(onChange)}
+    id={el.id}
+    name="element"
+    x={el.x}
+    y={el.y}
+    rotation={el.rotation}
+    scaleX={el.scaleX}
+    scaleY={el.scaleY}
+    opacity={el.opacity ?? 1}
+    globalCompositeOperation={toBlend(el.blendMode)}
+    draggable
+    onClick={onSelect}
+    onTap={onSelect}
+    onDblClick={() => onEditText?.(el.id)}
+    onDblTap={() => onEditText?.(el.id)}
+    {...commonHandlers(onChange)}
     >
       {chip && curve === 0 && dims.w > 0 && (
         <Rect
@@ -203,6 +212,8 @@ function DrawingNode({ el, onSelect, onChange }: NodeProps<DrawingElement>) {
       rotation={el.rotation}
       scaleX={el.scaleX}
       scaleY={el.scaleY}
+      opacity={el.opacity ?? 1}
+      globalCompositeOperation={toBlend(el.blendMode)}
       draggable
       onClick={onSelect}
       onTap={onSelect}
@@ -223,6 +234,8 @@ function StickerNode({ el, onSelect, onChange }: NodeProps<StickerElement>) {
       rotation={el.rotation}
       scaleX={el.scaleX}
       scaleY={el.scaleY}
+      opacity={el.opacity ?? 1}
+      globalCompositeOperation={toBlend(el.blendMode)}
       draggable
       onClick={onSelect}
       onTap={onSelect}

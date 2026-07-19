@@ -76,6 +76,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'text.content': 'Content',
     'text.effects': 'Effects',
     'text.selectHint': 'Add or select a text layer to edit it.',
+    'common.opacity': 'Opacity',
+    'common.blend': 'Blend',
     'common.color': 'Color',
     'common.size': 'Size',
 
@@ -221,6 +223,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'text.content': 'Inhalt',
     'text.effects': 'Effekte',
     'text.selectHint': 'Textebene hinzufügen oder auswählen, um sie zu bearbeiten.',
+    'common.opacity': 'Deckkraft',
+    'common.blend': 'Mischmodus',
     'common.color': 'Farbe',
     'common.size': 'Größe',
 

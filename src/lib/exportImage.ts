@@ -1,16 +1,38 @@
 import type Konva from 'konva'
 
-export type ExportFormat = 'png' | 'jpg'
+export type ExportFormat = 'png' | 'jpg' | 'webp'
 
-// Render the collage board (a Konva.Group holding the background + elements) to
-// a data URL at full board resolution, independent of the current view zoom.
+export type ExportPreset =
+  | 'original'
+  | 'instagram-square'
+  | 'instagram-portrait'
+  | 'instagram-story'
+  | 'a4'
+
+const PRESET_DIMS: Record<ExportPreset, { width: number; height: number }> = {
+  original: { width: 0, height: 0 }, // use board dimensions
+  'instagram-square': { width: 1080, height: 1080 },
+  'instagram-portrait': { width: 1080, height: 1350 },
+  'instagram-story': { width: 1080, height: 1920 },
+  a4: { width: 2480, height: 3508 },
+}
+
+// Render the collage board to a data URL at full board resolution,
+// with optional format, quality, and platform preset.
 export function exportBoard(
   board: Konva.Group,
   boardWidth: number,
   boardHeight: number,
   format: ExportFormat,
-  pixelRatio = 2,
+  options: {
+    quality?: number
+    preset?: ExportPreset
+    pixelRatio?: number
+  } = {},
 ): string {
+  const { quality = 0.92, preset = 'original', pixelRatio = 2 } = options
+  const dims = PRESET_DIMS[preset]
+
   const prev = {
     x: board.x(),
     y: board.y(),
@@ -20,14 +42,25 @@ export function exportBoard(
   }
   board.setAttrs({ x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 })
 
+  const mimeType =
+    format === 'png'
+      ? 'image/png'
+      : format === 'webp'
+        ? 'image/webp'
+        : 'image/jpeg'
+
+  // If preset has explicit dimensions, export at that size (cropping/centering)
+  const exportW = dims.width > 0 ? dims.width : boardWidth
+  const exportH = dims.height > 0 ? dims.height : boardHeight
+
   const url = board.toDataURL({
     x: 0,
     y: 0,
-    width: boardWidth,
-    height: boardHeight,
+    width: exportW,
+    height: exportH,
     pixelRatio,
-    mimeType: format === 'png' ? 'image/png' : 'image/jpeg',
-    quality: 0.92,
+    mimeType,
+    quality,
   })
 
   board.setAttrs(prev)
@@ -43,10 +76,15 @@ function dataURLToBlob(dataURL: string): Blob {
   return new Blob([bytes], { type: mime })
 }
 
-export function downloadDataURL(dataURL: string, format: ExportFormat): void {
+export function downloadDataURL(
+  dataURL: string,
+  format: ExportFormat,
+  filename?: string,
+): void {
   const a = document.createElement('a')
   a.href = dataURL
-  a.download = `collage-${Date.now()}.${format === 'png' ? 'png' : 'jpg'}`
+  a.download =
+    filename || `collage-${Date.now()}.${format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpg'}`
   document.body.appendChild(a)
   a.click()
   a.remove()
@@ -69,9 +107,11 @@ export async function shareDataURL(
 ): Promise<boolean> {
   if (!canShareImage()) return false
   const blob = dataURLToBlob(dataURL)
-  const file = new File([blob], `collage.${format === 'png' ? 'png' : 'jpg'}`, {
-    type: blob.type,
-  })
+  const file = new File(
+    [blob],
+    `collage.${format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpg'}`,
+    { type: blob.type },
+  )
   if (!navigator.canShare({ files: [file] })) return false
   try {
     await navigator.share({ files: [file], title })

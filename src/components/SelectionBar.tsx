@@ -66,52 +66,94 @@ export function SelectionBar() {
   )
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex flex-col items-center gap-2">
       <AnimatePresence>
         {selectedId && (
-          <m.div
-            key="selbar"
-            initial={{ opacity: 0, y: 16, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.9 }}
-            transition={{ type: 'spring', damping: 26, stiffness: 340 }}
-            className="pointer-events-auto flex gap-2 rounded-full bg-surface/80 p-1.5 shadow-xl ring-1 ring-border backdrop-blur"
-          >
+          <>
+            {/* Opacity + Blend controls */}
             {mode === 'free' && (
-          <>
-            <Btn onClick={() => duplicate(selectedId)} label={t('sel.duplicate')}>
-              <Copy size={18} />
-            </Btn>
-            <Btn onClick={() => backward(selectedId)} label={t('sel.backward')}>
-              <SendToBack size={18} />
-            </Btn>
-            <Btn onClick={() => forward(selectedId)} label={t('sel.forward')}>
-              <BringToFront size={18} />
-            </Btn>
+              <m.div
+                key="blend"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="pointer-events-auto flex items-center gap-2 rounded-full bg-surface/80 px-3 py-1.5 shadow-xl ring-1 ring-border backdrop-blur"
+              >
+                <label className="text-xs text-muted">{t('common.opacity')}</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={el?.opacity ?? 1}
+                  onChange={(e) =>
+                    selectedId &&
+                    updateElement(selectedId, { opacity: parseFloat(e.target.value) })
+                  }
+                  className="w-24 accent-accent"
+                />
+                <select
+                  value={el?.blendMode ?? 'normal'}
+                  onChange={(e) =>
+                    selectedId &&
+                    updateElement(selectedId, { blendMode: e.target.value as any })
+                  }
+                  className="rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text outline-none"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="multiply">Multiply</option>
+                  <option value="screen">Screen</option>
+                  <option value="overlay">Overlay</option>
+                  <option value="darken">Darken</option>
+                  <option value="lighten">Lighten</option>
+                </select>
+              </m.div>
+            )}
+
+            <m.div
+              key="selbar"
+              initial={{ opacity: 0, y: 16, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.9 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 340 }}
+              className="pointer-events-auto flex gap-2 rounded-full bg-surface/80 p-1.5 shadow-xl ring-1 ring-border backdrop-blur"
+            >
+              {mode === 'free' && (
+                <>
+                  <Btn onClick={() => duplicate(selectedId)} label={t('sel.duplicate')}>
+                    <Copy size={18} />
+                  </Btn>
+                  <Btn onClick={() => backward(selectedId)} label={t('sel.backward')}>
+                    <SendToBack size={18} />
+                  </Btn>
+                  <Btn onClick={() => forward(selectedId)} label={t('sel.forward')}>
+                    <BringToFront size={18} />
+                  </Btn>
+                </>
+              )}
+              {isFreePhoto && (
+                <Btn onClick={() => setCropping(selectedId)} label={t('sel.cropShape')}>
+                  <Crop size={18} />
+                </Btn>
+              )}
+              {isGridPhoto && (
+                <>
+                  <Btn onClick={() => stepZoom(-0.2)} label={t('cell.zoomOut')}>
+                    <ZoomOut size={18} />
+                  </Btn>
+                  <Btn onClick={() => stepZoom(0.2)} label={t('cell.zoomIn')}>
+                    <ZoomIn size={18} />
+                  </Btn>
+                  <Btn onClick={resetCell} label={t('cell.reset')}>
+                    <RotateCcw size={18} />
+                  </Btn>
+                </>
+              )}
+              <Btn onClick={() => remove(selectedId)} label={t('sel.delete')} danger>
+                <Trash2 size={18} />
+              </Btn>
+            </m.div>
           </>
-        )}
-        {isFreePhoto && (
-          <Btn onClick={() => setCropping(selectedId)} label={t('sel.cropShape')}>
-            <Crop size={18} />
-          </Btn>
-        )}
-        {isGridPhoto && (
-          <>
-            <Btn onClick={() => stepZoom(-0.2)} label={t('cell.zoomOut')}>
-              <ZoomOut size={18} />
-            </Btn>
-            <Btn onClick={() => stepZoom(0.2)} label={t('cell.zoomIn')}>
-              <ZoomIn size={18} />
-            </Btn>
-            <Btn onClick={resetCell} label={t('cell.reset')}>
-              <RotateCcw size={18} />
-            </Btn>
-          </>
-        )}
-            <Btn onClick={() => remove(selectedId)} label={t('sel.delete')} danger>
-              <Trash2 size={18} />
-            </Btn>
-          </m.div>
         )}
       </AnimatePresence>
     </div>
