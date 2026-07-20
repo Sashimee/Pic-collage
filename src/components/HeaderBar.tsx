@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
   Share2, FileImage, Image as ImageIcon, Sparkles,
-  RefreshCcw, MoreHorizontal, FolderOpen, Save, Plus,
-  Upload,
+  RefreshCcw, Menu, FolderOpen, Save, Upload,
+  ChevronDown,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -15,12 +15,14 @@ import { useTheme } from '../i18n/useTheme'
 import { LangSwitcher } from './LangSwitcher'
 import { IconButton } from './ui'
 import ProjectManager from './ProjectManager'
+import { ActionSheet, ActionItem, ActionDivider, ActionCancel } from './ActionSheet'
+import { AnimatePresence, motion } from 'framer-motion'
 
 export type ExportKind = 'png' | 'jpg' | 'share'
 
 export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }) {
-  const [exportMenu, setExportMenu] = useState(false)
-  const [moreOpen, setMoreOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [projectManagerOpen, setProjectManagerOpen] = useState(false)
   const t = useT()
   const clearAll = useEditor((s) => s.clearAll)
@@ -65,7 +67,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
   }
 
   const handleExport = async (kind: ExportKind) => {
-    setExportMenu(false)
+    setExportOpen(false)
     onExport(kind)
   }
 
@@ -87,7 +89,6 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
   const handleSave = async () => {
     if (activeProjectId) {
       await saveActiveProject()
-      // Show brief feedback — in a real app you'd use a toast
       window.alert(t('project.saved'))
     } else {
       setProjectManagerOpen(true)
@@ -99,125 +100,204 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
 
   return (
     <>
-      <header className="flex items-center justify-between gap-1.5 sm:gap-2 border-b border-border bg-surface px-2 sm:px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.55rem)]">
-        <h1 className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <span className="bg-grad-accent flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-[var(--shadow-accent)]">
+      <header className="flex items-center justify-between gap-2 border-b border-border bg-surface px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] select-none">
+        {/* Brand */}
+        <h1 className="flex items-center gap-2 shrink-0 min-w-0">
+          <span className="bg-grad-accent flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-[var(--shadow-accent)] shrink-0">
             <Sparkles size={17} strokeWidth={2.5} />
           </span>
-          <span className="text-grad-accent hidden sm:inline text-sm font-bold">Pic Collage Maker</span>
+          <span className="text-grad-accent hidden sm:inline text-sm font-bold truncate">
+            Pic Collage
+          </span>
         </h1>
 
-        <div className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto no-scrollbar">
-          {/* Desktop */}
-          <div className="hidden sm:flex items-center gap-1">
-            <IconButton onClick={undo} disabled={!canUndo} label={t('header.undo')}>
-              <Undo2 size={18} />
-            </IconButton>
-            <IconButton onClick={redo} disabled={!canRedo} label={t('header.redo')}>
-              <Redo2 size={18} />
-            </IconButton>
-            <span className="mx-0.5 h-6 w-px bg-border" />
-            <IconButton onClick={toggleTheme} label={t('header.theme')}>
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </IconButton>
-            <LangSwitcher />
-            <IconButton onClick={() => setProjectManagerOpen(true)} label={t('header.projects')}>
-              <FolderOpen size={18} />
-            </IconButton>
-            <IconButton onClick={handleNew} disabled={!hasElements} label={t('header.new')}>
-              <Trash2 size={18} />
-            </IconButton>
-            <IconButton onClick={handleSave} label={t('project.save')}>
-              <Save size={18} />
-            </IconButton>
-          </div>
+        {/* Desktop Actions */}
+        <div className="hidden sm:flex items-center gap-1">
+          <IconButton onClick={undo} disabled={!canUndo} label={t('header.undo')}>
+            <Undo2 size={18} />
+          </IconButton>
+          <IconButton onClick={redo} disabled={!canRedo} label={t('header.redo')}>
+            <Redo2 size={18} />
+          </IconButton>
+          <span className="mx-0.5 h-6 w-px bg-border" />
+          <IconButton onClick={toggleTheme} label={t('header.theme')}>
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </IconButton>
+          <LangSwitcher />
+          <span className="mx-0.5 h-6 w-px bg-border" />
+          <IconButton onClick={() => setProjectManagerOpen(true)} label={t('header.projects')}>
+            <FolderOpen size={18} />
+          </IconButton>
+          <IconButton onClick={handleSave} label={t('project.save')}>
+            <Save size={18} />
+          </IconButton>
+          <IconButton onClick={handleNew} disabled={!hasElements} label={t('header.new')}>
+            <Trash2 size={18} />
+          </IconButton>
+        </div>
 
-          {/* Mobile More */}
-          <div className="sm:hidden relative">
+        {/* Right side actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Export dropdown (desktop) */}
+          <div className="relative hidden sm:block">
             <button
-              onClick={() => setMoreOpen((o) => !o)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-text/80 hover:bg-surface-3 active:scale-95"
+              onClick={() => setExportOpen((v) => !v)}
+              className={accentBtn}
+              aria-expanded={exportOpen}
+              aria-haspopup="menu"
             >
-              <MoreHorizontal size={20} />
+              <Download size={16} strokeWidth={2.5} />
+              <span>{t('header.export')}</span>
+              <ChevronDown size={14} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
             </button>
-            {moreOpen && (
-              <>
-                <div className="fixed inset-0 z-20" onClick={() => setMoreOpen(false)} />
-                <div className="absolute right-0 z-30 mt-1.5 w-48 overflow-hidden rounded-xl border border-border bg-surface-2 shadow-2xl">
-                  <MenuItem onClick={undo} disabled={!canUndo}>
-                    <Undo2 size={16} /> {t('header.undo')}
-                  </MenuItem>
-                  <MenuItem onClick={redo} disabled={!canRedo}>
-                    <Redo2 size={16} /> {t('header.redo')}
-                  </MenuItem>
-                  <div className="mx-3 my-1 h-px bg-border" />
-                  <MenuItem onClick={toggleTheme}>
-                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                    {t('header.theme')}
-                  </MenuItem>
-                  <MenuItem onClick={() => { setMoreOpen(false); setProjectManagerOpen(true) }}>
-                    <FolderOpen size={16} /> {t('header.projects')}
-                  </MenuItem>
-                  <MenuItem onClick={handleSave}>
-                    <Save size={16} /> {t('project.save')}
-                  </MenuItem>
-                  <MenuItem onClick={handleNew} disabled={!hasElements}>
-                    <Plus size={16} /> {t('header.new')}
-                  </MenuItem>
-                </div>
-              </>
-            )}
+
+            <AnimatePresence>
+              {exportOpen && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-xl border border-border bg-surface-2 shadow-2xl"
+                    role="menu"
+                  >
+                    {canShareImage() && (
+                      <MenuItem onClick={() => handleExport('share')} icon={<Share2 size={16} />}>
+                        {t('export.share')}
+                      </MenuItem>
+                    )}
+                    <MenuItem onClick={() => handleExport('png')} icon={<ImageIcon size={16} />}>
+                      {t('export.png')}
+                    </MenuItem>
+                    <MenuItem onClick={() => handleExport('jpg')} icon={<FileImage size={16} />}>
+                      {t('export.jpg')}
+                    </MenuItem>
+                    <div className="mx-3 my-1 h-px bg-border" />
+                    <MenuItem onClick={handleSaveAsFile} icon={<Upload size={16} />}>
+                      Save as .piccollage
+                    </MenuItem>
+                    <label className="flex min-h-[44px] w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-left text-sm text-text/90 transition hover:bg-surface-3">
+                      <Upload size={16} className="text-muted" />
+                      <span>Open .piccollage</span>
+                      <input
+                        type="file"
+                        accept=".piccollage,application/json"
+                        onChange={handleOpenFile}
+                        className="sr-only"
+                      />
+                    </label>
+                  </motion.div>
+                  {/* Backdrop */}
+                  <div className="fixed inset-0 z-30" onClick={() => setExportOpen(false)} />
+                </>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Export */}
-          <div className="relative shrink-0">
-            <button onClick={() => setExportMenu((m) => !m)} className={accentBtn}>
-              <Download size={14} className="sm:hidden" strokeWidth={2.5} />
-              <Download size={16} className="hidden sm:block" strokeWidth={2.5} />
-              <span className="hidden sm:inline">{t('header.export')}</span>
-            </button>
-            {exportMenu && (
-              <>
-                <div className="fixed inset-0 z-20" onClick={() => setExportMenu(false)} />
-                <div className="absolute right-0 z-30 mt-1.5 w-48 overflow-hidden rounded-xl border border-border bg-surface-2 shadow-2xl">
-                  {canShareImage() && (
-                    <MenuItem onClick={() => handleExport('share')} icon={<Share2 size={16} />}>
-                      {t('export.share')}
-                    </MenuItem>
-                  )}
-                  <MenuItem onClick={() => handleExport('png')} icon={<ImageIcon size={16} />}>
-                    {t('export.png')}
-                  </MenuItem>
-                  <MenuItem onClick={() => handleExport('jpg')} icon={<FileImage size={16} />}>
-                    {t('export.jpg')}
-                  </MenuItem>
-                  <div className="mx-3 my-1 h-px bg-border" />
-                  <MenuItem onClick={handleSaveAsFile} icon={<Upload size={16} />}>
-                    Save as .piccollage
-                  </MenuItem>
-                  <label className="flex min-h-[44px] w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-left text-sm text-text/90 transition hover:bg-surface-3">
-                    <Upload size={16} className="text-muted" />
-                    <span>Open .piccollage</span>
-                    <input
-                      type="file"
-                      accept=".piccollage,application/json"
-                      onChange={handleOpenFile}
-                      className="sr-only"
-                    />
-                  </label>
-                </div>
-              </>
-            )}
-          </div>
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setSheetOpen(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95 sm:hidden"
+            aria-label={t('menu.more')}
+            title={t('menu.more')}
+          >
+            <Menu size={20} strokeWidth={2.5} />
+          </button>
+
+          {/* Mobile export (compact) */}
+          <button
+            onClick={() => handleExport('png')}
+            className={`${accentBtn} sm:hidden`}
+            aria-label={t('header.export')}
+          >
+            <Download size={16} strokeWidth={2.5} />
+          </button>
 
           {/* Refresh */}
-          <button onClick={handleRefresh} className={accentBtn}>
+          <button onClick={handleRefresh} className={accentBtn} aria-label={t('header.refresh')} title={t('header.refresh')}>
             <RefreshCcw size={14} className="sm:hidden" strokeWidth={2.5} />
             <RefreshCcw size={16} className="hidden sm:block" strokeWidth={2.5} />
             <span className="hidden sm:inline">{t('header.refresh')}</span>
           </button>
         </div>
       </header>
+
+      {/* Mobile Action Sheet */}
+      <ActionSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title={t('menu.more')}>
+        <ActionItem
+          onClick={() => { setSheetOpen(false); undo() }}
+          icon={<Undo2 size={18} />}
+          label={t('header.undo')}
+          disabled={!canUndo}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); redo() }}
+          icon={<Redo2 size={18} />}
+          label={t('header.redo')}
+          disabled={!canRedo}
+        />
+        <ActionDivider />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); toggleTheme() }}
+          icon={theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          label={t('header.theme')}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); setProjectManagerOpen(true) }}
+          icon={<FolderOpen size={18} />}
+          label={t('header.projects')}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleSave() }}
+          icon={<Save size={18} />}
+          label={t('project.save')}
+        />
+        <ActionDivider />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleNew() }}
+          icon={<Trash2 size={18} />}
+          label={t('header.new')}
+          disabled={!hasElements}
+          danger
+        />
+        <ActionDivider />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleExport('share') }}
+          icon={<Share2 size={18} />}
+          label={t('export.share')}
+          disabled={!canShareImage()}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleExport('png') }}
+          icon={<ImageIcon size={18} />}
+          label={t('export.png')}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleExport('jpg') }}
+          icon={<FileImage size={18} />}
+          label={t('export.jpg')}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleSaveAsFile() }}
+          icon={<Upload size={18} />}
+          label="Save as .piccollage"
+        />
+        <label className="flex min-h-[48px] w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-text transition hover:bg-surface-3 active:scale-[0.98]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-muted">
+            <Upload size={18} />
+          </span>
+          <span>Open .piccollage</span>
+          <input
+            type="file"
+            accept=".piccollage,application/json"
+            onChange={(e) => { setSheetOpen(false); handleOpenFile(e) }}
+            className="sr-only"
+          />
+        </label>
+
+        <ActionCancel onClick={() => setSheetOpen(false)} label={t('menu.cancel')} />
+      </ActionSheet>
 
       <ProjectManager open={projectManagerOpen} onClose={() => setProjectManagerOpen(false)} />
     </>
@@ -239,6 +319,7 @@ function MenuItem({
     <button
       onClick={onClick}
       disabled={disabled}
+      role="menuitem"
       className={`flex min-h-[44px] w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-text/90 transition hover:bg-surface-3 ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
     >
       {icon && <span className="text-muted">{icon}</span>}
