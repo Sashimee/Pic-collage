@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useEditor } from '../../store/editorStore'
 import { exportBoard } from '../exportImage'
 import type Konva from 'konva'
-import type { CanvasElement } from '../../types'
 
 // Reset store state between tests
 const resetStore = () => {
@@ -37,7 +36,7 @@ describe('stress tests', () => {
     const state = useEditor.getState()
 
     expect(state.elements).toHaveLength(100)
-    expect(state.elements.every((e: CanvasElement) => e.type === 'photo')).toBe(true)
+    expect(state.elements.every((e) => e.type === 'photo')).toBe(true)
     expect(duration).toBeLessThan(5000) // should complete in under 5s
   })
 
@@ -54,8 +53,8 @@ describe('stress tests', () => {
     const state = useEditor.getState()
 
     expect(state.elements).toHaveLength(500)
-    const texts = state.elements.filter((e: CanvasElement) => e.type === 'text')
-    const stickers = state.elements.filter((e: CanvasElement) => e.type === 'sticker')
+    const texts = state.elements.filter((e) => e.type === 'text')
+    const stickers = state.elements.filter((e) => e.type === 'sticker')
     expect(texts).toHaveLength(250)
     expect(stickers).toHaveLength(250)
     expect(duration).toBeLessThan(5000)
