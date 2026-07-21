@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import {
@@ -10,16 +11,24 @@ import {
   Wand2,
 } from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
-import {
-  BackgroundPanel,
-  DrawPanel,
-  FilterPanel,
-  LayoutPanel,
-  PhotosPanel,
-  StickerPanel,
-  TextPanel,
-} from './Panels'
 import { useEditor } from '../store/editorStore'
+
+// Lazy-load panels to reduce initial bundle
+const PhotosPanel = lazy(() => import('./Panels').then((m) => ({ default: m.PhotosPanel })))
+const LayoutPanel = lazy(() => import('./Panels').then((m) => ({ default: m.LayoutPanel })))
+const TextPanel = lazy(() => import('./Panels').then((m) => ({ default: m.TextPanel })))
+const DrawPanel = lazy(() => import('./Panels').then((m) => ({ default: m.DrawPanel })))
+const StickerPanel = lazy(() => import('./Panels').then((m) => ({ default: m.StickerPanel })))
+const BackgroundPanel = lazy(() => import('./Panels').then((m) => ({ default: m.BackgroundPanel })))
+const FilterPanel = lazy(() => import('./Panels').then((m) => ({ default: m.FilterPanel })))
+
+function PanelFallback() {
+  return (
+    <div className="flex flex-1 items-center justify-center p-8">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+    </div>
+  )
+}
 
 export interface PanelTab {
   id: string
@@ -28,16 +37,14 @@ export interface PanelTab {
   panel: ReactNode
 }
 
-// Single source of truth for the editing panels; consumed by both the mobile
-// dock (tab bar + bottom sheet) and the desktop shell (tool rail + side panel).
 export const PANEL_TABS: PanelTab[] = [
-  { id: 'photos', labelKey: 'tab.photos', Icon: ImageIcon, panel: <PhotosPanel /> },
-  { id: 'layout', labelKey: 'tab.layout', Icon: LayoutGrid, panel: <LayoutPanel /> },
-  { id: 'text', labelKey: 'tab.text', Icon: Type, panel: <TextPanel /> },
-  { id: 'draw', labelKey: 'tab.draw', Icon: Brush, panel: <DrawPanel /> },
-  { id: 'stickers', labelKey: 'tab.stickers', Icon: Smile, panel: <StickerPanel /> },
-  { id: 'bg', labelKey: 'tab.background', Icon: Palette, panel: <BackgroundPanel /> },
-  { id: 'filters', labelKey: 'tab.filters', Icon: Wand2, panel: <FilterPanel /> },
+  { id: 'photos', labelKey: 'tab.photos', Icon: ImageIcon, panel: <Suspense fallback={<PanelFallback />}><PhotosPanel /></Suspense> },
+  { id: 'layout', labelKey: 'tab.layout', Icon: LayoutGrid, panel: <Suspense fallback={<PanelFallback />}><LayoutPanel /></Suspense> },
+  { id: 'text', labelKey: 'tab.text', Icon: Type, panel: <Suspense fallback={<PanelFallback />}><TextPanel /></Suspense> },
+  { id: 'draw', labelKey: 'tab.draw', Icon: Brush, panel: <Suspense fallback={<PanelFallback />}><DrawPanel /></Suspense> },
+  { id: 'stickers', labelKey: 'tab.stickers', Icon: Smile, panel: <Suspense fallback={<PanelFallback />}><StickerPanel /></Suspense> },
+  { id: 'bg', labelKey: 'tab.background', Icon: Palette, panel: <Suspense fallback={<PanelFallback />}><BackgroundPanel /></Suspense> },
+  { id: 'filters', labelKey: 'tab.filters', Icon: Wand2, panel: <Suspense fallback={<PanelFallback />}><FilterPanel /></Suspense> },
 ]
 
 // Shared active-tab state + selection logic (arms the brush on the Draw tab,
