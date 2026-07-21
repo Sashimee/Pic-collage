@@ -10,14 +10,18 @@ import {
   Crop,
   Group,
   X,
+  Wand2,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
 import { m, AnimatePresence } from './motion'
+import { detectFaces, computeSmartCrop } from '../ai/faceDetection'
+import { useToasts } from './ToastContainer'
 
 // Floating contextual actions for the currently selected element.
 export function SelectionBar() {
   const t = useT()
+  const toast = useToasts()
   const selectedId = useEditor((s) => s.selectedId)
   const multiSelected = useEditor((s) => s.multiSelected)
   const mode = useEditor((s) => s.mode)
@@ -44,6 +48,32 @@ export function SelectionBar() {
   const resetCell = () =>
     el?.type === 'photo' &&
     updateElement(el.id, { cellZoom: 1, cellPan: { x: 0, y: 0 } })
+
+  const handleSmartCrop = async () => {
+    if (el?.type !== 'photo' || !selectedId) return
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = el.src
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = reject
+    })
+    try {
+      const faces = await detectFaces(el.src)
+      const crop = computeSmartCrop(
+        faces,
+        img.naturalWidth,
+        img.naturalHeight,
+        el.width / el.height,
+      )
+      updateElement(selectedId, { crop })
+      if (faces.length === 0) {
+        toast.info(t('sel.smartCropFail'))
+      }
+    } catch {
+      toast.error('Smart crop failed')
+    }
+  }
 
   const Btn = ({
     onClick,
@@ -167,6 +197,11 @@ export function SelectionBar() {
               {isFreePhoto && (
                 <Btn onClick={() => setCropping(selectedId)} label={t('sel.cropShape')}>
                   <Crop size={18} />
+                </Btn>
+              )}
+              {(isFreePhoto || isGridPhoto) && (
+                <Btn onClick={handleSmartCrop} label={t('sel.smartCrop')}>
+                  <Wand2 size={18} />
                 </Btn>
               )}
               {isGridPhoto && (

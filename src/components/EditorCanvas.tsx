@@ -16,6 +16,9 @@ import { ElementNode } from './CanvasNodes'
 import { GridView } from './GridView'
 import { exportBoard, type ExportFormat } from '../lib/exportImage'
 import type { CanvasElement, PhotoElement } from '../types'
+import { importFiles } from '../lib/importFiles'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { useToast } from '../store/toastStore'
 
 export interface EditorHandle {
   exportImage: (format: ExportFormat) => string | null
@@ -47,6 +50,9 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const toggleMultiSelect = useEditor((s) => s.toggleMultiSelect)
   const clearMultiSelect = useEditor((s) => s.clearMultiSelect)
   const updateElement = useEditor((s) => s.updateElement)
+  const addPhoto = useEditor((s) => s.addPhoto)
+  const addToast = useToast((s) => s.add)
+
   const tool = useEditor((s) => s.tool)
   const brushColor = useEditor((s) => s.brushColor)
   const brushSize = useEditor((s) => s.brushSize)
@@ -295,6 +301,23 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     setEditing(null)
   }
 
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const files = e.dataTransfer.files
+    if (!files?.length) return
+    try {
+      await importFiles(files, addPhoto)
+    } catch {
+      addToast('Failed to import dropped images', 'error')
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
   const renderElement = (el: CanvasElement) => (
     <ElementNode
       key={el.id}
@@ -309,7 +332,12 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   )
 
   return (
-    <div ref={hostRef} className="canvas-host relative h-full w-full">
+    <div
+      ref={hostRef}
+      className="canvas-host relative h-full w-full"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
       {size.w > 0 && (
         <Stage
           ref={stageRef}

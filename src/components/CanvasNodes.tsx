@@ -33,17 +33,23 @@ interface NodeProps<T extends CanvasElement> {
   onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void
   onChange: (patch: Partial<CanvasElement>) => void
   onEditText?: (id: string) => void
+  onDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void
 }
 
 // Shared transform → store bridge. We keep scaleX/scaleY on the node (rather
 // than baking size) so a single Transformer works uniformly for every type.
 function commonHandlers(
   onChange: (patch: Partial<CanvasElement>) => void,
+  onDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void,
 ): {
+  onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void
   onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void
   onTransformEnd: (e: Konva.KonvaEventObject<Event>) => void
 } {
   return {
+    onDragMove: (e) => {
+      onDragMove?.(e)
+    },
     onDragEnd: (e) => onChange({ x: e.target.x(), y: e.target.y() }),
     onTransformEnd: (e) => {
       const node = e.target
@@ -58,7 +64,7 @@ function commonHandlers(
   }
 }
 
-function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
+function PhotoNode({ el, onSelect, onChange, onDragMove }: NodeProps<PhotoElement>) {
   const image = useImage(el.src)
   const ref = useRef<Konva.Image>(null)
   const shape = el.shape ?? 'rect'
@@ -104,7 +110,7 @@ function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
           ? (ctx) => tracePhotoShape(ctx, shape, el.width, el.height)
           : undefined
       }
-      {...commonHandlers(onChange)}
+      {...commonHandlers(onChange, onDragMove)}
     >
       <KonvaImage
         ref={ref}
@@ -129,7 +135,7 @@ function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
   )
 }
 
-function TextNode({ el, onSelect, onChange, onEditText }: NodeProps<TextElement>) {
+function TextNode({ el, onSelect, onChange, onEditText, onDragMove }: NodeProps<TextElement>) {
   const textRef = useRef<Konva.Text>(null)
   const [dims, setDims] = useState({ w: 0, h: 0 })
   const curve = el.curve ?? 0
@@ -184,7 +190,7 @@ function TextNode({ el, onSelect, onChange, onEditText }: NodeProps<TextElement>
     onTap={(e) => onSelect(e)}
     onDblClick={() => onEditText?.(el.id)}
     onDblTap={() => onEditText?.(el.id)}
-    {...commonHandlers(onChange)}
+    {...commonHandlers(onChange, onDragMove)}
     >
       {chip && curve === 0 && dims.w > 0 && (
         <Rect
@@ -205,7 +211,7 @@ function TextNode({ el, onSelect, onChange, onEditText }: NodeProps<TextElement>
   )
 }
 
-function DrawingNode({ el, onSelect, onChange }: NodeProps<DrawingElement>) {
+function DrawingNode({ el, onSelect, onChange, onDragMove }: NodeProps<DrawingElement>) {
   return (
     <Line
       id={el.id}
@@ -227,7 +233,7 @@ function DrawingNode({ el, onSelect, onChange }: NodeProps<DrawingElement>) {
       draggable
       onClick={(e) => onSelect(e)}
       onTap={(e) => onSelect(e)}
-      {...commonHandlers(onChange)}
+      {...commonHandlers(onChange, onDragMove)}
     />
   )
 }
