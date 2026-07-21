@@ -133,15 +133,28 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   }))
 
   // --- gestures -----------------------------------------------------------
+  const canvasZoom = useEditor((s) => s.canvasZoom)
+  const setCanvasZoom = useEditor((s) => s.setCanvasZoom)
+
+  // Sync local zoom with store zoom (so ZoomControls works)
+  useEffect(() => {
+    setTf((prev) => ({
+      ...prev,
+      scale: canvasZoom,
+    }))
+  }, [canvasZoom])
+
   const zoomAtPoint = (px: number, py: number, factor: number) => {
     setTf((prev) => {
       const newScale = clamp(prev.scale * factor, 0.2, 6)
       const pointTo = { x: (px - prev.x) / prev.scale, y: (py - prev.y) / prev.scale }
-      return {
+      const next = {
         scale: newScale,
         x: px - pointTo.x * newScale,
         y: py - pointTo.y * newScale,
       }
+      setCanvasZoom(newScale)
+      return next
     })
   }
 

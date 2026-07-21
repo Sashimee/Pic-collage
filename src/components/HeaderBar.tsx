@@ -4,7 +4,7 @@ import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
   Share2, FileImage, Image as ImageIcon, Sparkles,
   RefreshCcw, Menu, FolderOpen, Save, Upload,
-  ChevronDown, FileCode,
+  ChevronDown, FileCode, Maximize,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -19,6 +19,7 @@ import ProjectManager from './ProjectManager'
 import { ActionSheet, ActionItem, ActionDivider, ActionCancel } from './ActionSheet'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useToasts } from './ToastContainer'
+import { FullScreenButton } from './FullScreen'
 
 export type ExportKind = 'png' | 'jpg' | 'share' | 'svg'
 
@@ -145,6 +146,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </IconButton>
           <LangSwitcher />
+          <FullScreenButton />
           <span className="mx-0.5 h-6 w-px bg-border" />
           <IconButton onClick={() => setProjectManagerOpen(true)} label={t('header.projects')}>
             <FolderOpen size={18} />
@@ -222,27 +224,26 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           {/* Mobile hamburger */}
           <button
             onClick={() => setSheetOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95 sm:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95 sm:hidden"
             aria-label={t('menu.more')}
             title={t('menu.more')}
           >
-            <Menu size={20} strokeWidth={2.5} />
+            <Menu size={18} strokeWidth={2.5} />
           </button>
 
-          {/* Mobile export (compact) */}
+          {/* Mobile export (compact icon-only) */}
           <button
             onClick={() => handleExport('png')}
-            className={`${accentBtn} sm:hidden`}
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-white shadow transition hover:brightness-110 active:scale-95 sm:hidden"
             aria-label={t('header.export')}
           >
             <Download size={16} strokeWidth={2.5} />
           </button>
 
-          {/* Refresh */}
-          <button onClick={handleRefresh} className={accentBtn} aria-label={t('header.refresh')} title={t('header.refresh')}>
-            <RefreshCcw size={14} className="sm:hidden" strokeWidth={2.5} />
-            <RefreshCcw size={16} className="hidden sm:block" strokeWidth={2.5} />
-            <span className="hidden sm:inline">{t('header.refresh')}</span>
+          {/* Refresh — desktop only */}
+          <button onClick={handleRefresh} className="hidden sm:flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-2 text-sm font-medium text-text/80 transition hover:bg-surface-3 active:scale-95" aria-label={t('header.refresh')} title={t('header.refresh')}>
+            <RefreshCcw size={16} strokeWidth={2.5} />
+            <span>{t('header.refresh')}</span>
           </button>
         </div>
       </motion.header>
@@ -266,6 +267,11 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           onClick={() => { setSheetOpen(false); toggleTheme() }}
           icon={theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           label={t('header.theme')}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); document.documentElement.requestFullscreen().catch(() => {}) }}
+          icon={<Maximize size={18} />}
+          label="Full screen"
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); setLang(lang === 'de' ? 'en' : 'de') }}

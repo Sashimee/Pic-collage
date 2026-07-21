@@ -6,7 +6,7 @@ export function ZoomControls() {
   const setZoom = useEditor((s) => s.setCanvasZoom)
 
   return (
-    <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 rounded-xl bg-surface/90 p-1.5 shadow-lg backdrop-blur-sm">
+    <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 rounded-xl bg-surface/90 p-1 shadow-lg backdrop-blur-sm sm:bottom-6 sm:right-6 sm:gap-1.5 sm:p-1.5">
       <button
         title="Zoom out"
         onClick={() => setZoom(zoom - 0.1)}
