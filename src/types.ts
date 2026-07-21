@@ -232,3 +232,39 @@ export const DEFAULT_FILTER_STACK: FilterOperation[] = [
   { type: 'saturation', value: 0 },
   { type: 'preset', id: 'none' },
 ]
+
+// ---- Watermark -----------------------------------------------------------
+
+export type WatermarkPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'
+
+export interface WatermarkSettings {
+  enabled: boolean
+  text: string
+  position: WatermarkPosition
+  opacity: number // 0..1
+  fontSize: number // px
+  color: string
+}
+
+export const DEFAULT_WATERMARK: WatermarkSettings = {
+  enabled: false,
+  text: '',
+  position: 'bottom-right',
+  opacity: 0.5,
+  fontSize: 24,
+  color: '#ffffff',
+}
+
+// ---- Print Mode ----------------------------------------------------------
+
+export interface PrintSettings {
+  enabled: boolean
+  bleedMarks: boolean
+  cropMarks: boolean
+}
+
+export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
+  enabled: false,
+  bleedMarks: true,
+  cropMarks: true,
+}
