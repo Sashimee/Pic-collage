@@ -17,6 +17,7 @@ import { StatusBar } from './components/StatusBar'
 import { useEditor } from './store/editorStore'
 import { useT } from './i18n/useLang'
 import { useProjects } from './store/projectsStore'
+import { useWorkspace } from './store/workspaceStore'
 import type { CanvasElement } from './types'
 import {
   downloadDataURL,
@@ -73,7 +74,11 @@ export default function App() {
   const isDesktop = useIsDesktop()
   // Desktop keeps the docked side panel populated; mobile starts with the
   // sheet closed so the first-run hero isn't covered.
-  const panels = usePanels(isDesktop ? 'photos' : null)
+  const activeWorkspaceTab = useWorkspace((s) => s.activeTab)
+  const panelSizes = useWorkspace((s) => s.panelSizes)
+  const isDesktopInitial = isDesktop ? (activeWorkspaceTab ?? 'photos') : null
+  const panels = usePanels(isDesktopInitial)
+  const sidePanelWidth = panelSizes['side'] ?? 336
   const t = useT()
 
   useVersionCheck()
@@ -226,7 +231,7 @@ export default function App() {
                 <CropOverlay />
                 <ZoomControls />
               </div>
-              <SidePanel panels={panels} />
+              <SidePanel panels={panels} width={sidePanelWidth} />
             </div>
             <StatusBar />
           </div>

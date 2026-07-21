@@ -2,6 +2,8 @@ import { useT } from '../i18n/useLang'
 import { m, AnimatePresence } from './motion'
 import { BottomSheet } from './BottomSheet'
 import type { PanelsApi } from './panels.config'
+import { useWorkspace } from '../store/workspaceStore'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 // ---- Mobile: draggable sheet (overlays canvas) + bottom tab bar ----------
 // The sheet and the tab bar are separate so App can place the sheet inside the
@@ -93,12 +95,54 @@ export function ToolRail({ panels }: { panels: PanelsApi }) {
   )
 }
 
-export function SidePanel({ panels }: { panels: PanelsApi }) {
+export function SidePanel({ panels, width }: { panels: PanelsApi; width?: number }) {
   const t = useT()
   const { current } = panels
+  const setPanelWidth = useWorkspace((s) => s.setPanelWidth)
+  const [isResizing, setIsResizing] = useState(false)
+  const startXRef = useRef(0)
+  const startWidthRef = useRef(0)
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      setIsResizing(true)
+      startXRef.current = e.clientX
+      startWidthRef.current = width ?? 336
+    },
+    [width],
+  )
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing) return
+      const delta = startXRef.current - e.clientX
+      const nextWidth = Math.max(200, Math.min(600, startWidthRef.current + delta))
+      setPanelWidth('side', nextWidth)
+    },
+    [isResizing, setPanelWidth],
+  )
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false)
+  }, [])
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp])
 
   return (
-    <aside className="flex w-[21rem] shrink-0 flex-col border-l border-border bg-surface">
+    <aside
+      className="relative flex shrink-0 flex-col border-l border-border bg-surface"
+      style={{ width: width ?? 336 }}
+    >
       <AnimatePresence mode="wait">
         {current ? (
           <m.div
@@ -124,6 +168,13 @@ export function SidePanel({ panels }: { panels: PanelsApi }) {
           </div>
         )}
       </AnimatePresence>
+      <div
+        onMouseDown={handleMouseDown}
+        className={`absolute left-0 top-0 h-full w-1.5 cursor-ew-resize transition ${
+          isResizing ? 'bg-accent/60' : 'bg-transparent hover:bg-accent/30'
+        }`}
+        style={{ transform: 'translateX(-50%)' }}
+      />
     </aside>
   )
 }

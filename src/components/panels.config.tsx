@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import {
   Image as ImageIcon,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
+import { useWorkspace } from '../store/workspaceStore'
 
 // Lazy-load panels to reduce initial bundle
 const PhotosPanel = lazy(() => import('./Panels').then((m) => ({ default: m.PhotosPanel })))
@@ -66,10 +67,22 @@ export function usePanels(initial: string | null = 'photos') {
   const [active, setActive] = useState<string | null>(initial)
   const setTool = useEditor((s) => s.setTool)
 
+  const workspaceActive = useWorkspace((s) => s.activeTab)
+  const setWorkspaceActive = useWorkspace((s) => s.setActiveTab)
+  const panelSizes = useWorkspace((s) => s.panelSizes)
+
+  // Hydrate from workspace store on mount
+  useEffect(() => {
+    if (workspaceActive !== undefined) {
+      setActive(workspaceActive)
+    }
+  }, [])
+
   const select = (id: string) => {
     setActive((a) => {
       const next = a === id ? null : id
       setTool(next === 'draw' ? 'draw' : 'select')
+      setWorkspaceActive(next)
       return next
     })
   }
@@ -77,10 +90,18 @@ export function usePanels(initial: string | null = 'photos') {
   const close = () => {
     setActive(null)
     setTool('select')
+    setWorkspaceActive(null)
   }
 
   const current = PANEL_TABS.find((tab) => tab.id === active) ?? null
-  return { tabs: PANEL_TABS, active, select, close, current }
+
+  // Filter out tabs hidden via workspace panelVisibility
+  const visibleTabs = PANEL_TABS.filter((tab) => {
+    const vis = useWorkspace.getState().panelVisibility[tab.id]
+    return vis !== false
+  })
+
+  return { tabs: visibleTabs, active, select, close, current, panelSizes }
 }
 
 export type PanelsApi = ReturnType<typeof usePanels>
