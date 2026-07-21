@@ -25,6 +25,7 @@ import {
 import { fireConfetti } from './lib/confetti'
 import { ToastContainer } from './components/ToastContainer'
 import { useDefaultShortcuts } from './hooks/useKeyboard'
+import { OnboardingOverlay } from './components/Onboarding'
 import {
   getPhoto,
   loadDoc,
@@ -202,6 +203,7 @@ export default function App() {
         )}
         <UpdateBanner />
         <ToastContainer />
+        <OnboardingOverlay />
       </div>
     </MotionProvider>
   )
