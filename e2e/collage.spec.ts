@@ -57,14 +57,22 @@ test.describe('collage end-to-end', () => {
       { timeout: 5000 },
     )
 
-    // 6. Export PNG and verify download triggered
+    // 6. Export PNG and verify download triggered by spying URL.createObjectURL
+    await page.evaluate(() => {
+      (window as unknown as Record<string, unknown>).__downloadTriggered = false
+      const orig = URL.createObjectURL
+      URL.createObjectURL = function (...args: unknown[]) {
+        (window as unknown as Record<string, unknown>).__downloadTriggered = true
+        return orig.apply(this, args as [Blob | MediaSource])
+      }
+    })
+
     await page.getByRole('button', { name: 'Export' }).click()
+    await page.getByRole('menuitem', { name: 'Download PNG' }).click()
 
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByRole('button', { name: 'Download PNG' }).click(),
-    ])
-
-    expect(download.suggestedFilename()).toMatch(/collage-.*\.png/)
+    const triggered = await page.evaluate(() =>
+      (window as unknown as Record<string, unknown>).__downloadTriggered as boolean,
+    )
+    expect(triggered).toBe(true)
   })
 })

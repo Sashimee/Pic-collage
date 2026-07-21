@@ -102,6 +102,7 @@ interface EditorState {
     naturalWidth: number,
     naturalHeight: number,
     photoId?: string,
+    opts?: { originalSrc?: string; previewSrc?: string; thumbSrc?: string },
   ) => void
   addText: () => void
   addSticker: (emoji: string) => void
@@ -208,7 +209,7 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   selected: () => get().elements.find((e) => e.id === get().selectedId),
 
-  addPhoto: (src, naturalWidth, naturalHeight, photoId) =>
+  addPhoto: (src, naturalWidth, naturalHeight, photoId, opts) =>
     set((s) => {
       // Fit the new photo to ~55% of the board's shorter axis, centered.
       const target = Math.min(s.boardWidth, s.boardHeight) * 0.55
@@ -224,6 +225,9 @@ export const useEditor = create<EditorState>((set, get) => ({
         type: 'photo',
         src,
         photoId,
+        previewSrc: opts?.previewSrc,
+        originalSrc: opts?.originalSrc,
+        thumbSrc: opts?.thumbSrc,
         width: w,
         height: h,
         x: s.boardWidth / 2 - w / 2,
@@ -492,8 +496,11 @@ export const useEditor = create<EditorState>((set, get) => ({
   clearAll: () =>
     set((s) => {
       s.elements.forEach((e) => {
-        if (e.type === 'photo' && e.src.startsWith('blob:')) {
-          URL.revokeObjectURL(e.src)
+        if (e.type === 'photo') {
+          if (e.src?.startsWith('blob:')) URL.revokeObjectURL(e.src)
+          if (e.previewSrc?.startsWith('blob:')) URL.revokeObjectURL(e.previewSrc)
+          if (e.originalSrc?.startsWith('blob:')) URL.revokeObjectURL(e.originalSrc)
+          if (e.thumbSrc?.startsWith('blob:')) URL.revokeObjectURL(e.thumbSrc)
         }
       })
       return {

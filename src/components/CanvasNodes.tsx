@@ -21,6 +21,7 @@ import type {
   TextElement,
 } from '../types'
 import { useImage } from '../hooks/useImage'
+import { useEditor } from '../store/editorStore'
 import { computeFilterConfig, computeFilterConfigFromStack } from '../lib/filters'
 import { tracePhotoShape } from '../lib/shapes'
 
@@ -66,7 +67,12 @@ function commonHandlers(
 }
 
 function PhotoNode({ el, onSelect, onChange, onDragMove }: NodeProps<PhotoElement>) {
-  const image = useImage(el.src)
+  const canvasZoom = useEditor((s) => s.canvasZoom)
+  const displaySrc =
+    (canvasZoom > 2 && el.originalSrc)
+      ? el.originalSrc
+      : (el.previewSrc ?? el.src)
+  const image = useImage(displaySrc)
   const ref = useRef<Konva.Image>(null)
   const shape = el.shape ?? 'rect'
 

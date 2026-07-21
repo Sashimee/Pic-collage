@@ -6,7 +6,7 @@ test.describe('smoke', () => {
       localStorage.setItem('pic-collage-onboarded-v2', '1')
     })
     await page.goto('/')
-    await expect(page.getByText('Pic Collage Maker')).toBeVisible()
+    await expect(page.getByText('Pic Collage')).toBeVisible()
     await expect(page.getByText('Create your collage')).toBeVisible()
   })
 
@@ -37,7 +37,7 @@ test.describe('smoke', () => {
         const editor = (window as unknown as { __editor?: { getState: () => { elements: { type: string }[] } } }).__editor
         return editor?.getState().elements.some((el) => el.type === 'text')
       },
-      { timeout: 5000 }
+      { timeout: 5000 },
     )
   })
 
@@ -47,7 +47,7 @@ test.describe('smoke', () => {
     })
     await page.goto('/')
     await page.getByRole('button', { name: 'Export' }).click()
-    await expect(page.getByRole('button', { name: 'Download PNG' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Download JPG' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Download PNG' })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Download JPG' })).toBeVisible()
   })
 })

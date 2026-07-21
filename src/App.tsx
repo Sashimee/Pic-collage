@@ -28,6 +28,7 @@ import { ToastContainer } from './components/ToastContainer'
 import { useDefaultShortcuts } from './hooks/useKeyboard'
 import { OnboardingOverlay } from './components/Onboarding'
 import { restoreCustomFonts } from './lib/fonts'
+import { extractFirstExif, injectExifIntoJpeg } from './lib/exifHelpers'
 import {
   getPhoto,
   loadDoc,
@@ -54,7 +55,9 @@ function toStoredDoc(): StoredDoc {
     gridRadius: s.gridRadius,
     frame: s.frame,
     elements: s.elements.map((el) =>
-      el.type === 'photo' ? { ...el, src: '' } : el,
+      el.type === 'photo'
+        ? { ...el, src: '', previewSrc: undefined, originalSrc: undefined, thumbSrc: undefined }
+        : el,
     ),
   }
 }
@@ -86,19 +89,26 @@ export default function App() {
     ;(async () => {
       const stored = await loadDoc()
       if (stored && !cancelled && stored.elements.length) {
-        const urlByPhoto = new Map<string, string>()
         const elements: CanvasElement[] = []
         for (const el of stored.elements) {
           if (el.type === 'photo') {
             if (!el.photoId) continue
-            let url = urlByPhoto.get(el.photoId)
-            if (!url) {
-              const blob = await getPhoto(el.photoId)
-              if (!blob) continue
-              url = URL.createObjectURL(blob)
-              urlByPhoto.set(el.photoId, url)
-            }
-            elements.push({ ...el, src: url })
+            const [origBlob, prevBlob, thumbBlob] = await Promise.all([
+              getPhoto(`${el.photoId}:orig`).catch(() => undefined),
+              getPhoto(`${el.photoId}:prev`).catch(() => undefined),
+              getPhoto(`${el.photoId}:thumb`).catch(() => undefined),
+            ])
+            if (!prevBlob) continue
+            const originalSrc = origBlob ? URL.createObjectURL(origBlob) : undefined
+            const previewSrc = URL.createObjectURL(prevBlob)
+            const thumbSrc = thumbBlob ? URL.createObjectURL(thumbBlob) : undefined
+            elements.push({
+              ...el,
+              src: previewSrc,
+              previewSrc,
+              originalSrc,
+              thumbSrc,
+            })
           } else {
             elements.push(el)
           }
@@ -149,8 +159,11 @@ export default function App() {
   useEffect(() => {
     const cleanup = () => {
       for (const el of useEditor.getState().elements) {
-        if (el.type === 'photo' && el.src.startsWith('blob:')) {
-          URL.revokeObjectURL(el.src)
+        if (el.type === 'photo') {
+          if (el.src?.startsWith('blob:')) URL.revokeObjectURL(el.src)
+          if (el.previewSrc?.startsWith('blob:')) URL.revokeObjectURL(el.previewSrc)
+          if (el.originalSrc?.startsWith('blob:')) URL.revokeObjectURL(el.originalSrc)
+          if (el.thumbSrc?.startsWith('blob:')) URL.revokeObjectURL(el.thumbSrc)
         }
       }
     }
@@ -168,9 +181,16 @@ export default function App() {
       return
     }
     const format: ExportFormat = kind === 'jpg' ? 'jpg' : 'png'
-    const url = editorRef.current?.exportImage(format)
+    let url = editorRef.current?.exportImage(format)
     if (url) {
       fireConfetti()
+      // Preserve EXIF for JPEG exports
+      if (format === 'jpg') {
+        const exif = await extractFirstExif(useEditor.getState().elements)
+        if (exif) {
+          url = injectExifIntoJpeg(url, exif)
+        }
+      }
       if (kind === 'share') {
         const shared = await shareDataURL(url, format, t('share.title'))
         if (!shared) downloadDataURL(url, format)

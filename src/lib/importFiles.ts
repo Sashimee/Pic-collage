@@ -1,17 +1,17 @@
 import { loadPhotoMeta } from './importPhotos'
-import { putPhoto } from './persistence'
-
-const uid = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2)
 
 // Decode picked image files, stash each source blob in IndexedDB (so the
 // collage survives a reload), and hand the object URL + intrinsic size to the
 // store's addPhoto. Shared by the Photos panel and the first-run empty state.
 export async function importFiles(
   files: FileList,
-  add: (src: string, w: number, h: number, photoId?: string) => void,
+  add: (
+    src: string,
+    w: number,
+    h: number,
+    photoId?: string,
+    opts?: { originalSrc?: string; previewSrc?: string; thumbSrc?: string },
+  ) => void,
 ) {
   console.log('[importFiles] processing', files.length, 'files')
   for (const file of Array.from(files)) {
@@ -24,10 +24,12 @@ export async function importFiles(
     }
     try {
       const meta = await loadPhotoMeta(file)
-      const photoId = uid()
-      console.log('[importFiles] loaded', meta.width, 'x', meta.height, 'photoId', photoId)
-      void putPhoto(photoId, meta.blob)
-      add(meta.src, meta.width, meta.height, photoId)
+      console.log('[importFiles] loaded', meta.width, 'x', meta.height, 'photoId', meta.photoId)
+      add(meta.src, meta.width, meta.height, meta.photoId, {
+        originalSrc: meta.originalSrc,
+        previewSrc: meta.previewSrc,
+        thumbSrc: meta.thumbSrc,
+      })
     } catch (err) {
       console.error('[importFiles] FAILED to process file:', file.name, err)
       // DO NOT swallow the error — let it propagate so the UI can show feedback

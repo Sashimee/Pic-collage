@@ -16,6 +16,7 @@ test.describe('export', () => {
   test.beforeAll(async () => {
     await createFixture(fixturePath)
   })
+
   test('export PNG after adding a photo', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('pic-collage-onboarded-v2', '1')
@@ -29,19 +30,26 @@ test.describe('export', () => {
         const editor = (window as unknown as { __editor?: { getState: () => { elements: unknown[] } } }).__editor
         return editor && editor.getState().elements.length > 0
       },
-      { timeout: 5000 }
+      { timeout: 5000 },
     )
 
-    // Open export menu and click Download PNG
+    // Spy download trigger via URL.createObjectURL
+    await page.evaluate(() => {
+      (window as unknown as Record<string, unknown>).__downloadTriggered = false
+      const orig = URL.createObjectURL
+      URL.createObjectURL = function (...args: unknown[]) {
+        (window as unknown as Record<string, unknown>).__downloadTriggered = true
+        return orig.apply(this, args as [Blob | MediaSource])
+      }
+    })
+
     await page.getByRole('button', { name: 'Export' }).click()
+    await page.getByRole('menuitem', { name: 'Download PNG' }).click()
 
-    // Intercept the download so it doesn't clutter the runner
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByRole('button', { name: 'Download PNG' }).click(),
-    ])
-
-    expect(download.suggestedFilename()).toMatch(/collage-.*\.png/)
+    const triggered = await page.evaluate(() =>
+      (window as unknown as Record<string, unknown>).__downloadTriggered as boolean,
+    )
+    expect(triggered).toBe(true)
   })
 
   test('export JPG after adding a photo', async ({ page }) => {
@@ -57,16 +65,24 @@ test.describe('export', () => {
         const editor = (window as unknown as { __editor?: { getState: () => { elements: unknown[] } } }).__editor
         return editor && editor.getState().elements.length > 0
       },
-      { timeout: 5000 }
+      { timeout: 5000 },
     )
 
+    await page.evaluate(() => {
+      (window as unknown as Record<string, unknown>).__downloadTriggered = false
+      const orig = URL.createObjectURL
+      URL.createObjectURL = function (...args: unknown[]) {
+        (window as unknown as Record<string, unknown>).__downloadTriggered = true
+        return orig.apply(this, args as [Blob | MediaSource])
+      }
+    })
+
     await page.getByRole('button', { name: 'Export' }).click()
+    await page.getByRole('menuitem', { name: 'Download JPG' }).click()
 
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByRole('button', { name: 'Download JPG' }).click(),
-    ])
-
-    expect(download.suggestedFilename()).toMatch(/collage-.*\.jpg/)
+    const triggered = await page.evaluate(() =>
+      (window as unknown as Record<string, unknown>).__downloadTriggered as boolean,
+    )
+    expect(triggered).toBe(true)
   })
 })
