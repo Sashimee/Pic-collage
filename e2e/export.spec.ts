@@ -16,8 +16,10 @@ test.describe('export', () => {
   test.beforeAll(async () => {
     await createFixture(fixturePath)
   })
-
   test('export PNG after adding a photo', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pic-collage-onboarded-v2', '1')
+    })
     await page.goto('/')
     await page.locator('#empty-gallery-input').setInputFiles(fixturePath)
 
@@ -43,6 +45,9 @@ test.describe('export', () => {
   })
 
   test('export JPG after adding a photo', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pic-collage-onboarded-v2', '1')
+    })
     await page.goto('/')
     await page.getByLabel('2 Vertical').click()
     await page.locator('#panel-gallery-input').setInputFiles(fixturePath)

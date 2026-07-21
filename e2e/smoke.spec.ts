@@ -2,12 +2,18 @@ import { test, expect } from '@playwright/test'
 
 test.describe('smoke', () => {
   test('app loads and shows title', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pic-collage-onboarded-v2', '1')
+    })
     await page.goto('/')
     await expect(page.getByText('Pic Collage Maker')).toBeVisible()
     await expect(page.getByText('Create your collage')).toBeVisible()
   })
 
   test('can switch language', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pic-collage-onboarded-v2', '1')
+    })
     await page.goto('/')
     await page.getByLabel('Deutsch').click()
     await expect(page.getByText('Erstelle deine Collage')).toBeVisible()
@@ -16,6 +22,9 @@ test.describe('smoke', () => {
   })
 
   test('can add text and see it on canvas', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pic-collage-onboarded-v2', '1')
+    })
     await page.goto('/')
     // Dismiss empty state by picking a template
     await page.getByLabel('2 Vertical').click()
@@ -33,6 +42,9 @@ test.describe('smoke', () => {
   })
 
   test('export menu opens', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pic-collage-onboarded-v2', '1')
+    })
     await page.goto('/')
     await page.getByRole('button', { name: 'Export' }).click()
     await expect(page.getByRole('button', { name: 'Download PNG' })).toBeVisible()

@@ -22,6 +22,7 @@ import {
   shareDataURL,
   type ExportFormat,
 } from './lib/exportImage'
+import { exportSVG, downloadSVG } from './lib/exportSVG'
 import { fireConfetti } from './lib/confetti'
 import { ToastContainer } from './components/ToastContainer'
 import { useDefaultShortcuts } from './hooks/useKeyboard'
@@ -162,6 +163,10 @@ export default function App() {
     // then wait a frame for the canvas to redraw before snapshotting.
     select(null)
     await nextFrame()
+    if (kind === 'svg') {
+      // SVG export handled separately via onExportSVG
+      return
+    }
     const format: ExportFormat = kind === 'jpg' ? 'jpg' : 'png'
     const url = editorRef.current?.exportImage(format)
     if (url) {
@@ -175,10 +180,17 @@ export default function App() {
     }
   }
 
+  const handleExportSVG = () => {
+    select(null)
+    const s = useEditor.getState()
+    const svg = exportSVG(s.elements, s.boardWidth, s.boardHeight, s.background)
+    downloadSVG(svg)
+  }
+
   return (
     <MotionProvider>
       <div className="flex h-full flex-col bg-surface text-text">
-        <HeaderBar onExport={handleExport} />
+        <HeaderBar onExport={handleExport} onExportSVG={handleExportSVG} />
         {isDesktop ? (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1">

@@ -18,6 +18,9 @@ test.describe('upload', () => {
   })
 
   test('upload photo via empty state gallery input', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pic-collage-onboarded-v2', '1')
+    })
     await page.goto('/')
     await expect(page.getByText('Create your collage')).toBeVisible()
 
@@ -38,6 +41,9 @@ test.describe('upload', () => {
   })
 
   test('upload multiple photos via panel gallery input', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('pic-collage-onboarded-v2', '1')
+    })
     await page.goto('/')
     // Dismiss empty state by choosing a template
     await page.getByLabel('4 Grid').click()

@@ -4,7 +4,7 @@ import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
   Share2, FileImage, Image as ImageIcon, Sparkles,
   RefreshCcw, Menu, FolderOpen, Save, Upload,
-  ChevronDown,
+  ChevronDown, FileCode,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -20,9 +20,9 @@ import { ActionSheet, ActionItem, ActionDivider, ActionCancel } from './ActionSh
 import { AnimatePresence, motion } from 'framer-motion'
 import { useToasts } from './ToastContainer'
 
-export type ExportKind = 'png' | 'jpg' | 'share'
+export type ExportKind = 'png' | 'jpg' | 'share' | 'svg'
 
-export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }) {
+export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKind) => void; onExportSVG?: () => void }) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [projectManagerOpen, setProjectManagerOpen] = useState(false)
@@ -194,6 +194,9 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
                     <MenuItem onClick={() => handleExport('jpg')} icon={<FileImage size={16} />}>
                       {t('export.jpg')}
                     </MenuItem>
+                    <MenuItem onClick={() => { setExportOpen(false); onExportSVG?.() }} icon={<FileCode size={16} />}>
+                      Export SVG
+                    </MenuItem>
                     <div className="mx-3 my-1 h-px bg-border" />
                     <MenuItem onClick={handleSaveAsFile} icon={<Upload size={16} />}>
                       Save as .piccollage
@@ -303,6 +306,11 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           onClick={() => { setSheetOpen(false); handleExport('jpg') }}
           icon={<FileImage size={18} />}
           label={t('export.jpg')}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); onExportSVG?.() }}
+          icon={<FileCode size={18} />}
+          label="Export SVG"
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); handleSaveAsFile() }}
