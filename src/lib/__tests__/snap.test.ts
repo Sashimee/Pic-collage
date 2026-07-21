@@ -1,0 +1,114 @@
+import { describe, it, expect } from 'vitest'
+import { computeSnap } from '../snap'
+import type { PhotoElement, TextElement } from '../../types'
+
+function makePhoto(id: string, x: number, y: number, w = 100, h = 100): PhotoElement {
+  return {
+    id,
+    type: 'photo',
+    x,
+    y,
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+    src: '',
+    width: w,
+    height: h,
+    filters: { brightness: 0, contrast: 0, saturation: 0, blur: 0, vignette: 0, preset: 'none' },
+  }
+}
+
+function makeText(id: string, x: number, y: number, text: string, fontSize = 24): TextElement {
+  return {
+    id,
+    type: 'text',
+    x,
+    y,
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+    text,
+    fontFamily: 'Arial',
+    fontSize,
+    fill: '#000',
+    fontStyle: 'normal',
+  }
+}
+
+const BOARD_W = 1080
+const BOARD_H = 1350
+
+describe('computeSnap', () => {
+  it('does not snap when far apart', () => {
+    const dragged = makePhoto('a', 200, 200)
+    const others = [makePhoto('b', 500, 500)]
+    const result = computeSnap(dragged, others, BOARD_W, BOARD_H, 200, 200)
+    expect(result.x).toBe(200)
+    expect(result.y).toBe(200)
+    expect(result.guides).toHaveLength(0)
+  })
+
+  it('snaps dragged element to board left edge', () => {
+    const dragged = makePhoto('a', 10, 200)
+    const result = computeSnap(dragged, [], BOARD_W, BOARD_H, 10, 200)
+    expect(result.x).toBe(0)
+    expect(result.y).toBe(200)
+    expect(result.guides.length).toBeGreaterThanOrEqual(1)
+    expect(result.guides.some((g) => g.axis === 'x' && g.pos === 0)).toBe(true)
+  })
+
+  it('snaps dragged element to another element edge', () => {
+    const other = makePhoto('b', 300, 400)
+    // Dragged right edge (x=190 + w=100 => right=290) is 10 px away from other's left edge (300)
+    const dragged = makePhoto('a', 190, 400)
+    const result = computeSnap(dragged, [other], BOARD_W, BOARD_H, 190, 400)
+    expect(result.x).toBe(200) // snap so right edge aligns with other's left edge
+    expect(result.y).toBe(400)
+  })
+
+  it('snaps to vertical board center', () => {
+    const dragged = makePhoto('a', BOARD_W / 2 - 5, 200, 100, 100)
+    const result = computeSnap(dragged, [], BOARD_W, BOARD_H, dragged.x, 200)
+    expect(result.x).toBe(BOARD_W / 2 - 50) // center x of dragged should be board center
+    // guides should include center line
+    expect(result.guides.some((g) => g.axis === 'x' && Math.abs(g.pos - BOARD_W / 2) < 1)).toBe(true)
+  })
+
+  it('snaps with equal spacing distribution between two elements', () => {
+    // Two fixed elements at x=100 (width 100 => right=200) and x=400 (left=400)
+    // Space between = 200. Dragged element width=100.
+    // If dragged center is placed at x=250, its left=200, right=300.
+    // For equal spacing: gap1 = 200-200 = 0, gap2 = 400-300 = 100. Not equal.
+    // Let's position dragged at x=245. left=245, right=345.
+    // center snap to middle: center should be at (200+400)/2 = 300.
+    // dragged center = 245 + 50 = 295, 5px away from 300 -> should snap to 250.
+    const left = makePhoto('left', 100, 0, 100, 100)
+    const right = makePhoto('right', 400, 0, 100, 100)
+    const dragged = makePhoto('mid', 240, 0, 100, 100)
+    const result = computeSnap(dragged, [left, right], BOARD_W, BOARD_H, 240, 0)
+    // The center of dragged (295) is 5 px away from the midpoint center snap target (300).
+    // After snap, dragged.x should be 250 so its center is exactly 300.
+    expect(result.x).toBe(250)
+  })
+
+  it('snaps to horizontal board center', () => {
+    const dragged = makePhoto('a', 200, BOARD_H / 2 - 6, 100, 100)
+    const result = computeSnap(dragged, [], BOARD_W, BOARD_H, 200, dragged.y)
+    expect(result.y).toBe(BOARD_H / 2 - 50)
+    expect(result.guides.some((g) => g.axis === 'y' && Math.abs(g.pos - BOARD_H / 2) < 1)).toBe(true)
+  })
+
+  it('snaps text element to photo edge using approximate bounds', () => {
+    const photo = makePhoto('p', 300, 500, 200, 200)
+    // Text approx width = fontSize * text.length * 0.6 = 20 * 4 * 0.6 = 48
+    const text = makeText('t', 248, 500, 'Hola', 20)
+    const result = computeSnap(text, [photo], BOARD_W, BOARD_H, 248, 500)
+    // text left edge approx 248, photo left edge 300, diff=52 > threshold (12) => no snap
+    expect(result.x).toBe(248)
+
+    // Move closer: text left edge 295, diff = 5
+    const textClose = makeText('t2', 295, 500, 'Hola', 20)
+    const result2 = computeSnap(textClose, [photo], BOARD_W, BOARD_H, 295, 500)
+    expect(result2.x).toBe(300)
+  })
+})
