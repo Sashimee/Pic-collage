@@ -183,6 +183,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'layer.ungroup': 'Ungroup',
     'layer.selectHint': 'Select layers (with Ctrl/Cmd) to group or reorder.',
 
+    'ctx.duplicate': 'Duplicate',
+    'ctx.bringFront': 'Bring to front',
+    'ctx.sendBack': 'Send to back',
+    'ctx.delete': 'Delete',
+    'ctx.selectAll': 'Select all',
+    'ctx.clear': 'Clear all',
+
+
     'error.title': 'Something went wrong',
     'error.message': 'The app crashed. You can try reloading or reset the app to its initial state.',
     'error.reload': 'Reload',
@@ -359,7 +367,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     'layer.unlock': 'Entsperren',
     'layer.group': 'Gruppieren',
     'layer.ungroup': 'Gruppierung aufheben',
-    'layer.selectHint': 'Ebenen (mit Strg/Cmd) auswählen, um zu gruppieren oder neu anzuordnen.',
+    'layer.selectHint': 'Wähle Ebenen (mit Strg/Cmd) zum Gruppieren oder Neuordnen.',
+
+    'ctx.duplicate': 'Duplizieren',
+    'ctx.bringFront': 'Nach vorne bringen',
+    'ctx.sendBack': 'Nach hinten senden',
+    'ctx.delete': 'Löschen',
+    'ctx.selectAll': 'Alle auswählen',
+    'ctx.clear': 'Alles löschen',
+
 
     'error.title': 'Etwas ist schiefgelaufen',
     'error.message': 'Die App ist abgestürzt. Du kannst sie neu laden oder auf den Ausgangszustand zurücksetzen.',
@@ -539,6 +555,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'layer.ungroup': 'Desagrupar',
     'layer.selectHint': 'Selecciona capas (con Ctrl/Cmd) para agrupar o reordenar.',
 
+    'ctx.duplicate': 'Duplicar',
+    'ctx.bringFront': 'Traer al frente',
+    'ctx.sendBack': 'Enviar al fondo',
+    'ctx.delete': 'Eliminar',
+    'ctx.selectAll': 'Seleccionar todo',
+    'ctx.clear': 'Limpiar todo',
+
+
     'error.title': 'Algo salió mal',
     'error.message': 'La aplicación se cerró inesperadamente. Puedes intentar recargarla o restablecerla a su estado inicial.',
     'error.reload': 'Recargar',
@@ -714,7 +738,15 @@ export const translations: Record<Lang, Record<string, string>> = {
     'layer.unlock': 'Déverrouiller',
     'layer.group': 'Grouper',
     'layer.ungroup': 'Dégrouper',
-    'layer.selectHint': 'Sélectionnez des calques (avec Ctrl/Cmd) pour grouper ou réorganiser.',
+    'layer.selectHint': 'Sélectionner des calques (Ctrl/Cmd) pour grouper ou réorganiser.',
+
+    'ctx.duplicate': 'Dupliquer',
+    'ctx.bringFront': 'Mettre au premier plan',
+    'ctx.sendBack': 'Envoyer à l\'arrière-plan',
+    'ctx.delete': 'Supprimer',
+    'ctx.selectAll': 'Tout sélectionner',
+    'ctx.clear': 'Tout effacer',
+
 
     'error.title': "Une erreur s'est produite",
     'error.message': "L'application a planté. Vous pouvez essayer de la recharger ou la réinitialiser à son état initial.",
@@ -892,6 +924,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'layer.group': 'Raggruppa',
     'layer.ungroup': 'Separa',
     'layer.selectHint': 'Seleziona livelli (con Ctrl/Cmd) per raggruppare o riordinare.',
+
+    'ctx.duplicate': 'Duplica',
+    'ctx.bringFront': 'Porta in primo piano',
+    'ctx.sendBack': 'Manda in secondo piano',
+    'ctx.delete': 'Elimina',
+    'ctx.selectAll': 'Seleziona tutto',
+    'ctx.clear': 'Cancella tutto',
+
 
     'error.title': 'Qualcosa è andato storto',
     'error.message': 'L\'app si è bloccata. Puoi provare a ricaricarla o ripristinarla allo stato iniziale.',

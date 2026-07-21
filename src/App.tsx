@@ -189,6 +189,45 @@ export default function App() {
       // SVG export handled separately via onExportSVG
       return
     }
+    if (kind === 'batch') {
+      // Handled by HeaderBar's handleBatchExport
+      return
+    }
+    if (kind === 'pdf') {
+      const { exportPDF, downloadPDF } = await import('./lib/exportPDF')
+      const s = useEditor.getState()
+      const url = editorRef.current?.exportImage('png')
+      if (url) {
+        const pdf = await exportPDF([{ dataUrl: url, width: s.boardWidth, height: s.boardHeight }])
+        downloadPDF(pdf, `collage-${Date.now()}.pdf`)
+        fireConfetti()
+      }
+      return
+    }
+    if (kind === 'webm') {
+      const { exportWebM } = await import('./lib/exportAnimation')
+      const s = useEditor.getState()
+      const url = editorRef.current?.exportImage('png')
+      if (url) {
+        // Create offscreen canvas for WebM recording
+        const canvas = document.createElement('canvas')
+        canvas.width = s.boardWidth
+        canvas.height = s.boardHeight
+        const ctx = canvas.getContext('2d')!
+        const img = new Image()
+        img.src = url
+        await new Promise((resolve) => { img.onload = resolve })
+        ctx.drawImage(img, 0, 0)
+        const blob = await exportWebM(canvas, 30, 2)
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = `collage-${Date.now()}.webm`
+        a.click()
+        URL.revokeObjectURL(a.href)
+        fireConfetti()
+      }
+      return
+    }
     const format: ExportFormat = kind === 'jpg' ? 'jpg' : 'png'
     let url = editorRef.current?.exportImage(format)
     if (url) {

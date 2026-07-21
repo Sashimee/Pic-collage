@@ -4,7 +4,7 @@ import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
   Share2, FileImage, Image as ImageIcon, Sparkles,
   RefreshCcw, Menu, FolderOpen, Save, Upload,
-  ChevronDown, FileCode, Maximize,
+  ChevronDown, FileCode, Maximize, FileText, Video, Package,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -21,7 +21,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useToasts } from './ToastContainer'
 import { FullScreenButton } from './FullScreen'
 
-export type ExportKind = 'png' | 'jpg' | 'share' | 'svg'
+export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'webm' | 'batch'
 
 export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKind) => void; onExportSVG?: () => void }) {
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -85,6 +85,48 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
   const handleExport = async (kind: ExportKind) => {
     setExportOpen(false)
     onExport(kind)
+  }
+
+  const handleBatchExport = async () => {
+    const { batchExport } = await import('../lib/batchExport')
+    const s = useEditor.getState()
+    const elements = s.elements.filter((e) => e.type === 'photo')
+    if (!elements.length) {
+      toast.info('No photos to export')
+      return
+    }
+    const files: { name: string; dataUrl: string }[] = []
+    for (let i = 0; i < elements.length; i++) {
+      const el = elements[i]
+      const dataUrl = el.src
+      if (dataUrl && dataUrl.startsWith('data:')) {
+        files.push({ name: `photo-${i + 1}.png`, dataUrl })
+      } else if (dataUrl) {
+        // Convert blob URL to data URL
+        try {
+          const res = await fetch(dataUrl)
+          const blob = await res.blob()
+          const reader = new FileReader()
+          const dataUrlPromise = new Promise<string>((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.readAsDataURL(blob)
+          })
+          const durl = await dataUrlPromise
+          files.push({ name: `photo-${i + 1}.png`, dataUrl: durl })
+        } catch { /* skip */ }
+      }
+    }
+    if (!files.length) {
+      toast.info('No exportable photos found')
+      return
+    }
+    const zip = await batchExport(files)
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(zip)
+    a.download = `collage-batch-${Date.now()}.zip`
+    a.click()
+    URL.revokeObjectURL(a.href)
+    toast.success('Batch export downloaded')
   }
 
   const handleRefresh = async () => {
@@ -198,6 +240,15 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
                     </MenuItem>
                     <MenuItem onClick={() => { setExportOpen(false); onExportSVG?.() }} icon={<FileCode size={16} />}>
                       Export SVG
+                    </MenuItem>
+                    <MenuItem onClick={() => handleExport('pdf')} icon={<FileText size={16} />}>
+                      Export PDF
+                    </MenuItem>
+                    <MenuItem onClick={() => handleExport('webm')} icon={<Video size={16} />}>
+                      Export WebM
+                    </MenuItem>
+                    <MenuItem onClick={() => { setExportOpen(false); handleBatchExport() }} icon={<Package size={16} />}>
+                      Batch Export ZIP
                     </MenuItem>
                     <div className="mx-3 my-1 h-px bg-border" />
                     <MenuItem onClick={handleSaveAsFile} icon={<Upload size={16} />}>
@@ -317,6 +368,21 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           onClick={() => { setSheetOpen(false); onExportSVG?.() }}
           icon={<FileCode size={18} />}
           label="Export SVG"
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleExport('pdf') }}
+          icon={<FileText size={18} />}
+          label="Export PDF"
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleExport('webm') }}
+          icon={<Video size={18} />}
+          label="Export WebM"
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleBatchExport() }}
+          icon={<Package size={18} />}
+          label="Batch Export"
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); handleSaveAsFile() }}
