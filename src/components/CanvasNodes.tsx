@@ -238,7 +238,7 @@ function DrawingNode({ el, onSelect, onChange, onDragMove }: NodeProps<DrawingEl
   )
 }
 
-function StickerNode({ el, onSelect, onChange }: NodeProps<StickerElement>) {
+function StickerNode({ el, onSelect, onChange, onDragMove }: NodeProps<StickerElement>) {
   return (
     <KonvaText
       id={el.id}
@@ -255,12 +255,12 @@ function StickerNode({ el, onSelect, onChange }: NodeProps<StickerElement>) {
       draggable
       onClick={(e) => onSelect(e)}
       onTap={(e) => onSelect(e)}
-      {...commonHandlers(onChange)}
+      {...commonHandlers(onChange, onDragMove)}
     />
   )
 }
 
-function ShapeNode({ el, onSelect, onChange }: NodeProps<ShapeElement>) {
+function ShapeNode({ el, onSelect, onChange, onDragMove }: NodeProps<ShapeElement>) {
   const common = {
     id: el.id,
     name: 'element',
@@ -274,7 +274,7 @@ function ShapeNode({ el, onSelect, onChange }: NodeProps<ShapeElement>) {
     draggable: true,
     onClick: onSelect,
     onTap: onSelect,
-    ...commonHandlers(onChange),
+    ...commonHandlers(onChange, onDragMove),
   }
 
   const shapeProps = {
