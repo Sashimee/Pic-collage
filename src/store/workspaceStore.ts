@@ -92,7 +92,7 @@ export const useWorkspace = create<
           },
           minimal: {
             panelVisibility: Object.fromEntries(
-              ['photos','layout','text','draw','stickers','bg','filters','layers','history','animation','settings'].map((id) => [id, false])
+              ['photos','layout','text','draw','stickers','bg','filters','layers','history','animation'].map((id) => [id, false])
             ),
             activeTab: null,
           },

@@ -1353,6 +1353,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'workspace.presetEditing': 'Edição',
     'workspace.presetReview': 'Revisão',
     'workspace.presetMinimal': 'Minimalista',
+    'workspace.reset': 'Reset Layout',
     'print.title': 'Modo Impressão',
     'print.enabled': 'Ativar modo impressão',
     'print.cmyk': 'Simulação CMYK',
