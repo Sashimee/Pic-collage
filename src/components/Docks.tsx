@@ -4,6 +4,47 @@ import { BottomSheet } from './BottomSheet'
 import type { PanelsApi } from './panels.config'
 import { useWorkspace } from '../store/workspaceStore'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { ChevronUp, ChevronDown } from 'lucide-react'
+
+// Tracks scroll position of a ref'd element so callers can show/hide
+// overflow affordances (fade edges, arrow buttons) only when needed.
+function useScrollOverflow<T extends HTMLElement>(axis: 'x' | 'y', deps: unknown[]) {
+  const ref = useRef<T>(null)
+  const [canScrollStart, setCanScrollStart] = useState(false)
+  const [canScrollEnd, setCanScrollEnd] = useState(false)
+
+  const update = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    if (axis === 'y') {
+      setCanScrollStart(el.scrollTop > 4)
+      setCanScrollEnd(el.scrollTop + el.clientHeight < el.scrollHeight - 4)
+    } else {
+      setCanScrollStart(el.scrollLeft > 4)
+      setCanScrollEnd(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+    }
+  }, [axis])
+
+  useEffect(() => {
+    const el = ref.current
+    update()
+    if (!el) return
+    el.addEventListener('scroll', update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    window.addEventListener('resize', update)
+    return () => {
+      el.removeEventListener('scroll', update)
+      ro.disconnect()
+      window.removeEventListener('resize', update)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [update, ...deps])
+
+  return { ref, canScrollStart, canScrollEnd, update }
+}
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react'
+import { useScrollOverflow } from '../hooks/useScrollOverflow'
 
 // ---- Mobile: draggable sheet (overlays canvas) + bottom tab bar ----------
 // The sheet and the tab bar are separate so App can place the sheet inside the
@@ -26,34 +67,73 @@ export function MobileSheet({ panels }: { panels: PanelsApi }) {
 export function MobileTabBar({ panels }: { panels: PanelsApi }) {
   const t = useT()
   const { tabs, active, select } = panels
+  const [navRef, canScrollLeft, canScrollRight] = useScrollOverflow<HTMLDivElement>()
+
+  const scroll = (dir: 'left' | 'right') => {
+    const el = navRef.current
+    if (!el) return
+    const amount = el.clientWidth * 0.6
+    el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' })
+  }
 
   return (
-    <nav className="scroll-x z-10 flex items-stretch gap-1 overflow-x-auto border-t border-border bg-surface px-2 py-1.5 pb-[calc(env(safe-area-inset-bottom)+0.35rem)]">
-      {tabs.map((tab) => {
-        const isActive = active === tab.id
-        return (
-          <button
-            key={tab.id}
-            onClick={() => select(tab.id)}
-            aria-label={t(tab.labelKey)}
-            className={`relative flex min-w-[4rem] flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[0.7rem] font-medium transition active:scale-95 ${
-              isActive ? 'text-accent' : 'text-muted hover:text-text'
-            }`}
-          >
-            <span
-              className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
-                isActive
-                  ? 'bg-grad-accent text-white shadow-[var(--shadow-accent)]'
-                  : ''
+    <div className="relative z-10 border-t border-border bg-surface">
+      {/* Fade left */}
+      {canScrollLeft && (
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-6 bg-gradient-to-r from-surface to-transparent" />
+      )}
+      {/* Fade right */}
+      {canScrollRight && (
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-6 bg-gradient-to-l from-surface to-transparent" />
+      )}
+      {/* Left arrow */}
+      <m.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: canScrollLeft ? 1 : 0 }}
+        className={`absolute left-1 top-1/2 z-30 -translate-y-1/2 rounded-full bg-surface-2 p-1 shadow-md ${canScrollLeft ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        onClick={() => scroll('left')}
+      >
+        <ChevronLeft size={16} />
+      </m.button>
+      {/* Right arrow */}
+      <m.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: canScrollRight ? 1 : 0 }}
+        className={`absolute right-1 top-1/2 z-30 -translate-y-1/2 rounded-full bg-surface-2 p-1 shadow-md ${canScrollRight ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        onClick={() => scroll('right')}
+      >
+        <ChevronRight size={16} />
+      </m.button>
+      <nav
+        ref={navRef}
+        className="scroll-x flex items-stretch gap-1 overflow-x-auto px-2 py-1.5 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] no-scrollbar"
+      >
+        {tabs.map((tab) => {
+          const isActive = active === tab.id
+          return (
+            <button
+              key={tab.id}
+              onClick={() => select(tab.id)}
+              aria-label={t(tab.labelKey)}
+              className={`relative flex min-w-[4rem] flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[0.7rem] font-medium transition active:scale-95 ${
+                isActive ? 'text-accent' : 'text-muted hover:text-text'
               }`}
             >
-              <tab.Icon size={19} strokeWidth={isActive ? 2.5 : 2} />
-            </span>
-            {t(tab.labelKey)}
-          </button>
-        )
-      })}
-    </nav>
+              <span
+                className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
+                  isActive
+                    ? 'bg-grad-accent text-white shadow-[var(--shadow-accent)]'
+                    : ''
+                }`}
+              >
+                <tab.Icon size={19} strokeWidth={isActive ? 2.5 : 2} />
+              </span>
+              {t(tab.labelKey)}
+            </button>
+          )
+        })}
+      </nav>
+    </div>
   )
 }
 
@@ -62,36 +142,75 @@ export function MobileTabBar({ panels }: { panels: PanelsApi }) {
 export function ToolRail({ panels }: { panels: PanelsApi }) {
   const t = useT()
   const { tabs, active, select } = panels
+  const [navRef, canScrollUp, canScrollDown] = useScrollOverflow<HTMLElement>()
+
+  const scroll = (dir: 'up' | 'down') => {
+    const el = navRef.current
+    if (!el) return
+    const amount = el.clientHeight * 0.6
+    el.scrollBy({ top: dir === 'up' ? -amount : amount, behavior: 'smooth' })
+  }
 
   return (
-    <nav className="flex w-[5.5rem] shrink-0 flex-col gap-1 overflow-y-auto border-r border-border bg-surface px-2 py-3">
-      {tabs.map((tab) => {
-        const isActive = active === tab.id
-        return (
-          <button
-            key={tab.id}
-            onClick={() => select(tab.id)}
-            aria-label={t(tab.labelKey)}
-            className={`relative flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 text-[0.7rem] font-medium transition active:scale-95 ${
-              isActive
-                ? 'text-accent'
-                : 'text-muted hover:bg-surface-2 hover:text-text'
-            }`}
-          >
-            <span
-              className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${
+    <div className="relative flex w-[5.5rem] shrink-0 flex-col border-r border-border bg-surface">
+      {/* Fade top */}
+      {canScrollUp && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-6 bg-gradient-to-b from-surface to-transparent" />
+      )}
+      {/* Fade bottom */}
+      {canScrollDown && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-6 bg-gradient-to-t from-surface to-transparent" />
+      )}
+      {/* Up arrow */}
+      <m.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: canScrollUp ? 1 : 0 }}
+        className={`absolute inset-x-0 top-1 z-30 mx-auto w-8 rounded-full bg-surface-2 py-0.5 shadow-md ${canScrollUp ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        onClick={() => scroll('up')}
+      >
+        <ChevronUp size={16} className="mx-auto" />
+      </m.button>
+      {/* Down arrow */}
+      <m.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: canScrollDown ? 1 : 0 }}
+        className={`absolute inset-x-0 bottom-1 z-30 mx-auto w-8 rounded-full bg-surface-2 py-0.5 shadow-md ${canScrollDown ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        onClick={() => scroll('down')}
+      >
+        <ChevronDown size={16} className="mx-auto" />
+      </m.button>
+      <nav
+        ref={navRef}
+        className="flex flex-col gap-1 overflow-y-auto px-2 py-3 no-scrollbar"
+      >
+        {tabs.map((tab) => {
+          const isActive = active === tab.id
+          return (
+            <button
+              key={tab.id}
+              onClick={() => select(tab.id)}
+              aria-label={t(tab.labelKey)}
+              className={`relative flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 text-[0.7rem] font-medium transition active:scale-95 ${
                 isActive
-                  ? 'bg-grad-accent text-white shadow-[var(--shadow-accent)]'
-                  : ''
+                  ? 'text-accent'
+                  : 'text-muted hover:bg-surface-2 hover:text-text'
               }`}
             >
-              <tab.Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-            </span>
-            {t(tab.labelKey)}
-          </button>
-        )
-      })}
-    </nav>
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${
+                  isActive
+                    ? 'bg-grad-accent text-white shadow-[var(--shadow-accent)]'
+                    : ''
+                }`}
+              >
+                <tab.Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              </span>
+              {t(tab.labelKey)}
+            </button>
+          )
+        })}
+      </nav>
+    </div>
   )
 }
 
