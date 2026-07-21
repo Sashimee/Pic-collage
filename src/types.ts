@@ -2,7 +2,7 @@
 // `CanvasElement` — a discriminated union keyed by `type`. New element kinds
 // (text, sticker, …) plug in here without touching the transform/selection code.
 
-export type ElementType = 'photo' | 'text' | 'sticker' | 'drawing' | 'shape' | 'group'
+export type ElementType = 'photo' | 'text' | 'sticker' | 'drawing' | 'shape' | 'path' | 'group'
 
 export interface BaseElement {
   id: string
@@ -142,17 +142,41 @@ export interface DrawingElement extends BaseElement {
   strokeWidth: number
 }
 
+export interface PathElement extends BaseElement {
+  type: 'path'
+  d: string // SVG path string
+  stroke: string
+  strokeWidth: number
+  fill?: string
+  closePath?: boolean
+}
+
 export type CanvasElement =
   | PhotoElement
   | TextElement
   | StickerElement
   | DrawingElement
+  | PathElement
   | ShapeElement
   | GroupElement
 
 // ---- Shape element --------------------------------------------------------
 
-export type ShapeType = 'rect' | 'circle' | 'triangle' | 'arrow' | 'speech-bubble' | 'star' | 'heart' | 'custom'
+export type ShapeType =
+  | 'rect'
+  | 'circle'
+  | 'triangle'
+  | 'arrow'
+  | 'arrow-curved'
+  | 'arrow-double'
+  | 'speech-bubble'
+  | 'star'
+  | 'starburst'
+  | 'ribbon'
+  | 'heart'
+  | 'cloud'
+  | 'lightning'
+  | 'custom'
 
 export interface ShapeElement extends BaseElement {
   type: 'shape'

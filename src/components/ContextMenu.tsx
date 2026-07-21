@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { useContextMenu } from '../hooks/useContextMenu'
 
 export function ContextMenu({ menu }: { menu: ReturnType<typeof useContextMenu>['menu'] }) {

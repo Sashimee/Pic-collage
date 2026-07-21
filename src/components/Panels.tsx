@@ -4,7 +4,7 @@ import { useEditor } from '../store/editorStore'
 import { GRID_LAYOUTS } from '../lib/grids'
 import { PATTERN_GLYPH, PATTERN_IDS } from '../lib/patterns'
 import { importFiles } from '../lib/importFiles'
-import type { FrameStyle, PhotoElement, TextElement } from '../types'
+import type { FrameStyle, PhotoElement, TextElement, TextSpan } from '../types'
 import { Chip, ColorField, PrimaryButton, Section, Slider } from './ui'
 import { LayoutPreview } from './LayoutPreview'
 import { useT } from '../i18n/useLang'
@@ -380,6 +380,29 @@ const DEFAULT_CHIP = { color: '#fde68a', padding: 18, radius: 14 }
 const inputClass =
   'min-h-[44px] rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text'
 
+function buildSpansFromText(text: string, fontSize: number, fill: string, fontStyle: string): TextSpan[] {
+  const style = fontStyle.includes('bold') ? 'bold' : ''
+  const italic = fontStyle.includes('italic')
+  return [
+    {
+      text,
+      fontSize,
+      fill,
+      bold: style === 'bold',
+      italic,
+      underline: false,
+    },
+  ]
+}
+
+function flattenSpans(spans: TextSpan[]): { text: string; fontStyle: string } {
+  const text = spans.map((s) => s.text).join('')
+  const anyBold = spans.some((s) => s.bold)
+  const anyItalic = spans.some((s) => s.italic)
+  const style = [anyBold ? 'bold' : '', anyItalic ? 'italic' : ''].filter(Boolean).join(' ') || 'normal'
+  return { text, fontStyle: style }
+}
+
 export function TextPanel() {
   const t = useT()
   const addText = useEditor((s) => s.addText)
@@ -419,7 +442,11 @@ export function TextPanel() {
               <button
                 onClick={() =>
                   update(selectedId, {
-                    fontStyle: text.fontStyle.includes('bold') ? 'normal' : 'bold',
+                    fontStyle: text.fontStyle.includes('bold')
+                      ? text.fontStyle.replace('bold', '').trim() || 'normal'
+                      : text.fontStyle === 'normal'
+                        ? 'bold'
+                        : `${text.fontStyle} bold`.trim(),
                   })
                 }
                 className={`min-h-[44px] rounded-lg px-3 py-2.5 text-sm font-bold transition active:scale-95 ${
@@ -429,6 +456,45 @@ export function TextPanel() {
                 }`}
               >
                 B
+              </button>
+              <button
+                onClick={() =>
+                  update(selectedId, {
+                    fontStyle: text.fontStyle.includes('italic')
+                      ? text.fontStyle.replace('italic', '').trim() || 'normal'
+                      : text.fontStyle === 'normal'
+                        ? 'italic'
+                        : `${text.fontStyle} italic`.trim(),
+                  })
+                }
+                className={`min-h-[44px] rounded-lg px-3 py-2.5 text-sm italic transition active:scale-95 ${
+                  text.fontStyle.includes('italic')
+                    ? 'bg-accent text-accent-fg'
+                    : 'bg-surface-2 text-text/80 hover:bg-surface-3'
+                }`}
+              >
+                I
+              </button>
+              <button
+                onClick={() => {
+                  // Underline is stored via spans; if no spans, create one
+                  if (!text.spans || text.spans.length === 0) {
+                    const spans = buildSpansFromText(text.text, text.fontSize, text.fill, text.fontStyle)
+                    spans[0].underline = !spans[0].underline
+                    update(selectedId, { spans })
+                  } else {
+                    update(selectedId, {
+                      spans: text.spans.map((s) => ({ ...s, underline: !s.underline })),
+                    })
+                  }
+                }}
+                className={`min-h-[44px] rounded-lg px-3 py-2.5 text-sm underline transition active:scale-95 ${
+                  text.spans?.some((s) => s.underline)
+                    ? 'bg-accent text-accent-fg'
+                    : 'bg-surface-2 text-text/80 hover:bg-surface-3'
+                }`}
+              >
+                U
               </button>
               <ColorField
                 label={t('common.color')}
@@ -443,6 +509,104 @@ export function TextPanel() {
               value={text.fontSize}
               onChange={(v) => update(selectedId, { fontSize: v })}
             />
+            {/* Span mode */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={() => {
+                  if (text.spans && text.spans.length > 0) {
+                    // Flatten spans back to plain text
+                    const { text: plainText, fontStyle: plainStyle } = flattenSpans(text.spans)
+                    update(selectedId, { spans: undefined, text: plainText, fontStyle: plainStyle })
+                  } else {
+                    // Convert plain text to single span
+                    const spans = buildSpansFromText(text.text, text.fontSize, text.fill, text.fontStyle)
+                    update(selectedId, { spans })
+                  }
+                }}
+                className={`min-h-[40px] rounded-lg px-3 text-sm transition active:scale-95 ${
+                  text.spans && text.spans.length > 0
+                    ? 'bg-accent text-accent-fg'
+                    : 'bg-surface-2 text-text/80 hover:bg-surface-3'
+                }`}
+              >
+                Span Mode
+              </button>
+            </div>
+            {/* If span mode is active, show per-span editor (simplified: single span) */}
+            {text.spans && text.spans.length > 0 && (
+              <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface-2 p-2">
+                <span className="text-xs text-muted">Span text</span>
+                {text.spans.map((span, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-2">
+                    <input
+                      value={span.text}
+                      onChange={(e) => {
+                        const next = [...text.spans!]
+                        next[i] = { ...next[i], text: e.target.value }
+                        update(selectedId, { spans: next })
+                      }}
+                      className="min-h-[36px] flex-1 rounded border border-border bg-surface-3 px-2 py-1 text-sm text-text"
+                    />
+                    <button
+                      onClick={() => {
+                        const next = [...text.spans!]
+                        next[i] = { ...next[i], bold: !next[i].bold }
+                        update(selectedId, { spans: next })
+                      }}
+                      className={`min-h-[36px] rounded px-2 text-sm font-bold transition ${
+                        span.bold ? 'bg-accent text-accent-fg' : 'bg-surface-3 text-text/80'
+                      }`}
+                    >
+                      B
+                    </button>
+                    <button
+                      onClick={() => {
+                        const next = [...text.spans!]
+                        next[i] = { ...next[i], italic: !next[i].italic }
+                        update(selectedId, { spans: next })
+                      }}
+                      className={`min-h-[36px] rounded px-2 text-sm italic transition ${
+                        span.italic ? 'bg-accent text-accent-fg' : 'bg-surface-3 text-text/80'
+                      }`}
+                    >
+                      I
+                    </button>
+                    <ColorField
+                      label=""
+                      value={span.fill ?? text.fill}
+                      onChange={(v) => {
+                        const next = [...text.spans!]
+                        next[i] = { ...next[i], fill: v }
+                        update(selectedId, { spans: next })
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        const next = [...text.spans!]
+                        next.splice(i, 1)
+                        update(selectedId, { spans: next.length ? next : undefined })
+                      }}
+                      className="min-h-[36px] rounded px-2 text-sm text-red-400 transition hover:bg-red-400/10"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => {
+                    update(selectedId, {
+                      spans: [
+                        ...(text.spans ?? []),
+                        { text: 'new', fill: text.fill, fontSize: text.fontSize },
+                      ],
+                    })
+                  }}
+                  className="min-h-[36px] rounded bg-surface-3 px-3 text-sm text-text transition hover:bg-surface-2"
+                >
+                  + Add span
+                </button>
+              </div>
+            )}
           </Section>
 
           <Section title={t('text.effects')}>
@@ -498,6 +662,72 @@ export function TextPanel() {
                 onChange={(v) => update(selectedId, { stroke: v })}
               />
             )}
+
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                onClick={() =>
+                  update(selectedId, {
+                    effects: {
+                      ...text.effects,
+                      glow: text.effects?.glow
+                        ? undefined
+                        : { color: '#ffffff', blur: 12 },
+                    },
+                  })
+                }
+                className={`min-h-[40px] rounded-lg px-3 text-sm transition active:scale-95 ${
+                  text.effects?.glow
+                    ? 'bg-accent text-accent-fg'
+                    : 'bg-surface-2 text-text/80 hover:bg-surface-3'
+                }`}
+              >
+                Glow
+              </button>
+              <button
+                onClick={() =>
+                  update(selectedId, {
+                    effects: {
+                      ...text.effects,
+                      extrude: text.effects?.extrude
+                        ? undefined
+                        : { depth: 4, color: '#000000' },
+                    },
+                  })
+                }
+                className={`min-h-[40px] rounded-lg px-3 text-sm transition active:scale-95 ${
+                  text.effects?.extrude
+                    ? 'bg-accent text-accent-fg'
+                    : 'bg-surface-2 text-text/80 hover:bg-surface-3'
+                }`}
+              >
+                Extrude
+              </button>
+              <button
+                onClick={() =>
+                  update(selectedId, {
+                    effects: {
+                      ...text.effects,
+                      gradient: text.effects?.gradient
+                        ? undefined
+                        : {
+                            stops: [
+                              { offset: 0, color: '#ec4899' },
+                              { offset: 1, color: '#6366f1' },
+                            ],
+                          },
+                    },
+                  })
+                }
+                className={`min-h-[40px] rounded-lg px-3 text-sm transition active:scale-95 ${
+                  text.effects?.gradient
+                    ? 'bg-accent text-accent-fg'
+                    : 'bg-surface-2 text-text/80 hover:bg-surface-3'
+                }`}
+              >
+                Gradient
+              </button>
+            </div>
+
             <Slider
               label={t('text.curve')}
               min={0}

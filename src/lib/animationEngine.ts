@@ -5,11 +5,22 @@ import type { CanvasElement } from '../types'
 
 export type AnimatableProp = 'x' | 'y' | 'rotation' | 'scaleX' | 'scaleY' | 'opacity'
 
+export type TransitionType = 'linear' | 'fade' | 'slide' | 'zoom' | 'flip'
+
 export interface Keyframe {
   id: string
   elementId: string
   time: number // seconds
   props: Partial<Record<AnimatableProp, number>>
+  transition?: TransitionType // transition for the segment starting at this keyframe
+}
+
+const EASING: Record<TransitionType, (t: number) => number> = {
+  linear: (t) => t,
+  fade: (t) => t * t * (3 - 2 * t), // smoothstep ease-in-out
+  slide: (t) => 1 - Math.pow(1 - t, 3), // ease-out cubic
+  zoom: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, // ease-in-out cubic
+  flip: (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2, // ease-in-out quad
 }
 
 export interface FrameState {
@@ -32,10 +43,12 @@ function interpolateProp(
   prevTime: number,
   nextTime: number,
   time: number,
+  transition: TransitionType = 'linear',
 ): number {
   if (nextTime === prevTime) return next
-  const t = clamp((time - prevTime) / (nextTime - prevTime), 0, 1)
-  return lerp(prev, next, t)
+  const rawT = clamp((time - prevTime) / (nextTime - prevTime), 0, 1)
+  const easedT = EASING[transition](rawT)
+  return lerp(prev, next, easedT)
 }
 
 /**
@@ -88,12 +101,14 @@ export function getFrameState(
         const prev = propFrames[i]
         const next = propFrames[i + 1]
         if (time >= prev.time && time < next.time) {
+          const transition = next.transition ?? 'linear'
           props[prop] = interpolateProp(
             prev.props[prop]!,
             next.props[prop]!,
             prev.time,
             next.time,
             time,
+            transition,
           )
           break
         }
