@@ -11,11 +11,9 @@ function detectTheme(): Theme {
   } catch {
     /* localStorage unavailable */
   }
-  if (
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-color-scheme: light)').matches
-  ) {
-    return 'light'
+  if (typeof window !== 'undefined') {
+    if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark'
+    if (window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light'
   }
   return 'dark'
 }
