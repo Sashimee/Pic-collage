@@ -20,7 +20,7 @@ const TextPanel = lazy(() => import('./Panels').then((m) => ({ default: m.TextPa
 const DrawPanel = lazy(() => import('./Panels').then((m) => ({ default: m.DrawPanel })))
 const StickerPanel = lazy(() => import('./Panels').then((m) => ({ default: m.StickerPanel })))
 const BackgroundPanel = lazy(() => import('./Panels').then((m) => ({ default: m.BackgroundPanel })))
-const FilterPanel = lazy(() => import('./Panels').then((m) => ({ default: m.FilterPanel })))
+const FilterPanel = lazy(() => import('./FilterPanel').then((m) => ({ default: m.FilterPanel })))
 
 function PanelFallback() {
   return (

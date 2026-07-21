@@ -1,0 +1,242 @@
+import { useState } from 'react'
+import { Trash2, GripVertical, Plus, Wand2 } from 'lucide-react'
+import { useEditor } from '../store/editorStore'
+import { FILTER_PRESETS, computeFilterConfigFromStack } from '../lib/filters'
+import { useT } from '../i18n/useLang'
+import type { FilterOperation } from '../types'
+import { Chip, Section, Slider } from './ui'
+import { useToasts } from './ToastContainer'
+
+const FILTER_OPS = [
+  { type: 'brightness', label: 'Brightness', min: -1, max: 1, step: 0.02, default: 0 },
+  { type: 'contrast', label: 'Contrast', min: -100, max: 100, step: 1, default: 0 },
+  { type: 'saturation', label: 'Saturation', min: -2, max: 4, step: 0.1, default: 0 },
+  { type: 'hueShift', label: 'Hue', min: -180, max: 180, step: 5, default: 0 },
+  { type: 'exposure', label: 'Exposure', min: -1, max: 1, step: 0.05, default: 0 },
+  { type: 'shadows', label: 'Shadows', min: -1, max: 1, step: 0.05, default: 0 },
+  { type: 'highlights', label: 'Highlights', min: -1, max: 1, step: 0.05, default: 0 },
+  { type: 'blur', label: 'Blur', min: 0, max: 40, step: 1, default: 0 },
+  { type: 'vignette', label: 'Vignette', min: 0, max: 0.9, step: 0.05, default: 0 },
+] as const
+
+export function FilterPanel() {
+  const t = useT()
+  const toast = useToasts()
+  const selectedId = useEditor((s) => s.selectedId)
+  const el = useEditor((s) => s.elements.find((e) => e.id === s.selectedId))
+  const updateFilterStack = useEditor((s) => s.updateFilterStack)
+  const updateFilters = useEditor((s) => s.updateFilters)
+  const photo = el?.type === 'photo' ? el : null
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+
+  if (!photo || !selectedId) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-6 text-center">
+        <span className="text-4xl opacity-30">✨</span>
+        <p className="text-sm text-muted">{t('filter.selectHint')}</p>
+      </div>
+    )
+  }
+
+  // Use v2 filterStack, or derive from v1 filters
+  const stack: FilterOperation[] = photo.filterStack ?? [
+    { type: 'brightness', value: photo.filters.brightness },
+    { type: 'contrast', value: photo.filters.contrast },
+    { type: 'saturation', value: photo.filters.saturation },
+    { type: 'preset', id: photo.filters.preset },
+  ]
+
+  const updateStack = (next: FilterOperation[]) => {
+    updateFilterStack(selectedId, next)
+  }
+
+  const updateOp = (index: number, patch: Partial<FilterOperation>) => {
+    const next = [...stack]
+    next[index] = { ...next[index], ...patch } as FilterOperation
+    updateStack(next)
+  }
+
+  const removeOp = (index: number) => {
+    const next = stack.filter((_, i) => i !== index)
+    updateStack(next)
+    toast.info('Filter removed')
+  }
+
+  const addOp = (type: string) => {
+    const def = FILTER_OPS.find((o) => o.type === type)
+    if (!def) return
+    const newOp: FilterOperation =
+      type === 'blur'
+        ? { type: 'blur', radius: def.default }
+        : type === 'vignette'
+          ? { type: 'vignette', strength: def.default }
+          : { type: type as any, value: def.default }
+    updateStack([...stack, newOp])
+    setExpanded((prev) => new Set(prev).add(stack.length))
+  }
+
+  const addPreset = (id: string) => {
+    const next = stack.filter((op) => op.type !== 'preset') as FilterOperation[]
+    if (id !== 'none') {
+      next.push({ type: 'preset', id: id as any })
+    }
+    updateStack(next)
+  }
+
+  const resetFilters = () => {
+    updateStack([
+      { type: 'brightness', value: 0 },
+      { type: 'contrast', value: 0 },
+      { type: 'saturation', value: 0 },
+      { type: 'preset', id: 'none' } as any,
+    ])
+    updateFilters(selectedId, { brightness: 0, contrast: 0, saturation: 0, preset: 'none', blur: 0, vignette: 0 })
+    toast.success('Filters reset')
+  }
+
+  // Quick preview config
+  const preview = computeFilterConfigFromStack(stack)
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Preview thumbnail */}
+      <div className="relative overflow-hidden rounded-xl border border-border bg-surface-2">
+        <img
+          src={photo.src}
+          alt=""
+          className="h-32 w-full object-cover opacity-70"
+          style={{
+            filter: `brightness(${1 + preview.brightness}) contrast(${1 + preview.contrast / 100}) saturate(${1 + preview.saturation / 3})`,
+          }}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="rounded-lg bg-black/50 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+            {stack.length} filter{stack.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+      </div>
+
+      {/* Presets */}
+      <Section title={t('filter.presets')}>
+        <div className="scroll-x flex gap-2 overflow-x-auto pb-1">
+          {FILTER_PRESETS.map((p) => {
+            const hasPreset = stack.some((op) => op.type === 'preset' && op.id === p.id)
+            return (
+              <Chip
+                key={p.id}
+                active={hasPreset}
+                onClick={() => addPreset(p.id)}
+              >
+                {t('filter.' + p.id)}
+              </Chip>
+            )
+          })}
+        </div>
+      </Section>
+
+      {/* Filter stack */}
+      <Section title="Filter Stack">
+        <div className="flex flex-col gap-1">
+          {stack.map((op, i) => {
+            const isExpanded = expanded.has(i)
+            const label =
+              op.type === 'preset'
+                ? `Preset: ${op.id}`
+                : op.type === 'blur'
+                  ? 'Blur'
+                  : op.type === 'vignette'
+                    ? 'Vignette'
+                    : FILTER_OPS.find((o) => o.type === op.type)?.label ?? op.type
+
+            const value =
+              op.type === 'preset'
+                ? ''
+                : op.type === 'blur'
+                  ? op.radius
+                  : op.type === 'vignette'
+                    ? op.strength
+                    : 'value' in op
+                      ? op.value
+                      : 0
+
+            return (
+              <div
+                key={`${op.type}-${i}`}
+                className="rounded-lg border border-border/50 bg-surface-2 transition hover:border-border"
+              >
+                <button
+                  onClick={() =>
+                    setExpanded((prev) => {
+                      const next = new Set(prev)
+                      if (next.has(i)) next.delete(i)
+                      else next.add(i)
+                      return next
+                    })
+                  }
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm"
+                >
+                  <GripVertical size={14} className="text-muted" />
+                  <span className="flex-1 font-medium">{label}</span>
+                  {value !== '' && (
+                    <span className="text-xs text-muted">
+                      {typeof value === 'number' ? value.toFixed(1) : value}
+                    </span>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removeOp(i)
+                    }}
+                    className="rounded p-1 text-muted transition hover:bg-danger/10 hover:text-danger"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </button>
+
+                {isExpanded && op.type !== 'preset' && (
+                  <div className="px-3 pb-2">
+                    <Slider
+                      label=""
+                      min={FILTER_OPS.find((o) => o.type === op.type)?.min ?? -1}
+                      max={FILTER_OPS.find((o) => o.type === op.type)?.max ?? 1}
+                      step={FILTER_OPS.find((o) => o.type === op.type)?.step ?? 0.1}
+                      value={value as number}
+                      onChange={(v) => {
+                        if (op.type === 'blur') updateOp(i, { radius: v })
+                        else if (op.type === 'vignette') updateOp(i, { strength: v })
+                        else updateOp(i, { value: v })
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Add filter dropdown */}
+        <div className="flex flex-wrap gap-1 pt-1">
+          {FILTER_OPS.map((op) => (
+            <button
+              key={op.type}
+              onClick={() => addOp(op.type)}
+              className="flex items-center gap-1 rounded-md bg-surface-3 px-2 py-1 text-xs text-muted transition hover:text-text"
+            >
+              <Plus size={12} />
+              {op.label}
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      {/* Reset */}
+      <button
+        onClick={resetFilters}
+        className="flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-2 py-2.5 text-sm text-muted transition hover:text-text"
+      >
+        <Wand2 size={16} />
+        Reset All Filters
+      </button>
+    </div>
+  )
+}

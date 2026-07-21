@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { ImagePlus, Camera } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { GRID_LAYOUTS } from '../lib/grids'
-import { FILTER_PRESETS } from '../lib/filters'
 import { PATTERN_GLYPH, PATTERN_IDS } from '../lib/patterns'
 import { importFiles } from '../lib/importFiles'
 import type { FrameStyle, PhotoElement, TextElement } from '../types'
@@ -798,7 +797,12 @@ export function FilterPanel() {
   const photo = el?.type === 'photo' ? (el as PhotoElement) : null
 
   if (!photo || !selectedId) {
-    return <EmptyHint icon="✨" text={t('filter.selectHint')} />
+    return (
+      <div className="flex flex-col items-center gap-2 py-6 text-center">
+        <span className="text-4xl opacity-30">✨</span>
+        <p className="text-sm text-muted">{t('filter.selectHint')}</p>
+      </div>
+    )
   }
 
   const f = photo.filters
@@ -806,7 +810,17 @@ export function FilterPanel() {
     <div className="flex flex-col gap-4">
       <Section title={t('filter.presets')}>
         <div className="scroll-x flex gap-2 overflow-x-auto pb-1">
-          {FILTER_PRESETS.map((p) => (
+          {([
+            { id: 'none', label: 'Original' },
+            { id: 'vivid', label: 'Vivid' },
+            { id: 'punch', label: 'Punch' },
+            { id: 'warm', label: 'Warm' },
+            { id: 'cool', label: 'Cool' },
+            { id: 'fade', label: 'Fade' },
+            { id: 'sepia', label: 'Sepia' },
+            { id: 'noir', label: 'Noir' },
+            { id: 'grayscale', label: 'B&W' },
+          ] as const).map((p) => (
             <Chip
               key={p.id}
               active={f.preset === p.id}

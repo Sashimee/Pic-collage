@@ -4,6 +4,7 @@ import type {
   CanvasElement,
   DrawingElement,
   EditorMode,
+  FilterOperation,
   Frame,
   PhotoElement,
   PhotoFilters,
@@ -105,6 +106,7 @@ interface EditorState {
   setBrush: (patch: { color?: string; size?: number }) => void
   updateElement: (id: string, patch: Partial<CanvasElement>) => void
   updateFilters: (id: string, patch: Partial<PhotoFilters>) => void
+  updateFilterStack: (id: string, stack: FilterOperation[]) => void
   duplicateElement: (id: string) => void
   removeElement: (id: string) => void
   select: (id: string | null) => void
@@ -320,6 +322,16 @@ export const useEditor = create<EditorState>((set, get) => ({
       elements: s.elements.map((e) =>
         e.id === id && e.type === 'photo'
           ? { ...e, filters: { ...e.filters, ...patch } }
+          : e,
+      ),
+    })),
+
+  updateFilterStack: (id, stack) =>
+    set((s) => ({
+      ...record(s, 'filterStack:' + id),
+      elements: s.elements.map((e) =>
+        e.id === id && e.type === 'photo'
+          ? { ...e, filterStack: stack }
           : e,
       ),
     })),
