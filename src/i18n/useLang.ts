@@ -5,8 +5,8 @@ const STORAGE_KEY = 'lang'
 
 function detectLang(): Lang {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved === 'de' || saved === 'en') return saved
+    const saved = localStorage.getItem(STORAGE_KEY) as Lang
+    if (saved && translations[saved]) return saved
   } catch {
     /* localStorage unavailable */
   }
@@ -14,7 +14,15 @@ function detectLang(): Lang {
     typeof navigator !== 'undefined'
       ? navigator.languages ?? [navigator.language]
       : []
-  return prefs.some((l) => l?.toLowerCase().startsWith('de')) ? 'de' : 'en'
+  for (const l of prefs) {
+    const lower = l?.toLowerCase() ?? ''
+    if (lower.startsWith('de')) return 'de'
+    if (lower.startsWith('es')) return 'es'
+    if (lower.startsWith('fr')) return 'fr'
+    if (lower.startsWith('it')) return 'it'
+    if (lower.startsWith('pt')) return 'pt'
+  }
+  return 'en'
 }
 
 function applyDocumentLang(lang: Lang) {
