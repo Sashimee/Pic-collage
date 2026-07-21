@@ -10,12 +10,14 @@ export function PhotoAssignmentSheet({
   onClose,
   onAssign,
   onSkip,
+  onDone,
 }: {
   layout: GridLayout
   open: boolean
   onClose: () => void
   onAssign: (files: File[]) => void
   onSkip: () => void
+  onDone?: () => void
 }) {
   const t = useT()
   const [previews, setPreviews] = useState<(string | null)[]>(
@@ -173,7 +175,7 @@ export function PhotoAssignmentSheet({
                           className="text-muted"
                         />
                         <span className="mt-1 text-[0.6rem] font-medium text-muted">
-                          {t('assignment.slot')} {i + 1}
+                          Slot {i + 1}
                         </span>
                       </>
                     )}
@@ -211,7 +213,7 @@ export function PhotoAssignmentSheet({
                 </m.button>
                 <m.button
                   whileTap={{ scale: 0.96 }}
-                  onClick={onClose}
+                  onClick={onDone || onClose}
                   className="bg-grad-accent flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110"
                 >
                   <Check size={16} strokeWidth={2.5} />
