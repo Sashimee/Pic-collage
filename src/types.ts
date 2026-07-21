@@ -89,6 +89,21 @@ export interface TextChip {
   radius: number
 }
 
+export interface TextSpan {
+  text: string
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  fontSize?: number
+  fill?: string
+}
+
+export interface TextEffects {
+  glow?: { color: string; blur: number }
+  extrude?: { depth: number; color: string }
+  gradient?: { stops: { offset: number; color: string }[] }
+}
+
 export interface TextElement extends BaseElement {
   type: 'text'
   text: string
@@ -106,6 +121,12 @@ export interface TextElement extends BaseElement {
   width?: number            // wrapping width in design units
   lineHeight?: number       // 1.2 default
   align?: 'left' | 'center' | 'right'
+  // Rich text spans (if provided, render instead of single text string)
+  spans?: TextSpan[]
+  // Text-on-path SVG path data
+  path?: string
+  // Text effects
+  effects?: TextEffects
 }
 
 export interface StickerElement extends BaseElement {

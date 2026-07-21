@@ -91,7 +91,7 @@ export function SelectionBar() {
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-11 w-11 items-center justify-center rounded-full shadow-lg backdrop-blur transition ${
+      className={`flex h-12 w-12 sm:h-11 sm:w-11 items-center justify-center rounded-full shadow-lg backdrop-blur transition ${
         danger
           ? 'bg-danger/90 text-white'
           : 'bg-surface-2/90 text-text hover:bg-surface-3'
@@ -102,10 +102,18 @@ export function SelectionBar() {
   )
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex flex-col items-center gap-2">
+    <div className="pointer-events-none absolute inset-x-0 bottom-3 flex flex-col items-center gap-2 px-2 z-20">
       <AnimatePresence>
         {selectedId && (
           <>
+            {/* Subtle backdrop so bar stands out from canvas */}
+            <m.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/20 to-transparent sm:hidden"
+            />
+
             {/* Opacity + Blend controls */}
             {mode === 'free' && (
               <m.div
@@ -113,7 +121,7 @@ export function SelectionBar() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="pointer-events-auto flex items-center gap-2 rounded-full bg-surface/80 px-3 py-1.5 shadow-xl ring-1 ring-border backdrop-blur"
+                className="pointer-events-auto flex max-w-full flex-wrap items-center gap-2 rounded-full bg-surface/80 px-3 py-1.5 shadow-xl ring-1 ring-border backdrop-blur"
               >
                 <label className="text-xs text-muted">{t('common.opacity')}</label>
                 <input
@@ -134,7 +142,7 @@ export function SelectionBar() {
                     selectedId &&
                     updateElement(selectedId, { blendMode: e.target.value as any })
                   }
-                  className="rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text outline-none"
+                  className="min-h-[44px] rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text outline-none"
                 >
                   <option value="normal">Normal</option>
                   <option value="multiply">Multiply</option>
@@ -179,7 +187,7 @@ export function SelectionBar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.9 }}
               transition={{ type: 'spring', damping: 26, stiffness: 340 }}
-              className="pointer-events-auto flex gap-2 rounded-full bg-surface/80 p-1.5 shadow-xl ring-1 ring-border backdrop-blur"
+              className="pointer-events-auto flex max-w-full flex-wrap justify-center gap-2 rounded-full bg-surface/80 p-1.5 shadow-xl ring-1 ring-border backdrop-blur sm:flex-nowrap"
             >
               {mode === 'free' && (
                 <>

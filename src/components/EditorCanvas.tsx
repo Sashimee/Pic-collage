@@ -17,6 +17,7 @@ import { GridView } from './GridView'
 import { exportBoard, type ExportFormat } from '../lib/exportImage'
 import type { CanvasElement, PhotoElement } from '../types'
 import { computeSnap, type SnapLine } from '../lib/snap'
+import { useToasts } from './ToastContainer'
 
 export interface EditorHandle {
   exportImage: (format: ExportFormat) => string | null
@@ -59,10 +60,26 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const addDrawing = useEditor((s) => s.addDrawing)
 
   const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null)
+  const pinchHintShown = useRef(false)
+  const toast = useToasts()
   const drawMode = tool === 'draw'
   const drawing = useRef(false)
   const ptsRef = useRef<number[]>([])
   const [, setTick] = useState(0)
+
+  // Pinch-to-zoom hint (one-time)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      pinchHintShown.current = localStorage.getItem('piccollage-pinch-hint-shown') === '1'
+    }
+  }, [])
+
+  const showPinchHint = () => {
+    if (pinchHintShown.current) return
+    pinchHintShown.current = true
+    localStorage.setItem('piccollage-pinch-hint-shown', '1')
+    toast.info('Pinch with two fingers to zoom')
+  }
 
   // Inline text editor overlay (replaces window.prompt on double-tap).
   const [editing, setEditing] = useState<{
@@ -159,6 +176,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   }
 
   const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
+    showPinchHint()
     e.evt.preventDefault()
     const stage = stageRef.current
     const p = stage?.getPointerPosition()
@@ -174,6 +192,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const handleTouchMove = (e: Konva.KonvaEventObject<TouchEvent>) => {
     const touches = e.evt.touches
     if (touches.length !== 2) return
+    showPinchHint()
     e.evt.preventDefault()
     const p1 = localPoint(touches[0])
     const p2 = localPoint(touches[1])

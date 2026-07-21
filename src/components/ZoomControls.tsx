@@ -10,10 +10,10 @@ export function ZoomControls() {
       <button
         title="Zoom out"
         onClick={() => setZoom(zoom - 0.1)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
+        className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
         aria-label="Zoom out"
       >
-        <ZoomOut size={16} strokeWidth={2.5} />
+        <ZoomOut size={18} strokeWidth={2.5} />
       </button>
       <span className="w-14 text-center text-xs font-semibold text-text">
         {Math.round(zoom * 100)}%
@@ -21,26 +21,26 @@ export function ZoomControls() {
       <button
         title="Zoom in"
         onClick={() => setZoom(zoom + 0.1)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
+        className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
         aria-label="Zoom in"
       >
-        <ZoomIn size={16} strokeWidth={2.5} />
+        <ZoomIn size={18} strokeWidth={2.5} />
       </button>
       <button
         title="Reset zoom"
         onClick={() => setZoom(1)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
+        className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
         aria-label="Reset zoom"
       >
-        <RotateCcw size={14} strokeWidth={2.5} />
+        <RotateCcw size={16} strokeWidth={2.5} />
       </button>
       <button
         title="Fit to screen"
         onClick={() => setZoom(0.8)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
+        className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
         aria-label="Fit to screen"
       >
-        <Maximize size={14} strokeWidth={2.5} />
+        <Maximize size={16} strokeWidth={2.5} />
       </button>
     </div>
   )
