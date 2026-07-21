@@ -659,5 +659,50 @@ These 7 items = ~2 weeks of work and transform the feel of the app.
 
 ---
 
-*Last updated: 2026-07-20*
-*Next review: After Phase 1 completion*
+*Last updated: 2026-07-21*  
+*v2.0 Status: ALL 5 PHASES COMPLETE. App is production-ready.*  
+*Post-v2.0: UX polish, performance tuning, and new features ongoing.*
+
+---
+
+## Post-v2.0 UX Polish Roadmap (Completed Items)
+
+### ✅ Scroll Affordances (v2.0.1)
+- Mobile tab bar: ◀ ▶ chevron arrows + fade gradients when overflowing
+- Desktop tool rail: ▲ ▼ chevron arrows + fade gradients when overflowing
+- Hook: `useScrollOverflow` with ResizeObserver for dynamic detection
+
+### ✅ Language Header Cleanup (v2.0.1)
+- Collapsed 5 permanent flag buttons to single `LangDropdown` (active flag only)
+- Opens menu with all 5 languages + labels
+- Mobile ActionSheet: all 5 languages listed with `active` highlight state
+
+### ✅ Zoom Controls Enhancement (v2.0.1)
+- Zoom percentage: larger (14px → sm bold), `tabular-nums` for stable width
+- Still shows inline between zoom buttons
+
+### ✅ Empty Canvas Grid (v2.0.1)
+- Subtle radial dot grid (24px spacing, 3% opacity) behind canvas
+- Gives spatial reference without visual noise
+- Works in both dark and light themes via `var(--text)`
+
+### ✅ ActionSheet Active State (v2.0.1)
+- `active` prop on `ActionItem` — accent background + accent icon tint
+- Used for language selection in mobile ActionSheet
+
+---
+
+## Future Ideas (Not Yet Implemented)
+
+- **Animation timeline UI**: keyframe segments need transition selector (EASING wired, UI missing)
+- **Ken Burns auto-keyframes**: `kenBurns` boolean exists, auto-pan/zoom on export not yet wired
+- **Bundle analysis**: `rollup-plugin-visualizer` not installed, no `npm run analyze`
+- **Service worker runtime caching**: review `vite-plugin-pwa` for panels/WASM caching
+- **Context menu on canvas**: `useContextMenu` hook exists but not wired to right-click on canvas/layers
+- **System clipboard image paste**: not yet wired to paste images from OS clipboard
+- **Three-finger undo gesture**: partially implemented, needs verification
+- **Shape categories**: shapes exist but no tabbed categories (arrows, badges, decorative)
+
+---
+
+*End of PLAN.md*
