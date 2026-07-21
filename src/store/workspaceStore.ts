@@ -12,6 +12,7 @@ export interface WorkspaceState {
   saveWorkspace: (name: string) => void
   loadWorkspace: (name: string) => void
   resetWorkspace: () => void
+  applyPreset: (presetId: string) => void
 }
 
 const DEFAULT_SIDE_PANEL_WIDTH = 336 // 21rem = 336px
@@ -81,6 +82,24 @@ export const useWorkspace = create<
           panelSizes: { side: DEFAULT_SIDE_PANEL_WIDTH },
           activeTab: 'photos',
         }),
+
+      applyPreset: (presetId: string) => {
+        const presets: Record<string, Partial<WorkspaceState>> = {
+          editing: { panelVisibility: {}, activeTab: 'photos' },
+          review: {
+            panelVisibility: { layers: false, history: false, animation: false },
+            activeTab: null,
+          },
+          minimal: {
+            panelVisibility: Object.fromEntries(
+              ['photos','layout','text','draw','stickers','bg','filters','layers','history','animation','settings'].map((id) => [id, false])
+            ),
+            activeTab: null,
+          },
+        }
+        const p = presets[presetId]
+        if (p) set({ ...p, panelSizes: { side: DEFAULT_SIDE_PANEL_WIDTH } })
+      },
     }),
     {
       name: STORAGE_KEY,

@@ -81,6 +81,7 @@ export interface PhotoElement extends BaseElement {
   // Per-cell framing in grid mode (ignored in free mode):
   cellZoom?: number // zoom within the cell, >= 1; default 1 = plain cover-fit
   cellPan?: { x: number; y: number } // normalised pan, each axis in [-1, 1]; default centred
+  kenBurns?: boolean // auto-generate pan/zoom keyframes for animation
 }
 
 export interface TextChip {

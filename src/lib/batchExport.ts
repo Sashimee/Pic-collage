@@ -1,19 +1,13 @@
 import JSZip from 'jszip'
-import { exportImage } from './exportImage'
-import type { CanvasElement } from '../types'
 
+// Simplified batch export - caller provides dataUrls
 export async function batchExport(
-  elements: CanvasElement[],
-  board: { width: number; height: number; background: string },
-  configs: { format: 'png' | 'jpg'; width: number; height: number }[],
+  files: { name: string; dataUrl: string }[],
 ): Promise<Blob> {
   const zip = new JSZip()
-  const folder = zip.folder('exports')!
-  for (const cfg of configs) {
-    const dataUrl = await exportImage(elements, board, cfg.format, cfg.width, cfg.height)
+  for (const { name, dataUrl } of files) {
     const base64 = dataUrl.split(',')[1]
-    const ext = cfg.format === 'png' ? 'png' : 'jpg'
-    folder.file(`export_${cfg.width}x${cfg.height}.${ext}`, base64, { base64: true })
+    zip.file(name, base64, { base64: true })
   }
   return await zip.generateAsync({ type: 'blob' })
 }
