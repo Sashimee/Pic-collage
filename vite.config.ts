@@ -70,6 +70,8 @@ export default defineConfig({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
+        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024, // 50MB for WASM models
+        globPatterns: ['**/*.{js,css,html,png,jpg,svg,ico,woff2}'],
       },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
