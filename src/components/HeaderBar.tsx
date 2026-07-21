@@ -356,6 +356,12 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           active={lang === 'it'}
         />
         <ActionItem
+          onClick={() => { setSheetOpen(false); setLang('pt') }}
+          icon={<span className="text-lg">🇧🇷</span>}
+          label="Português"
+          active={lang === 'pt'}
+        />
+        <ActionItem
           onClick={() => { setSheetOpen(false); setProjectManagerOpen(true) }}
           icon={<FolderOpen size={18} />}
           label={t('header.projects')}
