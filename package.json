@@ -12,7 +12,8 @@
     "test": "vitest run",
     "generate:icons": "node scripts/generate-icons.mjs",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test -c e2e/playwright.config.ts"
+    "test:e2e": "playwright test -c e2e/playwright.config.ts",
+    "analyze": "vite build --mode analyze"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
@@ -20,6 +21,7 @@
     "framer-motion": "^12.42.2",
     "gif.js": "^0.2.0",
     "idb": "^8.0.3",
+    "jszip": "^3.10.1",
     "konva": "^10.3.0",
     "lucide-react": "^1.24.0",
     "onnxruntime-web": "^1.27.0",
@@ -44,6 +46,7 @@
     "@vitest/ui": "^4.1.10",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
+    "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
     "vite": "^8.1.2",
