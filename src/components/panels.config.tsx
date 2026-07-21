@@ -95,8 +95,9 @@ export function usePanels(initial: string | null = 'photos') {
 
   const current = PANEL_TABS.find((tab) => tab.id === active) ?? null
 
-  // Filter out tabs hidden via workspace panelVisibility
+  // Filter out tabs hidden via workspace panelVisibility — always keep Settings visible
   const visibleTabs = PANEL_TABS.filter((tab) => {
+    if (tab.id === 'settings') return true
     const vis = useWorkspace.getState().panelVisibility[tab.id]
     return vis !== false
   })
