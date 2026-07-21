@@ -85,7 +85,7 @@ export function EmptyState() {
     <AnimatePresence>
       {isEmpty && (
         <m.div
-          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4"
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-surface/80 p-4 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 0.98 }}

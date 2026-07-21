@@ -105,7 +105,7 @@ export function LayoutGallery({
   )
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-4 rounded-2xl bg-surface-2/80 p-4 shadow-[var(--shadow-card)] backdrop-blur-sm border border-border/30">
       <div className="text-center">
         <h2 className="text-base font-bold text-text">{t('gallery.title')}</h2>
         <p className="mt-1 text-xs text-muted">{t('gallery.subtitle')}</p>
