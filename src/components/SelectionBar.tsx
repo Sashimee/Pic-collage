@@ -267,6 +267,14 @@ export function SelectionBar() {
                   </Btn>
                 </>
               )}
+              {isFreePhoto && (
+                <button
+                  onClick={() => updateElement(selectedId, { kenBurns: !el?.kenBurns })}
+                  className={'flex items-center gap-1.5 rounded-full px-3 py-2 text-xs transition ' + (el?.kenBurns ? 'bg-accent text-white' : 'bg-surface-2 text-text hover:bg-surface-3')}
+                >
+                  Ken Burns
+                </button>
+              )}
               {isGridPhoto && (
                 <>
                   <Btn onClick={() => stepZoom(-0.2)} label={t('cell.zoomOut')}>

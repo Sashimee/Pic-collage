@@ -3,6 +3,7 @@ import { useT } from '../i18n/useLang'
 import { Slider, ColorField, Section, Chip } from './ui'
 import { m } from './motion'
 import type { WatermarkPosition } from '../types'
+import { WorkspacePresets } from './WorkspacePresets'
 
 const POSITIONS: { label: string; value: WatermarkPosition }[] = [
   { label: 'Top Left', value: 'top-left' },
@@ -178,6 +179,7 @@ export function PrintPanel() {
 export function SettingsPanel() {
   return (
     <div className="flex flex-col gap-6">
+      <WorkspacePresets />
       <WatermarkPanel />
       <PrintPanel />
     </div>
