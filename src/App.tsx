@@ -55,6 +55,8 @@ function toStoredDoc(): StoredDoc {
     gridGap: s.gridGap,
     gridRadius: s.gridRadius,
     frame: s.frame,
+    watermark: s.watermark,
+    print: s.print,
     elements: s.elements.map((el) =>
       el.type === 'photo'
         ? { ...el, src: '', previewSrc: undefined, originalSrc: undefined, thumbSrc: undefined }

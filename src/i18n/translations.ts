@@ -1,9 +1,11 @@
-export type Lang = 'de' | 'en' | 'es'
+export type Lang = 'de' | 'en' | 'es' | 'fr' | 'it'
 
 export const LANGS: { id: Lang; flag: string; label: string }[] = [
   { id: 'de', flag: '🇩🇪', label: 'Deutsch' },
   { id: 'en', flag: '🇬🇧', label: 'English' },
   { id: 'es', flag: '🇪🇸', label: 'Español' },
+  { id: 'fr', flag: '🇫🇷', label: 'Français' },
+  { id: 'it', flag: '🇮🇹', label: 'Italiano' },
 ]
 
 // Flat key → string maps. Keep keys stable; English doubles as the fallback.
@@ -539,4 +541,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     'error.reload': 'Recargar',
     'error.reset': 'Restablecer app',
   },
+  fr: {},
+  it: {},
 }

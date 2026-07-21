@@ -11,9 +11,15 @@ import type {
   ShapeElement,
   StickerElement,
   TextElement,
+  WatermarkSettings,
+  PrintSettings,
 } from '../types'
-import { DEFAULT_FILTERS, DEFAULT_FILTER_STACK } from '../types'
-
+import {
+  DEFAULT_FILTERS,
+  DEFAULT_FILTER_STACK,
+  DEFAULT_WATERMARK,
+  DEFAULT_PRINT_SETTINGS,
+} from '../types'
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -40,6 +46,8 @@ interface Snapshot {
   frame: Frame
   boardWidth: number
   boardHeight: number
+  watermark: WatermarkSettings
+  print: PrintSettings
 }
 
 const snap = (s: EditorState): Snapshot => ({
@@ -52,6 +60,8 @@ const snap = (s: EditorState): Snapshot => ({
   frame: s.frame,
   boardWidth: s.boardWidth,
   boardHeight: s.boardHeight,
+  watermark: s.watermark,
+  print: s.print,
 })
 
 // Returns the `past`/`future` patch to spread into a mutating `set`. When a
@@ -88,6 +98,9 @@ interface EditorState {
 
   past: Snapshot[]
   future: Snapshot[]
+
+  watermark: WatermarkSettings
+  print: PrintSettings
 
   // selectors
   selected: () => CanvasElement | undefined
@@ -153,6 +166,9 @@ interface EditorState {
   clearAll: () => void
   loadDocument: (doc: LoadedDocument) => void
 
+  setWatermark: (patch: Partial<WatermarkSettings>) => void
+  setPrint: (patch: Partial<PrintSettings>) => void
+
   // history
   undo: () => void
   redo: () => void
@@ -169,6 +185,8 @@ export interface LoadedDocument {
   gridRadius: number
   frame: Frame
   elements: CanvasElement[]
+  watermark?: WatermarkSettings
+  print?: PrintSettings
 }
 
 const DEFAULT_BACKGROUND: Background = {
@@ -209,6 +227,9 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   past: [],
   future: [],
+
+  watermark: { ...DEFAULT_WATERMARK },
+  print: { ...DEFAULT_PRINT_SETTINGS },
 
   selected: () => get().elements.find((e) => e.id === get().selectedId),
 
@@ -512,6 +533,8 @@ export const useEditor = create<EditorState>((set, get) => ({
         gridId: null,
         mode: 'free',
         frame: DEFAULT_FRAME,
+        watermark: { ...DEFAULT_WATERMARK },
+        print: { ...DEFAULT_PRINT_SETTINGS },
         past: [],
         future: [],
       }
@@ -531,6 +554,8 @@ export const useEditor = create<EditorState>((set, get) => ({
       selectedId: null,
       past: [],
       future: [],
+      watermark: doc.watermark ? { ...DEFAULT_WATERMARK, ...doc.watermark } : { ...DEFAULT_WATERMARK },
+      print: doc.print ? { ...DEFAULT_PRINT_SETTINGS, ...doc.print } : { ...DEFAULT_PRINT_SETTINGS },
     }),
 
   undo: () =>
@@ -569,6 +594,11 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   setCanvasZoom: (zoom) => set({ canvasZoom: Math.max(0.25, Math.min(3, zoom)) }),
   setExporting: (v) => set({ exporting: v }),
+
+  setWatermark: (patch) =>
+    set((s) => ({ watermark: { ...s.watermark, ...patch }, ...record(s, 'watermark') })),
+  setPrint: (patch) =>
+    set((s) => ({ print: { ...s.print, ...patch }, ...record(s, 'print') })),
 }))
 
 // Dev-only handle so the editor state can be driven from the console / tests.

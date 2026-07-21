@@ -3,6 +3,8 @@ import type {
   CanvasElement,
   EditorMode,
   Frame,
+  WatermarkSettings,
+  PrintSettings,
 } from '../types'
 
 // Client-side persistence: the whole editable document is saved to IndexedDB
@@ -25,6 +27,8 @@ export interface StoredDoc {
   gridGap: number
   gridRadius: number
   frame: Frame
+  watermark?: WatermarkSettings
+  print?: PrintSettings
   elements: CanvasElement[] // photo elements carry photoId; src is blanked
 }
 

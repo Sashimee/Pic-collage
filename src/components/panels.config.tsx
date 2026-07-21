@@ -9,6 +9,9 @@ import {
   Smile,
   Palette,
   Wand2,
+  Layers,
+  History,
+  Settings,
 } from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
@@ -21,6 +24,9 @@ const DrawPanel = lazy(() => import('./Panels').then((m) => ({ default: m.DrawPa
 const StickerPanel = lazy(() => import('./Panels').then((m) => ({ default: m.StickerPanel })))
 const BackgroundPanel = lazy(() => import('./Panels').then((m) => ({ default: m.BackgroundPanel })))
 const FilterPanel = lazy(() => import('./FilterPanel').then((m) => ({ default: m.FilterPanel })))
+const SettingsPanel = lazy(() => import('./WatermarkPanel').then((m) => ({ default: m.SettingsPanel })))
+const LayerPanel = lazy(() => import('./LayerPanel'))
+const VersionHistoryPanel = lazy(() => import('./VersionHistoryPanel'))
 
 function PanelFallback() {
   return (
@@ -45,6 +51,9 @@ export const PANEL_TABS: PanelTab[] = [
   { id: 'stickers', labelKey: 'tab.stickers', Icon: Smile, panel: <Suspense fallback={<PanelFallback />}><StickerPanel /></Suspense> },
   { id: 'bg', labelKey: 'tab.background', Icon: Palette, panel: <Suspense fallback={<PanelFallback />}><BackgroundPanel /></Suspense> },
   { id: 'filters', labelKey: 'tab.filters', Icon: Wand2, panel: <Suspense fallback={<PanelFallback />}><FilterPanel /></Suspense> },
+  { id: 'layers', labelKey: 'tab.layers', Icon: Layers, panel: <Suspense fallback={<PanelFallback />}><LayerPanel /></Suspense> },
+  { id: 'history', labelKey: 'tab.history', Icon: History, panel: <Suspense fallback={<PanelFallback />}><VersionHistoryPanel /></Suspense> },
+  { id: 'settings', labelKey: 'tab.settings', Icon: Settings, panel: <Suspense fallback={<PanelFallback />}><SettingsPanel /></Suspense> },
 ]
 
 // Shared active-tab state + selection logic (arms the brush on the Draw tab,
