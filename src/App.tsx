@@ -26,6 +26,7 @@ import { fireConfetti } from './lib/confetti'
 import { ToastContainer } from './components/ToastContainer'
 import { useDefaultShortcuts } from './hooks/useKeyboard'
 import { OnboardingOverlay } from './components/Onboarding'
+import { restoreCustomFonts } from './lib/fonts'
 import {
   getPhoto,
   loadDoc,
@@ -70,6 +71,11 @@ export default function App() {
 
   useVersionCheck()
   useDefaultShortcuts()
+
+  // Restore custom fonts on startup
+  useEffect(() => {
+    restoreCustomFonts().catch(() => { /* ignore font errors */ })
+  }, [])
 
   // Restore persisted work on startup: rebuild object URLs from stored blobs
   // (one URL per photoId, so duplicates keep sharing a src). Photos whose blob
