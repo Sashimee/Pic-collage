@@ -71,7 +71,8 @@ export interface PhotoElement extends BaseElement {
   photoId?: string // IndexedDB key for the source blob (persistence)
   width: number // intrinsic display size (design units)
   height: number
-  filters: PhotoFilters
+  filters: PhotoFilters // legacy v1 — kept for backward compatibility
+  filterStack?: FilterOperation[] // non-destructive v2
   shape?: PhotoShape // defaults to 'rect'
   crop?: CropRect // source-pixel crop; undefined = whole image
   // Per-cell framing in grid mode (ignored in free mode):
@@ -204,3 +205,27 @@ export const DEFAULT_FILTERS: PhotoFilters = {
   vignette: 0,
   preset: 'none',
 }
+
+export type FilterOperation =
+  | { type: 'brightness'; value: number }
+  | { type: 'contrast'; value: number }
+  | { type: 'saturation'; value: number }
+  | { type: 'hueShift'; value: number }
+  | { type: 'exposure'; value: number }
+  | { type: 'shadows'; value: number }
+  | { type: 'highlights'; value: number }
+  | { type: 'temperature'; value: number }
+  | { type: 'tint'; value: number }
+  | { type: 'clarity'; value: number }
+  | { type: 'preset'; id: FilterPreset }
+  | { type: 'blur'; radius: number }
+  | { type: 'vignette'; strength: number }
+  | { type: 'aiBgRemoval'; enabled: boolean; replacementColor?: string }
+  | { type: 'styleTransfer'; styleId: string; intensity: number }
+
+export const DEFAULT_FILTER_STACK: FilterOperation[] = [
+  { type: 'brightness', value: 0 },
+  { type: 'contrast', value: 0 },
+  { type: 'saturation', value: 0 },
+  { type: 'preset', id: 'none' },
+]

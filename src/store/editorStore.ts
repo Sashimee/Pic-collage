@@ -11,7 +11,7 @@ import type {
   StickerElement,
   TextElement,
 } from '../types'
-import { DEFAULT_FILTERS } from '../types'
+import { DEFAULT_FILTERS, DEFAULT_FILTER_STACK } from '../types'
 
 
 const uid = () =>
@@ -224,6 +224,7 @@ export const useEditor = create<EditorState>((set, get) => ({
         scaleX: 1,
         scaleY: 1,
         filters: { ...DEFAULT_FILTERS },
+        filterStack: [...DEFAULT_FILTER_STACK],
       }
       return { elements: [...s.elements, photo], selectedId: photo.id, ...record(s) }
     }),

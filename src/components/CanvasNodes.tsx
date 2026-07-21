@@ -20,7 +20,7 @@ import type {
   TextElement,
 } from '../types'
 import { useImage } from '../hooks/useImage'
-import { computeFilterConfig } from '../lib/filters'
+import { computeFilterConfig, computeFilterConfigFromStack } from '../lib/filters'
 import { tracePhotoShape } from '../lib/shapes'
 
 function toBlend(mode: string | undefined): any {
@@ -68,7 +68,10 @@ function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
   useEffect(() => {
     const node = ref.current
     if (!node || !image) return
-    const cfg = computeFilterConfig(el.filters)
+    // Use v2 filterStack if available, else fall back to v1 filters
+    const cfg = el.filterStack
+      ? computeFilterConfigFromStack(el.filterStack)
+      : computeFilterConfig(el.filters)
     node.cache()
     node.filters(cfg.filters)
     node.brightness(cfg.brightness)
@@ -78,7 +81,7 @@ function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
     node.luminance(cfg.luminance)
     node.blurRadius(cfg.blurRadius)
     node.getLayer()?.batchDraw()
-  }, [image, el.filters, el.crop, el.width, el.height])
+  }, [image, el.filters, el.filterStack, el.crop, el.width, el.height])
 
   const v = el.filters.vignette
 
