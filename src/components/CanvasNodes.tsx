@@ -4,14 +4,18 @@ import {
   Image as KonvaImage,
   Line,
   Rect,
+  RegularPolygon,
+  Star,
   Text as KonvaText,
   TextPath,
+  Arrow,
 } from 'react-konva'
 import type Konva from 'konva'
 import type {
   CanvasElement,
   DrawingElement,
   PhotoElement,
+  ShapeElement,
   StickerElement,
   TextElement,
 } from '../types'
@@ -140,7 +144,6 @@ function TextNode({ el, onSelect, onChange, onEditText }: NodeProps<TextElement>
     el.strokeWidth,
   ])
 
-  // Shared visual attrs for both the straight Text and the curved TextPath.
   const paint = {
     fontFamily: el.fontFamily,
     fontSize: el.fontSize,
@@ -152,6 +155,10 @@ function TextNode({ el, onSelect, onChange, onEditText }: NodeProps<TextElement>
     shadowColor: el.shadowBlur ? el.shadowColor : undefined,
     shadowBlur: el.shadowBlur ?? 0,
     shadowOpacity: el.shadowBlur ? 0.85 : 0,
+    // Multi-line support
+    width: el.width,
+    lineHeight: el.lineHeight ?? 1.2,
+    align: el.align ?? 'left',
   }
 
   const chip = el.chip
@@ -244,6 +251,70 @@ function StickerNode({ el, onSelect, onChange }: NodeProps<StickerElement>) {
   )
 }
 
+function ShapeNode({ el, onSelect, onChange }: NodeProps<ShapeElement>) {
+  const common = {
+    id: el.id,
+    name: 'element',
+    x: el.x,
+    y: el.y,
+    rotation: el.rotation,
+    scaleX: el.scaleX,
+    scaleY: el.scaleY,
+    opacity: el.opacity ?? 1,
+    globalCompositeOperation: toBlend(el.blendMode),
+    draggable: true,
+    onClick: onSelect,
+    onTap: onSelect,
+    ...commonHandlers(onChange),
+  }
+
+  const shapeProps = {
+    fill: el.fill,
+    stroke: el.strokeWidth ? el.stroke : undefined,
+    strokeWidth: el.strokeWidth ?? 0,
+    listening: true,
+  }
+
+  switch (el.shapeType) {
+    case 'rect':
+      return <Rect width={120} height={80} cornerRadius={8} {...common} {...shapeProps} />
+    case 'circle':
+      return <Rect width={100} height={100} cornerRadius={50} {...common} {...shapeProps} />
+    case 'triangle':
+      return (
+        <RegularPolygon
+          sides={3}
+          radius={60}
+          {...common}
+          {...shapeProps}
+        />
+      )
+    case 'star':
+      return (
+        <Star
+          numPoints={5}
+          innerRadius={25}
+          outerRadius={55}
+          {...common}
+          {...shapeProps}
+        />
+      )
+    case 'arrow':
+      return (
+        <Arrow
+          points={[0, 0, 120, 0]}
+          pointerLength={el.arrowHead?.size ?? 12}
+          pointerWidth={el.arrowHead?.size ?? 12}
+          {...common}
+          {...shapeProps}
+        />
+      )
+    default:
+      // Custom path or fallback rect
+      return <Rect width={120} height={80} cornerRadius={8} {...common} {...shapeProps} />
+  }
+}
+
 export function ElementNode({
   el,
   onSelect,
@@ -271,5 +342,9 @@ export function ElementNode({
       return <StickerNode el={el} onSelect={onSelect} onChange={onChange} />
     case 'drawing':
       return <DrawingNode el={el} onSelect={onSelect} onChange={onChange} />
+    case 'shape':
+      return <ShapeNode el={el} onSelect={onSelect} onChange={onChange} />
+    default:
+      return null
   }
 }

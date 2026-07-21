@@ -327,6 +327,35 @@ export function LayoutPanel() {
       )}
 
       <ShapePicker />
+
+      <Section title="Shapes">
+        <div className="flex flex-wrap gap-2">
+          {[
+            { type: 'rect' as const, label: 'Rectangle', icon: '▭' },
+            { type: 'circle' as const, label: 'Circle', icon: '●' },
+            { type: 'triangle' as const, label: 'Triangle', icon: '▲' },
+            { type: 'star' as const, label: 'Star', icon: '★' },
+            { type: 'arrow' as const, label: 'Arrow', icon: '→' },
+          ].map((s) => (
+            <button
+              key={s.type}
+              onClick={() => useEditor.getState().addShape(s.type)}
+              className="flex h-14 w-14 items-center justify-center rounded-xl bg-surface-2 text-xl transition hover:bg-surface-3 active:scale-95"
+              title={s.label}
+              aria-label={s.label}
+            >
+              {s.icon}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <ColorField
+            label="Default fill"
+            value="#6366f1"
+            onChange={() => { /* shapes created after this will use this color — future enhancement */ }}
+          />
+        </div>
+      </Section>
     </div>
   )
 }

@@ -2,7 +2,7 @@
 // `CanvasElement` — a discriminated union keyed by `type`. New element kinds
 // (text, sticker, …) plug in here without touching the transform/selection code.
 
-export type ElementType = 'photo' | 'text' | 'sticker' | 'drawing'
+export type ElementType = 'photo' | 'text' | 'sticker' | 'drawing' | 'shape' | 'group'
 
 export interface BaseElement {
   id: string
@@ -98,6 +98,10 @@ export interface TextElement extends BaseElement {
   shadowBlur?: number //   drop-shadow blur (0 = none)
   chip?: TextChip //       tape/scrapbook background behind the text
   curve?: number //        arch depth in px (0 = straight)
+  // Multi-line support
+  width?: number            // wrapping width in design units
+  lineHeight?: number       // 1.2 default
+  align?: 'left' | 'center' | 'right'
 }
 
 export interface StickerElement extends BaseElement {
@@ -118,6 +122,32 @@ export type CanvasElement =
   | TextElement
   | StickerElement
   | DrawingElement
+  | ShapeElement
+  | GroupElement
+
+// ---- Shape element --------------------------------------------------------
+
+export type ShapeType = 'rect' | 'circle' | 'triangle' | 'arrow' | 'speech-bubble' | 'star' | 'heart' | 'custom'
+
+export interface ShapeElement extends BaseElement {
+  type: 'shape'
+  shapeType: ShapeType
+  fill: string
+  stroke?: string
+  strokeWidth?: number
+  // For arrows
+  arrowHead?: { size: number; style: 'triangle' | 'circle' | 'bar' }
+  // For custom SVG path
+  path?: string
+}
+
+// ---- Group element ---------------------------------------------------------
+
+export interface GroupElement extends BaseElement {
+  type: 'group'
+  children: CanvasElement[]  // nested elements
+  expanded?: boolean        // layer panel state
+}
 
 // ---- Background ----------------------------------------------------------
 

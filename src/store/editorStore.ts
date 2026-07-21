@@ -7,6 +7,7 @@ import type {
   Frame,
   PhotoElement,
   PhotoFilters,
+  ShapeElement,
   StickerElement,
   TextElement,
 } from '../types'
@@ -99,6 +100,7 @@ interface EditorState {
   addText: () => void
   addSticker: (emoji: string) => void
   addDrawing: (points: number[], stroke: string, strokeWidth: number) => void
+  addShape: (shapeType: import('../types').ShapeType, fill?: string) => void
   setTool: (tool: 'select' | 'draw') => void
   setBrush: (patch: { color?: string; size?: number }) => void
   updateElement: (id: string, patch: Partial<CanvasElement>) => void
@@ -276,6 +278,22 @@ export const useEditor = create<EditorState>((set, get) => ({
         scaleY: 1,
       }
       return { elements: [...s.elements, drawing], ...record(s) }
+    }),
+
+  addShape: (shapeType, fill = '#6366f1') =>
+    set((s) => {
+      const shape: ShapeElement = {
+        id: uid(),
+        type: 'shape',
+        shapeType,
+        fill,
+        x: s.boardWidth / 2 - 60,
+        y: s.boardHeight / 2 - 40,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+      }
+      return { elements: [...s.elements, shape], selectedId: shape.id, ...record(s) }
     }),
 
   setTool: (tool) => set({ tool, selectedId: null }),
