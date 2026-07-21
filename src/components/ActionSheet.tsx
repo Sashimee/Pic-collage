@@ -82,12 +82,14 @@ export function ActionItem({
   label,
   danger,
   disabled,
+  active,
 }: {
   onClick?: () => void
   icon: ReactNode
   label: string
   danger?: boolean
   disabled?: boolean
+  active?: boolean
 }) {
   return (
     <button
@@ -98,10 +100,12 @@ export function ActionItem({
           ? 'cursor-not-allowed opacity-40'
           : danger
             ? 'text-rose-500 hover:bg-rose-500/10'
-            : 'text-text hover:bg-surface-3'
+            : active
+              ? 'bg-accent/15 text-accent'
+              : 'text-text hover:bg-surface-3'
       }`}
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-muted">
+      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted ${active ? 'bg-accent/20' : 'bg-surface-3'}`}>
         {icon}
       </span>
       {label}

@@ -13,7 +13,7 @@ import { clearPersisted } from '../lib/persistence'
 import { useT } from '../i18n/useLang'
 import { useTheme } from '../i18n/useTheme'
 import { useLang } from '../i18n/useLang'
-import { LangSwitcher } from './LangSwitcher'
+import { LangDropdown } from './LangSwitcher'
 import { IconButton } from './ui'
 import ProjectManager from './ProjectManager'
 import { ActionSheet, ActionItem, ActionDivider, ActionCancel } from './ActionSheet'
@@ -187,7 +187,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           <IconButton onClick={toggleTheme} label={t('header.theme')}>
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </IconButton>
-          <LangSwitcher />
+          <LangDropdown />
           <FullScreenButton />
           <span className="mx-0.5 h-6 w-px bg-border" />
           <IconButton onClick={() => setProjectManagerOpen(true)} label={t('header.projects')}>
@@ -324,10 +324,36 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           icon={<Maximize size={18} />}
           label="Full screen"
         />
+        <ActionDivider />
         <ActionItem
-          onClick={() => { setSheetOpen(false); setLang(lang === 'de' ? 'en' : 'de') }}
-          icon={<span className="text-lg">{lang === 'de' ? '🇬🇧' : '🇩🇪'}</span>}
-          label={lang === 'de' ? 'English' : 'Deutsch'}
+          onClick={() => { setSheetOpen(false); setLang('de') }}
+          icon={<span className="text-lg">🇩🇪</span>}
+          label="Deutsch"
+          active={lang === 'de'}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); setLang('en') }}
+          icon={<span className="text-lg">🇬🇧</span>}
+          label="English"
+          active={lang === 'en'}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); setLang('es') }}
+          icon={<span className="text-lg">🇪🇸</span>}
+          label="Español"
+          active={lang === 'es'}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); setLang('fr') }}
+          icon={<span className="text-lg">🇫🇷</span>}
+          label="Français"
+          active={lang === 'fr'}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); setLang('it') }}
+          icon={<span className="text-lg">🇮🇹</span>}
+          label="Italiano"
+          active={lang === 'it'}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); setProjectManagerOpen(true) }}

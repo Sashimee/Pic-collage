@@ -1,7 +1,48 @@
 import { useLang } from '../i18n/useLang'
+import { useState } from 'react'
 import { LANGS } from '../i18n/translations'
 
-// Two flag buttons in the header; highlights the active language.
+// Compact dropdown — shows only active flag, opens menu with all languages
+export function LangDropdown() {
+  const lang = useLang((s) => s.lang)
+  const setLang = useLang((s) => s.setLang)
+  const [open, setOpen] = useState(false)
+  const active = LANGS.find((l) => l.id === lang) ?? LANGS[0]
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label={active.label}
+        title={active.label}
+        className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-lg transition hover:bg-surface-3"
+      >
+        {active.flag}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-surface-2 shadow-2xl">
+            {LANGS.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => { setLang(l.id); setOpen(false) }}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition hover:bg-surface-3 ${
+                  l.id === lang ? 'text-accent font-medium' : 'text-text'
+                }`}
+              >
+                <span className="text-base">{l.flag}</span>
+                <span>{l.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// Legacy: all flags visible (takes more space)
 export function LangSwitcher() {
   const lang = useLang((s) => s.lang)
   const setLang = useLang((s) => s.setLang)

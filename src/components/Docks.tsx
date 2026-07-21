@@ -4,11 +4,16 @@ import { BottomSheet } from './BottomSheet'
 import type { PanelsApi } from './panels.config'
 import { useWorkspace } from '../store/workspaceStore'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react'
 
 // Tracks scroll position of a ref'd element so callers can show/hide
 // overflow affordances (fade edges, arrow buttons) only when needed.
-function useScrollOverflow<T extends HTMLElement>(axis: 'x' | 'y', deps: unknown[]) {
+function useScrollOverflow<T extends HTMLElement>(axis: 'x' | 'y', deps: unknown[] = []) {
   const ref = useRef<T>(null)
   const [canScrollStart, setCanScrollStart] = useState(false)
   const [canScrollEnd, setCanScrollEnd] = useState(false)
@@ -43,12 +48,8 @@ function useScrollOverflow<T extends HTMLElement>(axis: 'x' | 'y', deps: unknown
 
   return { ref, canScrollStart, canScrollEnd, update }
 }
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react'
-import { useScrollOverflow } from '../hooks/useScrollOverflow'
 
 // ---- Mobile: draggable sheet (overlays canvas) + bottom tab bar ----------
-// The sheet and the tab bar are separate so App can place the sheet inside the
-// positioned canvas host (it overlays the canvas) while the tab bar sits below.
 
 export function MobileSheet({ panels }: { panels: PanelsApi }) {
   const t = useT()
@@ -67,7 +68,7 @@ export function MobileSheet({ panels }: { panels: PanelsApi }) {
 export function MobileTabBar({ panels }: { panels: PanelsApi }) {
   const t = useT()
   const { tabs, active, select } = panels
-  const [navRef, canScrollLeft, canScrollRight] = useScrollOverflow<HTMLDivElement>()
+  const { ref: navRef, canScrollStart: canScrollLeft, canScrollEnd: canScrollRight } = useScrollOverflow<HTMLDivElement>('x')
 
   const scroll = (dir: 'left' | 'right') => {
     const el = navRef.current
@@ -142,7 +143,7 @@ export function MobileTabBar({ panels }: { panels: PanelsApi }) {
 export function ToolRail({ panels }: { panels: PanelsApi }) {
   const t = useT()
   const { tabs, active, select } = panels
-  const [navRef, canScrollUp, canScrollDown] = useScrollOverflow<HTMLElement>()
+  const { ref: navRef, canScrollStart: canScrollUp, canScrollEnd: canScrollDown } = useScrollOverflow<HTMLElement>('y')
 
   const scroll = (dir: 'up' | 'down') => {
     const el = navRef.current
