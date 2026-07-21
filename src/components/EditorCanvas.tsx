@@ -44,6 +44,8 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const gridRadius = useEditor((s) => s.gridRadius)
   const selectedId = useEditor((s) => s.selectedId)
   const select = useEditor((s) => s.select)
+  const toggleMultiSelect = useEditor((s) => s.toggleMultiSelect)
+  const clearMultiSelect = useEditor((s) => s.clearMultiSelect)
   const updateElement = useEditor((s) => s.updateElement)
   const tool = useEditor((s) => s.tool)
   const brushColor = useEditor((s) => s.brushColor)
@@ -189,6 +191,11 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     const target = e.target
     if (target === target.getStage() || target.name() === 'background') {
       select(null)
+      if (e.evt.shiftKey) {
+        // Shift-click on canvas keeps multi-selection
+      } else {
+        clearMultiSelect()
+      }
     }
   }
 
@@ -292,7 +299,10 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     <ElementNode
       key={el.id}
       el={el}
-      onSelect={() => select(el.id)}
+      onSelect={(e) => {
+        if (e?.evt?.shiftKey) toggleMultiSelect(el.id)
+        else select(el.id)
+      }}
       onChange={(patch) => updateElement(el.id, patch)}
       onEditText={openTextEditor}
     />

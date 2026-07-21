@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Trash2, GripVertical, Plus, Wand2 } from 'lucide-react'
+import { Trash2, GripVertical, Plus, Wand2, Sparkles } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { FILTER_PRESETS, computeFilterConfigFromStack } from '../lib/filters'
 import { useT } from '../i18n/useLang'
 import type { FilterOperation } from '../types'
 import { Chip, Section, Slider } from './ui'
 import { useToasts } from './ToastContainer'
+import { autoEnhance } from '../ai/autoEnhance'
 
 const FILTER_OPS = [
   { type: 'brightness', label: 'Brightness', min: -1, max: 1, step: 0.02, default: 0 },
@@ -25,6 +26,7 @@ export function FilterPanel() {
   const selectedId = useEditor((s) => s.selectedId)
   const el = useEditor((s) => s.elements.find((e) => e.id === s.selectedId))
   const updateFilterStack = useEditor((s) => s.updateFilterStack)
+  const updateElement = useEditor((s) => s.updateElement)
   const updateFilters = useEditor((s) => s.updateFilters)
   const photo = el?.type === 'photo' ? el : null
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
@@ -228,6 +230,28 @@ export function FilterPanel() {
           ))}
         </div>
       </Section>
+
+      {/* Auto-enhance */}
+      <button
+        onClick={async () => {
+          if (!photo?.src) return
+          try {
+            const enhanced = await autoEnhance(photo.src, {
+              autoContrast: true,
+              autoWhiteBalance: true,
+              sharpen: true,
+            })
+            updateElement(selectedId, { src: enhanced })
+            toast.success('Photo auto-enhanced!')
+          } catch {
+            toast.error('Enhancement failed')
+          }
+        }}
+        className="flex items-center justify-center gap-2 rounded-lg bg-accent/10 py-2.5 text-sm font-medium text-accent transition hover:bg-accent/20"
+      >
+        <Sparkles size={16} />
+        Auto-Enhance
+      </button>
 
       {/* Reset */}
       <button

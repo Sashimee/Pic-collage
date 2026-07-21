@@ -78,6 +78,7 @@ interface EditorState {
   frame: Frame
   elements: CanvasElement[]
   selectedId: string | null
+  multiSelected: string[]
   croppingId: string | null
 
   // drawing tool (transient — not part of undo history)
@@ -90,6 +91,10 @@ interface EditorState {
 
   // selectors
   selected: () => CanvasElement | undefined
+
+  // multi-select
+  toggleMultiSelect: (id: string) => void
+  clearMultiSelect: () => void
 
   // element actions
   addPhoto: (
@@ -190,6 +195,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   frame: DEFAULT_FRAME,
   elements: [],
   selectedId: null,
+  multiSelected: [],
   croppingId: null,
 
   tool: 'select',
@@ -367,8 +373,21 @@ export const useEditor = create<EditorState>((set, get) => ({
       // Do not select locked elements
       const el = s.elements.find((e) => e.id === id)
       if (el && (el as any).locked) return {}
-      return { selectedId: id }
+      return { selectedId: id, multiSelected: [] }
     }),
+
+  toggleMultiSelect: (id) =>
+    set((s) => {
+      const has = s.multiSelected.includes(id)
+      return {
+        multiSelected: has
+          ? s.multiSelected.filter((x) => x !== id)
+          : [...s.multiSelected, id],
+        selectedId: has ? s.selectedId : id,
+      }
+    }),
+
+  clearMultiSelect: () => set({ multiSelected: [] }),
 
   setCropping: (id) => set({ croppingId: id }),
 

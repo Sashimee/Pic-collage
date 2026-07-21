@@ -8,6 +8,8 @@ import {
   RotateCcw,
   Trash2,
   Crop,
+  Group,
+  X,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
@@ -17,6 +19,7 @@ import { m, AnimatePresence } from './motion'
 export function SelectionBar() {
   const t = useT()
   const selectedId = useEditor((s) => s.selectedId)
+  const multiSelected = useEditor((s) => s.multiSelected)
   const mode = useEditor((s) => s.mode)
   const selected = useEditor((s) => s.selected)
   const remove = useEditor((s) => s.removeElement)
@@ -25,10 +28,13 @@ export function SelectionBar() {
   const backward = useEditor((s) => s.sendBackward)
   const updateElement = useEditor((s) => s.updateElement)
   const setCropping = useEditor((s) => s.setCropping)
+  const groupElements = useEditor((s) => s.groupElements)
+  const clearMultiSelect = useEditor((s) => s.clearMultiSelect)
 
   const el = selected()
   const isGridPhoto = mode === 'grid' && el?.type === 'photo'
   const isFreePhoto = mode === 'free' && el?.type === 'photo'
+  const hasMulti = multiSelected.length > 1
 
   const stepZoom = (delta: number) => {
     if (el?.type !== 'photo') return
@@ -107,6 +113,33 @@ export function SelectionBar() {
                   <option value="darken">Darken</option>
                   <option value="lighten">Lighten</option>
                 </select>
+              </m.div>
+            )}
+
+            {/* Multi-select indicator + group controls */}
+            {hasMulti && (
+              <m.div
+                key="multisel"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="pointer-events-auto flex items-center gap-2 rounded-full bg-accent/90 px-3 py-1.5 shadow-xl ring-1 ring-accent backdrop-blur"
+              >
+                <span className="text-xs font-medium text-white">
+                  {multiSelected.length} selected
+                </span>
+                <button
+                  onClick={() => groupElements(multiSelected)}
+                  className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-1 text-xs text-white transition hover:bg-white/30"
+                >
+                  <Group size={14} /> Group
+                </button>
+                <button
+                  onClick={clearMultiSelect}
+                  className="rounded-full p-1 text-white/70 transition hover:bg-white/20 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
               </m.div>
             )}
 

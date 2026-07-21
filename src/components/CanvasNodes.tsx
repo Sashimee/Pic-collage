@@ -30,7 +30,7 @@ function toBlend(mode: string | undefined): any {
 
 interface NodeProps<T extends CanvasElement> {
   el: T
-  onSelect: () => void
+  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void
   onChange: (patch: Partial<CanvasElement>) => void
   onEditText?: (id: string) => void
 }
@@ -97,8 +97,8 @@ function PhotoNode({ el, onSelect, onChange }: NodeProps<PhotoElement>) {
       opacity={el.opacity ?? 1}
       globalCompositeOperation={toBlend(el.blendMode)}
       draggable
-      onClick={onSelect}
-      onTap={onSelect}
+      onClick={(e) => onSelect(e)}
+      onTap={(e) => onSelect(e)}
       clipFunc={
         shape !== 'rect'
           ? (ctx) => tracePhotoShape(ctx, shape, el.width, el.height)
@@ -180,8 +180,8 @@ function TextNode({ el, onSelect, onChange, onEditText }: NodeProps<TextElement>
     opacity={el.opacity ?? 1}
     globalCompositeOperation={toBlend(el.blendMode)}
     draggable
-    onClick={onSelect}
-    onTap={onSelect}
+    onClick={(e) => onSelect(e)}
+    onTap={(e) => onSelect(e)}
     onDblClick={() => onEditText?.(el.id)}
     onDblTap={() => onEditText?.(el.id)}
     {...commonHandlers(onChange)}
@@ -225,8 +225,8 @@ function DrawingNode({ el, onSelect, onChange }: NodeProps<DrawingElement>) {
       opacity={el.opacity ?? 1}
       globalCompositeOperation={toBlend(el.blendMode)}
       draggable
-      onClick={onSelect}
-      onTap={onSelect}
+      onClick={(e) => onSelect(e)}
+      onTap={(e) => onSelect(e)}
       {...commonHandlers(onChange)}
     />
   )
@@ -247,8 +247,8 @@ function StickerNode({ el, onSelect, onChange }: NodeProps<StickerElement>) {
       opacity={el.opacity ?? 1}
       globalCompositeOperation={toBlend(el.blendMode)}
       draggable
-      onClick={onSelect}
-      onTap={onSelect}
+      onClick={(e) => onSelect(e)}
+      onTap={(e) => onSelect(e)}
       {...commonHandlers(onChange)}
     />
   )
@@ -325,7 +325,7 @@ export function ElementNode({
   onEditText,
 }: {
   el: CanvasElement
-  onSelect: () => void
+  onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void
   onChange: (patch: Partial<CanvasElement>) => void
   onEditText?: (id: string) => void
 }) {
