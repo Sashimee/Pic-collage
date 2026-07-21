@@ -65,7 +65,7 @@ export function ActionSheet({ open, onClose, title, children }: ActionSheetProps
                 </h3>
               )}
 
-              <div className="pb-safe flex flex-col px-2 pb-4">
+              <div className="max-h-[70vh] overflow-y-auto px-2 pb-4">
                 {children}
               </div>
             </motion.div>
