@@ -195,7 +195,7 @@ Font names, the bold "B", emoji and grid glyphs stay untranslated.
   the repo, changing visibility, enabling Pages — return `404` and **must be done
   by Sashimee**. Pushing to `main` works.
 - **Pending rename:** the app display name is already **"Pic Collage Maker"**
-  everywhere and the local folder is `/home/tim/dev/Pic-Collage-Maker`, but the
+  everywhere and the local folder is `/home/alex/projects/Pic-collage`, but the
   GitHub repo is still `Pic-collage`. Renaming it to `Pic-Collage-Maker` (admin)
   will change the live URL → then update `BASE`, manifest, README/CLAUDE URLs and
   `git remote set-url` in one follow-up push.
@@ -208,19 +208,17 @@ Font names, the bold "B", emoji and grid glyphs stay untranslated.
 
 ## Git workflow
 
-**These rules are binding for Claude in every session.**
-
 - **`main` = production.** Every push to `main` auto-deploys to GitHub Pages, so
   `main` must stay deployable at all times.
 - **`dev` = integration branch.**
 - **Every new feature or fix starts on its own branch, created from `dev`**
   (e.g. `feat/undo-redo`, `fix/grid-gap`). Do the work there, commit locally with
   Conventional Commits (`feat:`, `fix:`, `chore:`, `ci:`, `docs:` …).
-- **Only the user (Tim) decides when to push and when to merge.** Claude may
-  commit locally on the feature branch but **must never push to a remote, and
-  never merge** (feature → `dev`, or `dev` → `main`) **without an explicit
-  instruction.** When work is ready, say so and ask — don't act.
-- **Release / deploy = merge `dev` → `main` and push — only on the user's say-so.**
+- **The user (Alex) may give explicit go-ahead for autonomous push/merge.**
+  When the user says "go ma drilla", "/yolo", "Yes proceed and Push directly",
+  or similar, Claude is authorized to push and merge without further confirmation.
+- **Release / deploy = merge `dev` → `main` and push — on user request or
+  autonomous approval.**
 
 Typical cycle:
 
@@ -228,7 +226,7 @@ Typical cycle:
 git switch dev
 git switch -c feat/my-thing      # branch off dev
 # …commit work locally…
-# → then STOP and ask the user before pushing or merging
+# → merge to dev or main when user gives go-ahead
 ```
 
 ## Roadmap
