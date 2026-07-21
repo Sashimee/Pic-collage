@@ -34,6 +34,7 @@ export async function exportWebM(
   canvas: HTMLCanvasElement,
   fps: number = 30,
   durationSeconds: number = 5,
+  frames?: ImageBitmap[],
 ): Promise<Blob> {
   const stream = canvas.captureStream(fps)
   const recorder = new MediaRecorder(stream, {
@@ -47,7 +48,47 @@ export async function exportWebM(
 
   return new Promise((resolve) => {
     recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }))
-    recorder.start()
-    setTimeout(() => recorder.stop(), durationSeconds * 1000)
+
+    if (frames && frames.length > 1) {
+      recorder.start()
+      const ctx = canvas.getContext('2d')!
+      const startTime = performance.now()
+      const totalMs = durationSeconds * 1000
+      const segmentMs = totalMs / frames.length
+      const fadeRatio = 0.4 // 40% of each segment is crossfade
+
+      const animate = (now: number) => {
+        const elapsed = now - startTime
+        if (elapsed >= totalMs) {
+          recorder.stop()
+          return
+        }
+
+        const idx = Math.floor(elapsed / segmentMs)
+        const t = (elapsed % segmentMs) / segmentMs
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        // Hold phase: draw current frame fully opaque
+        const current = frames[Math.min(idx, frames.length - 1)]
+        ctx.globalAlpha = 1
+        ctx.drawImage(current, 0, 0)
+
+        // Fade phase: crossfade to next frame
+        if (idx + 1 < frames.length && t > 1 - fadeRatio) {
+          const fade = (t - (1 - fadeRatio)) / fadeRatio // 0..1
+          ctx.globalAlpha = Math.min(1, Math.max(0, fade))
+          ctx.drawImage(frames[idx + 1], 0, 0)
+        }
+
+        ctx.globalAlpha = 1
+        requestAnimationFrame(animate)
+      }
+
+      requestAnimationFrame(animate)
+    } else {
+      recorder.start()
+      setTimeout(() => recorder.stop(), durationSeconds * 1000)
+    }
   })
 }
