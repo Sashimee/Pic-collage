@@ -83,7 +83,7 @@ async function fetchWithProgress(
       onProgress?.({ loaded, total, pct: total ? loaded / total : 0 })
     }
   }
-  const blob = new Blob(chunks)
+  const blob = new Blob(chunks.map((c) => c.buffer as BlobPart))
   return blob.arrayBuffer()
 }
 

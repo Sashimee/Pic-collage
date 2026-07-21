@@ -16,9 +16,7 @@ import { ElementNode } from './CanvasNodes'
 import { GridView } from './GridView'
 import { exportBoard, type ExportFormat } from '../lib/exportImage'
 import type { CanvasElement, PhotoElement } from '../types'
-import { importFiles } from '../lib/importFiles'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useToast } from '../store/toastStore'
+import { computeSnap, type SnapLine } from '../lib/snap'
 
 export interface EditorHandle {
   exportImage: (format: ExportFormat) => string | null
@@ -35,6 +33,11 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
 
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [tf, setTf] = useState({ x: 0, y: 0, scale: 1 })
+  const [snapGuides, setSnapGuides] = useState<SnapLine[]>([])
+  const [snapEnabled, setSnapEnabled] = useState(true)
+  const [showGrid, setShowGrid] = useState(false)
+  const [gridType, setGridType] = useState<'dot' | 'line'>('dot')
+  const [showRulers, setShowRulers] = useState(false)
 
   const boardWidth = useEditor((s) => s.boardWidth)
   const boardHeight = useEditor((s) => s.boardHeight)
@@ -50,9 +53,6 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const toggleMultiSelect = useEditor((s) => s.toggleMultiSelect)
   const clearMultiSelect = useEditor((s) => s.clearMultiSelect)
   const updateElement = useEditor((s) => s.updateElement)
-  const addPhoto = useEditor((s) => s.addPhoto)
-  const addToast = useToast((s) => s.add)
-
   const tool = useEditor((s) => s.tool)
   const brushColor = useEditor((s) => s.brushColor)
   const brushSize = useEditor((s) => s.brushSize)
@@ -102,9 +102,6 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   useEffect(fitToScreen, [size.w, size.h, boardWidth, boardHeight])
 
   // --- transformer attachment --------------------------------------------
-  // Attach to the selected element when it is rendered as a free node: any
-  // element in free mode, only non-photo overlays in grid mode (grid photos
-  // keep the tap-highlight from GridView, without transform handles).
   useEffect(() => {
     const tr = trRef.current
     const stage = stageRef.current
@@ -165,8 +162,6 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     const prev = pinch.current
     if (prev) {
       const factor = clamp(dist / prev.dist, 0.5, 2)
-      // A selected photo in grid mode captures the pinch as per-cell zoom;
-      // otherwise the gesture zooms the board view.
       const sel = elements.find((el) => el.id === selectedId)
       if (mode === 'grid' && sel?.type === 'photo') {
         const newZoom = clamp((sel.cellZoom ?? 1) * factor, 1, 4)
@@ -197,6 +192,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     const target = e.target
     if (target === target.getStage() || target.name() === 'background') {
       select(null)
+      setSnapGuides([])
       if (e.evt.shiftKey) {
         // Shift-click on canvas keeps multi-selection
       } else {
@@ -206,7 +202,6 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   }
 
   // --- freehand drawing ---------------------------------------------------
-  // Convert a container-local pixel to board design units via the view transform.
   const toBoard = (px: number, py: number) => ({
     x: (px - tf.x) / tf.scale,
     y: (py - tf.y) / tf.scale,
@@ -269,15 +264,32 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     endPinch()
   }
 
+  // --- snap wiring --------------------------------------------------------
+  const handleDragMove = (el: CanvasElement) => (e: Konva.KonvaEventObject<DragEvent>) => {
+    if (!snapEnabled || e.evt?.shiftKey) return
+    const node = e.target
+    const currentX = node.x()
+    const currentY = node.y()
+    const result = computeSnap(
+      el,
+      elements,
+      boardWidth,
+      boardHeight,
+      currentX,
+      currentY,
+    )
+    if (result.x !== currentX) node.x(result.x)
+    if (result.y !== currentY) node.y(result.y)
+    setSnapGuides(result.guides)
+  }
+
   const gridLayout = gridId ? getGridById(gridId) : undefined
   const photos = elements.filter((e): e is PhotoElement => e.type === 'photo')
   const inGrid = mode === 'grid' && !!gridLayout
-  // In grid mode photos fill the cells; text/stickers float on top as free nodes.
   const freeElements = inGrid
     ? elements.filter((e) => e.type !== 'photo')
     : elements
 
-  // Open the inline editor positioned over the tapped text node.
   const openTextEditor = (id: string) => {
     const stage = stageRef.current
     const node = stage?.findOne('#' + id)
@@ -301,23 +313,6 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     setEditing(null)
   }
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const files = e.dataTransfer.files
-    if (!files?.length) return
-    try {
-      await importFiles(files, addPhoto)
-    } catch {
-      addToast('Failed to import dropped images', 'error')
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
   const renderElement = (el: CanvasElement) => (
     <ElementNode
       key={el.id}
@@ -328,16 +323,74 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
       }}
       onChange={(patch) => updateElement(el.id, patch)}
       onEditText={openTextEditor}
+      onDragMove={handleDragMove(el)}
     />
   )
 
+  // Grid background dots / lines
+  const gridSpacing = 40
+  const gridDots: { x: number; y: number }[] = []
+  const gridLinesH: { x1: number; y1: number; x2: number; y2: number }[] = []
+  const gridLinesV: { x1: number; y1: number; x2: number; y2: number }[] = []
+  if (showGrid) {
+    for (let x = 0; x <= boardWidth; x += gridSpacing) {
+      for (let y = 0; y <= boardHeight; y += gridSpacing) {
+        if (gridType === 'dot') {
+          gridDots.push({ x, y })
+        }
+      }
+      if (gridType === 'line') {
+        gridLinesV.push({ x1: x, y1: 0, x2: x, y2: boardHeight })
+      }
+    }
+    if (gridType === 'line') {
+      for (let y = 0; y <= boardHeight; y += gridSpacing) {
+        gridLinesH.push({ x1: 0, y1: y, x2: boardWidth, y2: y })
+      }
+    }
+  }
+
   return (
-    <div
-      ref={hostRef}
-      className="canvas-host relative h-full w-full"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-    >
+    <div ref={hostRef} className="canvas-host relative h-full w-full">
+      {/* Toggles */}
+      <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
+        <button
+          onClick={() => setSnapEnabled((v) => !v)}
+          className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
+            snapEnabled ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
+          }`}
+          title="Snap to guides (Shift to temporarily disable while dragging)"
+        >
+          Snap
+        </button>
+        <button
+          onClick={() => setShowGrid((v) => !v)}
+          className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
+            showGrid ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
+          }`}
+          title="Toggle grid"
+        >
+          Grid
+        </button>
+        {showGrid && (
+          <button
+            onClick={() => setGridType((t) => (t === 'dot' ? 'line' : 'dot'))}
+            className="rounded-md bg-surface-2/90 px-2 py-1 text-xs font-medium text-muted shadow backdrop-blur transition hover:text-text"
+          >
+            {gridType === 'dot' ? 'Dots' : 'Lines'}
+          </button>
+        )}
+        <button
+          onClick={() => setShowRulers((v) => !v)}
+          className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
+            showRulers ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
+          }`}
+          title="Toggle rulers"
+        >
+          Rulers
+        </button>
+      </div>
+
       {size.w > 0 && (
         <Stage
           ref={stageRef}
@@ -357,6 +410,74 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
               {/* In draw mode elements ignore hits so strokes land on the stage. */}
               <Group listening={!drawMode}>
                 <Background bg={background} width={boardWidth} height={boardHeight} />
+
+                {/* Grid background */}
+                {showGrid && gridType === 'dot' &&
+                  gridDots.map((d, i) => (
+                    <Line
+                      key={`gd-${i}`}
+                      points={[d.x, d.y, d.x + 0.1, d.y + 0.1]}
+                      stroke="rgba(0,0,0,0.12)"
+                      strokeWidth={1.5}
+                      lineCap="round"
+                      listening={false}
+                    />
+                  ))}
+                {showGrid && gridType === 'line' && (
+                  <>
+                    {gridLinesV.map((l, i) => (
+                      <Line
+                        key={`gv-${i}`}
+                        points={[l.x1, l.y1, l.x2, l.y2]}
+                        stroke="rgba(0,0,0,0.08)"
+                        strokeWidth={0.5}
+                        listening={false}
+                      />
+                    ))}
+                    {gridLinesH.map((l, i) => (
+                      <Line
+                        key={`gh-${i}`}
+                        points={[l.x1, l.y1, l.x2, l.y2]}
+                        stroke="rgba(0,0,0,0.08)"
+                        strokeWidth={0.5}
+                        listening={false}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {/* Pixel rulers */}
+                {showRulers && (
+                  <>
+                    {/* Top ruler */}
+                    {Array.from({ length: Math.floor(boardWidth / 100) + 1 }).map((_, i) => {
+                      const x = i * 100
+                      return (
+                        <Line
+                          key={`rt-${i}`}
+                          points={[x, 0, x, 12]}
+                          stroke="rgba(0,0,0,0.25)"
+                          strokeWidth={0.5}
+                          listening={false}
+                        />
+                      )
+                    })}
+                    {/* Left ruler */}
+                    {Array.from({ length: Math.floor(boardHeight / 100) + 1 }).map((_, i) => {
+                      const y = i * 100
+                      return (
+                        <Line
+                          key={`rl-${i}`}
+                          points={[0, y, 12, y]}
+                          stroke="rgba(0,0,0,0.25)"
+                          strokeWidth={0.5}
+                          listening={false}
+                        />
+                      )
+                    })}
+                  </>
+                )}
+
                 {inGrid && gridLayout && (
                   <GridView
                     layout={gridLayout}
@@ -372,6 +493,23 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
                 )}
                 {freeElements.map(renderElement)}
               </Group>
+
+              {/* Snap guide lines */}
+              {snapGuides.map((g, i) => (
+                <Line
+                  key={`sg-${i}`}
+                  points={
+                    g.axis === 'x'
+                      ? [g.pos, g.from, g.pos, g.to]
+                      : [g.from, g.pos, g.to, g.pos]
+                  }
+                  stroke="#ef4444"
+                  strokeWidth={1}
+                  dash={[6, 4]}
+                  listening={false}
+                />
+              ))}
+
               {drawing.current && ptsRef.current.length >= 2 && (
                 <Line
                   points={ptsRef.current}

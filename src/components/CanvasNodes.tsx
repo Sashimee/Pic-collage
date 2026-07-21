@@ -3,6 +3,7 @@ import {
   Group,
   Image as KonvaImage,
   Line,
+  Path,
   Rect,
   RegularPolygon,
   Star,
@@ -69,12 +70,9 @@ function PhotoNode({ el, onSelect, onChange, onDragMove }: NodeProps<PhotoElemen
   const ref = useRef<Konva.Image>(null)
   const shape = el.shape ?? 'rect'
 
-  // (Re)build the Konva filter cache whenever the bitmap, filter values, or
-  // crop change. Blur/color filters live on the inner Image node.
   useEffect(() => {
     const node = ref.current
     if (!node || !image) return
-    // Use v2 filterStack if available, else fall back to v1 filters
     const cfg = el.filterStack
       ? computeFilterConfigFromStack(el.filterStack)
       : computeFilterConfig(el.filters)
@@ -140,8 +138,6 @@ function TextNode({ el, onSelect, onChange, onEditText, onDragMove }: NodeProps<
   const [dims, setDims] = useState({ w: 0, h: 0 })
   const curve = el.curve ?? 0
 
-  // Measure the rendered text so the chip background can size to it. The Text
-  // node measures even while hidden (curved mode renders a TextPath instead).
   useLayoutEffect(() => {
     const n = textRef.current
     if (n) setDims({ w: n.width(), h: n.height() })
@@ -164,33 +160,31 @@ function TextNode({ el, onSelect, onChange, onEditText, onDragMove }: NodeProps<
     shadowColor: el.shadowBlur ? el.shadowColor : undefined,
     shadowBlur: el.shadowBlur ?? 0,
     shadowOpacity: el.shadowBlur ? 0.85 : 0,
-    // Multi-line support
     width: el.width,
     lineHeight: el.lineHeight ?? 1.2,
     align: el.align ?? 'left',
   }
 
   const chip = el.chip
-  // Bow path for curved text: from (0,0) to (w,0), arching up by `curve`.
   const bow = `M 0 0 Q ${dims.w / 2} ${-curve * 2} ${dims.w} 0`
 
   return (
     <Group
-    id={el.id}
-    name="element"
-    x={el.x}
-    y={el.y}
-    rotation={el.rotation}
-    scaleX={el.scaleX}
-    scaleY={el.scaleY}
-    opacity={el.opacity ?? 1}
-    globalCompositeOperation={toBlend(el.blendMode)}
-    draggable
-    onClick={(e) => onSelect(e)}
-    onTap={(e) => onSelect(e)}
-    onDblClick={() => onEditText?.(el.id)}
-    onDblTap={() => onEditText?.(el.id)}
-    {...commonHandlers(onChange, onDragMove)}
+      id={el.id}
+      name="element"
+      x={el.x}
+      y={el.y}
+      rotation={el.rotation}
+      scaleX={el.scaleX}
+      scaleY={el.scaleY}
+      opacity={el.opacity ?? 1}
+      globalCompositeOperation={toBlend(el.blendMode)}
+      draggable
+      onClick={(e) => onSelect(e)}
+      onTap={(e) => onSelect(e)}
+      onDblClick={() => onEditText?.(el.id)}
+      onDblTap={() => onEditText?.(el.id)}
+      {...commonHandlers(onChange, onDragMove)}
     >
       {chip && curve === 0 && dims.w > 0 && (
         <Rect
@@ -291,29 +285,16 @@ function ShapeNode({ el, onSelect, onChange, onDragMove }: NodeProps<ShapeElemen
       return <Rect width={100} height={100} cornerRadius={50} {...common} {...shapeProps} />
     case 'triangle':
       return (
-        <RegularPolygon
-          sides={3}
-          radius={60}
-          {...common}
-          {...shapeProps}
-        />
+        <RegularPolygon sides={3} radius={60} {...common} {...shapeProps} />
       )
     case 'star':
       return (
-        <Star
-          numPoints={5}
-          innerRadius={25}
-          outerRadius={55}
-          {...common}
-          {...shapeProps}
-        />
+        <Star numPoints={5} innerRadius={25} outerRadius={55} {...common} {...shapeProps} />
       )
     case 'speech-bubble':
       return (
         <Path
           data={`M 0,40 Q 0,0 20,0 L 100,0 Q 120,0 120,20 L 120,60 Q 120,80 100,80 L 40,80 L 10,100 L 20,80 L 20,80 Q 0,80 0,60 Z`}
-          scaleX={1.5}
-          scaleY={1.5}
           {...common}
           {...shapeProps}
         />
@@ -322,8 +303,6 @@ function ShapeNode({ el, onSelect, onChange, onDragMove }: NodeProps<ShapeElemen
       return (
         <Path
           data={`M60,30 C60,10 40,0 30,10 C20,0 0,10 0,30 C0,50 30,70 30,70 C30,70 60,50 60,30 Z`}
-          scaleX={2}
-          scaleY={2}
           {...common}
           {...shapeProps}
         />
@@ -339,7 +318,6 @@ function ShapeNode({ el, onSelect, onChange, onDragMove }: NodeProps<ShapeElemen
         />
       )
     default:
-      // Custom path or fallback rect
       if (el.path) {
         return <Path data={el.path} {...common} {...shapeProps} />
       }
