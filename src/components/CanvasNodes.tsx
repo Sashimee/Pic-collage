@@ -308,6 +308,26 @@ function ShapeNode({ el, onSelect, onChange, onDragMove }: NodeProps<ShapeElemen
           {...shapeProps}
         />
       )
+    case 'speech-bubble':
+      return (
+        <Path
+          data={`M 0,40 Q 0,0 20,0 L 100,0 Q 120,0 120,20 L 120,60 Q 120,80 100,80 L 40,80 L 10,100 L 20,80 L 20,80 Q 0,80 0,60 Z`}
+          scaleX={1.5}
+          scaleY={1.5}
+          {...common}
+          {...shapeProps}
+        />
+      )
+    case 'heart':
+      return (
+        <Path
+          data={`M60,30 C60,10 40,0 30,10 C20,0 0,10 0,30 C0,50 30,70 30,70 C30,70 60,50 60,30 Z`}
+          scaleX={2}
+          scaleY={2}
+          {...common}
+          {...shapeProps}
+        />
+      )
     case 'arrow':
       return (
         <Arrow
@@ -320,6 +340,9 @@ function ShapeNode({ el, onSelect, onChange, onDragMove }: NodeProps<ShapeElemen
       )
     default:
       // Custom path or fallback rect
+      if (el.path) {
+        return <Path data={el.path} {...common} {...shapeProps} />
+      }
       return <Rect width={120} height={80} cornerRadius={8} {...common} {...shapeProps} />
   }
 }
@@ -329,15 +352,17 @@ export function ElementNode({
   onSelect,
   onChange,
   onEditText,
+  onDragMove,
 }: {
   el: CanvasElement
   onSelect: (e?: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void
   onChange: (patch: Partial<CanvasElement>) => void
   onEditText?: (id: string) => void
+  onDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void
 }) {
   switch (el.type) {
     case 'photo':
-      return <PhotoNode el={el} onSelect={onSelect} onChange={onChange} />
+      return <PhotoNode el={el} onSelect={onSelect} onChange={onChange} onDragMove={onDragMove} />
     case 'text':
       return (
         <TextNode
@@ -345,14 +370,15 @@ export function ElementNode({
           onSelect={onSelect}
           onChange={onChange}
           onEditText={onEditText}
+          onDragMove={onDragMove}
         />
       )
     case 'sticker':
-      return <StickerNode el={el} onSelect={onSelect} onChange={onChange} />
+      return <StickerNode el={el} onSelect={onSelect} onChange={onChange} onDragMove={onDragMove} />
     case 'drawing':
-      return <DrawingNode el={el} onSelect={onSelect} onChange={onChange} />
+      return <DrawingNode el={el} onSelect={onSelect} onChange={onChange} onDragMove={onDragMove} />
     case 'shape':
-      return <ShapeNode el={el} onSelect={onSelect} onChange={onChange} />
+      return <ShapeNode el={el} onSelect={onSelect} onChange={onChange} onDragMove={onDragMove} />
     default:
       return null
   }
