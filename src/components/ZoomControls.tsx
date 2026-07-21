@@ -15,7 +15,7 @@ export function ZoomControls() {
       >
         <ZoomOut size={18} strokeWidth={2.5} />
       </button>
-      <span className="w-14 text-center text-xs font-semibold text-text">
+      <span className="min-w-[3.5rem] text-center text-sm font-bold text-text tabular-nums">
         {Math.round(zoom * 100)}%
       </span>
       <button

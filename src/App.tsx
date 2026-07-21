@@ -264,6 +264,14 @@ export default function App() {
             <div className="flex min-h-0 flex-1">
               <ToolRail panels={panels} />
               <div className="relative min-h-0 flex-1 bg-bg">
+                {/* Subtle dot grid on empty canvas */}
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-[0.03]"
+                  style={{
+                    backgroundImage: 'radial-gradient(circle, var(--text) 1px, transparent 1px)',
+                    backgroundSize: '24px 24px',
+                  }}
+                />
                 <EditorCanvas ref={editorRef} />
                 <SelectionBar />
                 <EmptyState />
@@ -277,6 +285,14 @@ export default function App() {
         ) : (
           <>
             <div className="relative min-h-0 flex-1 bg-bg">
+              {/* Subtle dot grid on empty canvas */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.03]"
+                style={{
+                  backgroundImage: 'radial-gradient(circle, var(--text) 1px, transparent 1px)',
+                  backgroundSize: '24px 24px',
+                }}
+              />
               <EditorCanvas ref={editorRef} />
               <SelectionBar />
               <EmptyState />
