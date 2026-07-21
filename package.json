@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "tsc -b --noEmit",
+    "test": "vitest run",
     "generate:icons": "node scripts/generate-icons.mjs",
     "test:unit": "vitest run",
     "test:e2e": "playwright test -c e2e/playwright.config.ts"
