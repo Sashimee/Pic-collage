@@ -48,5 +48,6 @@ export function useToasts() {
     success: (msg: string) => addToast(msg, 'success', 3000),
     error: (msg: string) => addToast(msg, 'error', 4000),
     info: (msg: string) => addToast(msg, 'info', 3000),
+    warn: (msg: string) => addToast(msg, 'error', 5000),
   }
 }

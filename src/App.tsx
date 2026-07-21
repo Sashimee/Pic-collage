@@ -8,6 +8,7 @@ import { usePanels } from './components/panels.config'
 import { MotionProvider } from './components/motion'
 import { useIsDesktop } from './hooks/useMediaQuery'
 import { useVersionCheck } from './hooks/useVersionCheck'
+import { useMemoryPressure } from './hooks/useMemoryPressure'
 import { useShortcuts } from './hooks/useShortcuts'
 import { CropOverlay } from './components/CropOverlay'
 import { UpdateBanner } from './components/UpdateBanner'
@@ -74,6 +75,7 @@ export default function App() {
   const t = useT()
 
   useVersionCheck()
+  useMemoryPressure()
   useDefaultShortcuts()
 
   // Restore custom fonts on startup
