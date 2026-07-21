@@ -121,9 +121,9 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
       const board = boardRef.current
       if (!board) return null
       // Force original resolution photos during export
-      useEditor.getState().setCanvasZoom(10)
+      useEditor.getState().setExporting(true)
       const result = exportBoard(board, boardWidth, boardHeight, format)
-      useEditor.getState().setCanvasZoom(1)
+      useEditor.getState().setExporting(false)
       return result
     },
   }))

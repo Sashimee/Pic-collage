@@ -139,6 +139,8 @@ interface EditorState {
   applyShapeToAll: (shape: string) => void
   setCanvasZoom: (zoom: number) => void
   canvasZoom: number
+  exporting: boolean
+  setExporting: (v: boolean) => void
 
   // board / background / mode / frame / grid style
   setBackground: (patch: Partial<Background>) => void
@@ -203,6 +205,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   brushColor: '#ef4444',
   brushSize: 8,
   canvasZoom: 1,
+  exporting: false,
 
   past: [],
   future: [],
@@ -565,6 +568,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     })),
 
   setCanvasZoom: (zoom) => set({ canvasZoom: Math.max(0.25, Math.min(3, zoom)) }),
+  setExporting: (v) => set({ exporting: v }),
 }))
 
 // Dev-only handle so the editor state can be driven from the console / tests.

@@ -67,11 +67,10 @@ function commonHandlers(
 }
 
 function PhotoNode({ el, onSelect, onChange, onDragMove }: NodeProps<PhotoElement>) {
-  const canvasZoom = useEditor((s) => s.canvasZoom)
-  const displaySrc =
-    (canvasZoom > 2 && el.originalSrc)
-      ? el.originalSrc
-      : (el.previewSrc ?? el.src)
+  const exporting = useEditor((s) => s.exporting)
+  const displaySrc = exporting
+    ? (el.originalSrc ?? el.previewSrc ?? el.src)
+    : (el.previewSrc ?? el.src)
   const image = useImage(displaySrc)
   const ref = useRef<Konva.Image>(null)
   const shape = el.shape ?? 'rect'
