@@ -4,11 +4,28 @@ import type { GridLayout } from '../types'
 // so cells here tile the full unit square edge-to-edge. Rendered as visual
 // thumbnails in the layout picker (see LayoutPreview), so no text label needed.
 export const GRID_LAYOUTS: GridLayout[] = [
+  // ---- 1 photo ----
+  {
+    id: '1-full',
+    label: '1',
+    count: 1,
+    category: 'classic',
+    cells: [{ x: 0, y: 0, width: 1, height: 1 }],
+  },
+  {
+    id: '1-centered',
+    label: '1',
+    count: 1,
+    category: 'classic',
+    cells: [{ x: 0.1, y: 0.1, width: 0.8, height: 0.8, shape: 'circle' }],
+  },
+
   // ---- 2 photos ----
   {
     id: '2-v',
     label: '2',
     count: 2,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 0.5, height: 1 },
       { x: 0.5, y: 0, width: 0.5, height: 1 },
@@ -18,6 +35,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '2-h',
     label: '2',
     count: 2,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 1, height: 0.5 },
       { x: 0, y: 0.5, width: 1, height: 0.5 },
@@ -27,16 +45,29 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '2-big-small',
     label: '2',
     count: 2,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 1, height: 0.66 },
       { x: 0, y: 0.66, width: 1, height: 0.34 },
     ],
   },
+  {
+    id: '2-overlap',
+    label: '2',
+    count: 2,
+    category: 'creative',
+    cells: [
+      { x: 0, y: 0, width: 0.7, height: 1 },
+      { x: 0.3, y: 0.05, width: 0.7, height: 0.9 },
+    ],
+  },
+
   // ---- 3 photos ----
   {
     id: '3-col',
     label: '3',
     count: 3,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 1 / 3, height: 1 },
       { x: 1 / 3, y: 0, width: 1 / 3, height: 1 },
@@ -47,6 +78,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '3-strip-h',
     label: '3',
     count: 3,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 1, height: 1 / 3 },
       { x: 0, y: 1 / 3, width: 1, height: 1 / 3 },
@@ -57,6 +89,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '3-1big-left',
     label: '3',
     count: 3,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 0.6, height: 1 },
       { x: 0.6, y: 0, width: 0.4, height: 0.5 },
@@ -67,17 +100,53 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '3-1big-top',
     label: '3',
     count: 3,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 1, height: 0.6 },
       { x: 0, y: 0.6, width: 0.5, height: 0.4 },
       { x: 0.5, y: 0.6, width: 0.5, height: 0.4 },
     ],
   },
+  {
+    id: '3-tri',
+    label: '3',
+    count: 3,
+    category: 'creative',
+    cells: [
+      { x: 0.25, y: 0, width: 0.5, height: 0.5, shape: 'circle' },
+      { x: 0, y: 0.5, width: 0.5, height: 0.5, shape: 'circle' },
+      { x: 0.5, y: 0.5, width: 0.5, height: 0.5, shape: 'circle' },
+    ],
+  },
+  {
+    id: '3-magazine',
+    label: '3',
+    count: 3,
+    category: 'editorial',
+    cells: [
+      { x: 0, y: 0, width: 1, height: 0.6 },
+      { x: 0, y: 0.6, width: 0.55, height: 0.4 },
+      { x: 0.55, y: 0.6, width: 0.45, height: 0.4 },
+    ],
+  },
+  {
+    id: '3-diamond',
+    label: '3',
+    count: 3,
+    category: 'creative',
+    cells: [
+      { x: 0.25, y: 0, width: 0.5, height: 0.5, shape: 'polygon', polygon: [{ x: 0.5, y: 0 }, { x: 1, y: 0.5 }, { x: 0.5, y: 1 }, { x: 0, y: 0.5 }] },
+      { x: 0, y: 0.5, width: 0.5, height: 0.5, shape: 'polygon', polygon: [{ x: 0.5, y: 0 }, { x: 1, y: 0.5 }, { x: 0.5, y: 1 }, { x: 0, y: 0.5 }] },
+      { x: 0.5, y: 0.5, width: 0.5, height: 0.5, shape: 'polygon', polygon: [{ x: 0.5, y: 0 }, { x: 1, y: 0.5 }, { x: 0.5, y: 1 }, { x: 0, y: 0.5 }] },
+    ],
+  },
+
   // ---- 4 photos ----
   {
     id: '4-grid',
     label: '4',
     count: 4,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 0.5, height: 0.5 },
       { x: 0.5, y: 0, width: 0.5, height: 0.5 },
@@ -89,6 +158,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '4-col',
     label: '4',
     count: 4,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 0.25, height: 1 },
       { x: 0.25, y: 0, width: 0.25, height: 1 },
@@ -100,6 +170,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '4-row',
     label: '4',
     count: 4,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 1, height: 0.25 },
       { x: 0, y: 0.25, width: 1, height: 0.25 },
@@ -111,6 +182,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '4-1big-top',
     label: '4',
     count: 4,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 1, height: 0.6 },
       { x: 0, y: 0.6, width: 1 / 3, height: 0.4 },
@@ -122,6 +194,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '4-1big-left',
     label: '4',
     count: 4,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 0.6, height: 1 },
       { x: 0.6, y: 0, width: 0.4, height: 1 / 3 },
@@ -133,6 +206,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '4-pinwheel',
     label: '4',
     count: 4,
+    category: 'creative',
     cells: [
       { x: 0, y: 0, width: 0.6, height: 0.4 },
       { x: 0.6, y: 0, width: 0.4, height: 0.6 },
@@ -140,11 +214,49 @@ export const GRID_LAYOUTS: GridLayout[] = [
       { x: 0, y: 0.4, width: 0.4, height: 0.6 },
     ],
   },
+  {
+    id: '4-magazine',
+    label: '4',
+    count: 4,
+    category: 'editorial',
+    cells: [
+      { x: 0, y: 0, width: 0.7, height: 1 },
+      { x: 0.7, y: 0, width: 0.3, height: 1 / 3 },
+      { x: 0.7, y: 1 / 3, width: 0.3, height: 1 / 3 },
+      { x: 0.7, y: 2 / 3, width: 0.3, height: 1 / 3 },
+    ],
+  },
+  {
+    id: '4-story',
+    label: '4',
+    count: 4,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1, height: 0.25 },
+      { x: 0, y: 0.25, width: 1, height: 0.25 },
+      { x: 0, y: 0.5, width: 1, height: 0.25 },
+      { x: 0, y: 0.75, width: 1, height: 0.25 },
+    ],
+  },
+  {
+    id: '4-hex',
+    label: '4',
+    count: 4,
+    category: 'creative',
+    cells: [
+      { x: 0.25, y: 0, width: 0.5, height: 0.5, shape: 'polygon', polygon: [{ x: 0.5, y: 0 }, { x: 0.933, y: 0.25 }, { x: 0.933, y: 0.75 }, { x: 0.5, y: 1 }, { x: 0.067, y: 0.75 }, { x: 0.067, y: 0.25 }] },
+      { x: 0, y: 0.25, width: 0.5, height: 0.5, shape: 'polygon', polygon: [{ x: 0.5, y: 0 }, { x: 0.933, y: 0.25 }, { x: 0.933, y: 0.75 }, { x: 0.5, y: 1 }, { x: 0.067, y: 0.75 }, { x: 0.067, y: 0.25 }] },
+      { x: 0.5, y: 0.25, width: 0.5, height: 0.5, shape: 'polygon', polygon: [{ x: 0.5, y: 0 }, { x: 0.933, y: 0.25 }, { x: 0.933, y: 0.75 }, { x: 0.5, y: 1 }, { x: 0.067, y: 0.75 }, { x: 0.067, y: 0.25 }] },
+      { x: 0.25, y: 0.5, width: 0.5, height: 0.5, shape: 'polygon', polygon: [{ x: 0.5, y: 0 }, { x: 0.933, y: 0.25 }, { x: 0.933, y: 0.75 }, { x: 0.5, y: 1 }, { x: 0.067, y: 0.75 }, { x: 0.067, y: 0.25 }] },
+    ],
+  },
+
   // ---- 5 photos ----
   {
     id: '5-1big-left',
     label: '5',
     count: 5,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 0.6, height: 1 },
       { x: 0.6, y: 0, width: 0.4, height: 0.25 },
@@ -157,6 +269,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '5-1big-top',
     label: '5',
     count: 5,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 1, height: 0.6 },
       { x: 0, y: 0.6, width: 0.25, height: 0.4 },
@@ -169,6 +282,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '5-2over3',
     label: '5',
     count: 5,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 0.5, height: 0.5 },
       { x: 0.5, y: 0, width: 0.5, height: 0.5 },
@@ -177,11 +291,65 @@ export const GRID_LAYOUTS: GridLayout[] = [
       { x: 2 / 3, y: 0.5, width: 1 / 3, height: 0.5 },
     ],
   },
+  {
+    id: '5-circle',
+    label: '5',
+    count: 5,
+    category: 'creative',
+    cells: [
+      { x: 0.3, y: 0.3, width: 0.4, height: 0.4, shape: 'circle' },
+      { x: 0.3, y: 0.05, width: 0.4, height: 0.25, shape: 'circle' },
+      { x: 0.7, y: 0.3, width: 0.25, height: 0.4, shape: 'circle' },
+      { x: 0.3, y: 0.7, width: 0.4, height: 0.25, shape: 'circle' },
+      { x: 0.05, y: 0.3, width: 0.25, height: 0.4, shape: 'circle' },
+    ],
+  },
+  {
+    id: '5-pinterest',
+    label: '5',
+    count: 5,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 0.5, height: 0.4 },
+      { x: 0.5, y: 0, width: 0.5, height: 0.6 },
+      { x: 0, y: 0.4, width: 0.5, height: 0.6 },
+      { x: 0.5, y: 0.6, width: 0.5, height: 0.4 },
+      { x: 0.25, y: 0.35, width: 0.5, height: 0.3 },
+    ],
+  },
+  {
+    id: '5-magazine',
+    label: '5',
+    count: 5,
+    category: 'editorial',
+    cells: [
+      { x: 0, y: 0, width: 1, height: 0.5 },
+      { x: 0, y: 0.5, width: 0.5, height: 0.5 },
+      { x: 0.5, y: 0.5, width: 0.25, height: 0.25 },
+      { x: 0.75, y: 0.5, width: 0.25, height: 0.25 },
+      { x: 0.5, y: 0.75, width: 0.5, height: 0.25 },
+    ],
+  },
+  {
+    id: '5-strip',
+    label: '5',
+    count: 5,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1, height: 0.2 },
+      { x: 0, y: 0.2, width: 1, height: 0.2 },
+      { x: 0, y: 0.4, width: 1, height: 0.2 },
+      { x: 0, y: 0.6, width: 1, height: 0.2 },
+      { x: 0, y: 0.8, width: 1, height: 0.2 },
+    ],
+  },
+
   // ---- 6 photos ----
   {
     id: '6-grid',
     label: '6',
     count: 6,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 1 / 3, height: 0.5 },
       { x: 1 / 3, y: 0, width: 1 / 3, height: 0.5 },
@@ -195,6 +363,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '6-2x3',
     label: '6',
     count: 6,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 0.5, height: 1 / 3 },
       { x: 0.5, y: 0, width: 0.5, height: 1 / 3 },
@@ -208,6 +377,7 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: '6-1big',
     label: '6',
     count: 6,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 2 / 3, height: 2 / 3 },
       { x: 2 / 3, y: 0, width: 1 / 3, height: 1 / 3 },
@@ -217,11 +387,69 @@ export const GRID_LAYOUTS: GridLayout[] = [
       { x: 2 / 3, y: 2 / 3, width: 1 / 3, height: 1 / 3 },
     ],
   },
+  {
+    id: '6-pinterest',
+    label: '6',
+    count: 6,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1 / 3, height: 0.35 },
+      { x: 1 / 3, y: 0, width: 1 / 3, height: 0.55 },
+      { x: 2 / 3, y: 0, width: 1 / 3, height: 0.4 },
+      { x: 0, y: 0.35, width: 1 / 3, height: 0.65 },
+      { x: 1 / 3, y: 0.55, width: 1 / 3, height: 0.45 },
+      { x: 2 / 3, y: 0.4, width: 1 / 3, height: 0.6 },
+    ],
+  },
+  {
+    id: '6-magazine',
+    label: '6',
+    count: 6,
+    category: 'editorial',
+    cells: [
+      { x: 0, y: 0, width: 0.5, height: 0.66 },
+      { x: 0.5, y: 0, width: 0.5, height: 0.33 },
+      { x: 0.5, y: 0.33, width: 0.5, height: 0.33 },
+      { x: 0, y: 0.66, width: 1 / 3, height: 0.34 },
+      { x: 1 / 3, y: 0.66, width: 1 / 3, height: 0.34 },
+      { x: 2 / 3, y: 0.66, width: 1 / 3, height: 0.34 },
+    ],
+  },
+  {
+    id: '6-story',
+    label: '6',
+    count: 6,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1, height: 1 / 6 },
+      { x: 0, y: 1 / 6, width: 1, height: 1 / 6 },
+      { x: 0, y: 2 / 6, width: 1, height: 1 / 6 },
+      { x: 0, y: 3 / 6, width: 1, height: 1 / 6 },
+      { x: 0, y: 4 / 6, width: 1, height: 1 / 6 },
+      { x: 0, y: 5 / 6, width: 1, height: 1 / 6 },
+    ],
+  },
+  {
+    id: '6-circle',
+    label: '6',
+    count: 6,
+    category: 'creative',
+    cells: [
+      { x: 0.33, y: 0.33, width: 0.34, height: 0.34, shape: 'circle' },
+      { x: 0.33, y: 0, width: 0.34, height: 0.33, shape: 'circle' },
+      { x: 0.67, y: 0.33, width: 0.33, height: 0.34, shape: 'circle' },
+      { x: 0.33, y: 0.67, width: 0.34, height: 0.33, shape: 'circle' },
+      { x: 0, y: 0.33, width: 0.33, height: 0.34, shape: 'circle' },
+      { x: 0, y: 0, width: 1, height: 1, shape: 'circle' },
+    ],
+  },
+
   // ---- 7 photos ----
   {
     id: '7-1big-top',
     label: '7',
     count: 7,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 1, height: 0.5 },
       { x: 0, y: 0.5, width: 1 / 3, height: 0.25 },
@@ -232,11 +460,73 @@ export const GRID_LAYOUTS: GridLayout[] = [
       { x: 2 / 3, y: 0.75, width: 1 / 3, height: 0.25 },
     ],
   },
+  {
+    id: '7-magazine',
+    label: '7',
+    count: 7,
+    category: 'editorial',
+    cells: [
+      { x: 0, y: 0, width: 1, height: 0.45 },
+      { x: 0, y: 0.45, width: 1 / 3, height: 0.275 },
+      { x: 1 / 3, y: 0.45, width: 1 / 3, height: 0.275 },
+      { x: 2 / 3, y: 0.45, width: 1 / 3, height: 0.275 },
+      { x: 0, y: 0.725, width: 1 / 3, height: 0.275 },
+      { x: 1 / 3, y: 0.725, width: 1 / 3, height: 0.275 },
+      { x: 2 / 3, y: 0.725, width: 1 / 3, height: 0.275 },
+    ],
+  },
+  {
+    id: '7-circle',
+    label: '7',
+    count: 7,
+    category: 'creative',
+    cells: [
+      { x: 0.35, y: 0.35, width: 0.3, height: 0.3, shape: 'circle' },
+      { x: 0.35, y: 0.02, width: 0.3, height: 0.28, shape: 'circle' },
+      { x: 0.35, y: 0.7, width: 0.3, height: 0.28, shape: 'circle' },
+      { x: 0.02, y: 0.35, width: 0.28, height: 0.3, shape: 'circle' },
+      { x: 0.7, y: 0.35, width: 0.28, height: 0.3, shape: 'circle' },
+      { x: 0.15, y: 0.15, width: 0.2, height: 0.2, shape: 'circle' },
+      { x: 0.65, y: 0.65, width: 0.2, height: 0.2, shape: 'circle' },
+    ],
+  },
+  {
+    id: '7-pinterest',
+    label: '7',
+    count: 7,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1 / 3, height: 0.3 },
+      { x: 1 / 3, y: 0, width: 1 / 3, height: 0.5 },
+      { x: 2 / 3, y: 0, width: 1 / 3, height: 0.35 },
+      { x: 0, y: 0.3, width: 1 / 3, height: 0.4 },
+      { x: 1 / 3, y: 0.5, width: 1 / 3, height: 0.5 },
+      { x: 2 / 3, y: 0.35, width: 1 / 3, height: 0.35 },
+      { x: 0, y: 0.7, width: 1 / 3, height: 0.3 },
+    ],
+  },
+  {
+    id: '7-strip',
+    label: '7',
+    count: 7,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1, height: 1 / 7 },
+      { x: 0, y: 1 / 7, width: 1, height: 1 / 7 },
+      { x: 0, y: 2 / 7, width: 1, height: 1 / 7 },
+      { x: 0, y: 3 / 7, width: 1, height: 1 / 7 },
+      { x: 0, y: 4 / 7, width: 1, height: 1 / 7 },
+      { x: 0, y: 5 / 7, width: 1, height: 1 / 7 },
+      { x: 0, y: 6 / 7, width: 1, height: 1 / 7 },
+    ],
+  },
+
   // ---- 8 photos ----
   {
     id: '8-2x4',
     label: '8',
     count: 8,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 0.5, height: 0.25 },
       { x: 0.5, y: 0, width: 0.5, height: 0.25 },
@@ -248,11 +538,61 @@ export const GRID_LAYOUTS: GridLayout[] = [
       { x: 0.5, y: 0.75, width: 0.5, height: 0.25 },
     ],
   },
+  {
+    id: '8-magazine',
+    label: '8',
+    count: 8,
+    category: 'editorial',
+    cells: [
+      { x: 0, y: 0, width: 0.6, height: 0.6 },
+      { x: 0.6, y: 0, width: 0.4, height: 0.3 },
+      { x: 0.6, y: 0.3, width: 0.4, height: 0.3 },
+      { x: 0, y: 0.6, width: 0.3, height: 0.4 },
+      { x: 0.3, y: 0.6, width: 0.3, height: 0.4 },
+      { x: 0.6, y: 0.6, width: 0.4, height: 0.13 },
+      { x: 0.6, y: 0.73, width: 0.4, height: 0.13 },
+      { x: 0.6, y: 0.87, width: 0.4, height: 0.13 },
+    ],
+  },
+  {
+    id: '8-pinterest',
+    label: '8',
+    count: 8,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1 / 3, height: 0.25 },
+      { x: 1 / 3, y: 0, width: 1 / 3, height: 0.4 },
+      { x: 2 / 3, y: 0, width: 1 / 3, height: 0.3 },
+      { x: 0, y: 0.25, width: 1 / 3, height: 0.35 },
+      { x: 1 / 3, y: 0.4, width: 1 / 3, height: 0.3 },
+      { x: 2 / 3, y: 0.3, width: 1 / 3, height: 0.35 },
+      { x: 0, y: 0.6, width: 1 / 3, height: 0.4 },
+      { x: 1 / 3, y: 0.7, width: 1 / 3, height: 0.3 },
+    ],
+  },
+  {
+    id: '8-story',
+    label: '8',
+    count: 8,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1, height: 0.125 },
+      { x: 0, y: 0.125, width: 1, height: 0.125 },
+      { x: 0, y: 0.25, width: 1, height: 0.125 },
+      { x: 0, y: 0.375, width: 1, height: 0.125 },
+      { x: 0, y: 0.5, width: 1, height: 0.125 },
+      { x: 0, y: 0.625, width: 1, height: 0.125 },
+      { x: 0, y: 0.75, width: 1, height: 0.125 },
+      { x: 0, y: 0.875, width: 1, height: 0.125 },
+    ],
+  },
+
   // ---- 9 photos ----
   {
     id: '9-grid',
     label: '9',
     count: 9,
+    category: 'classic',
     cells: [
       { x: 0, y: 0, width: 1 / 3, height: 1 / 3 },
       { x: 1 / 3, y: 0, width: 1 / 3, height: 1 / 3 },
@@ -265,11 +605,166 @@ export const GRID_LAYOUTS: GridLayout[] = [
       { x: 2 / 3, y: 2 / 3, width: 1 / 3, height: 1 / 3 },
     ],
   },
+  {
+    id: '9-circle',
+    label: '9',
+    count: 9,
+    category: 'creative',
+    cells: [
+      { x: 0.33, y: 0.33, width: 0.34, height: 0.34, shape: 'circle' },
+      { x: 0.33, y: 0, width: 0.34, height: 0.33, shape: 'circle' },
+      { x: 0.67, y: 0.33, width: 0.33, height: 0.34, shape: 'circle' },
+      { x: 0.33, y: 0.67, width: 0.34, height: 0.33, shape: 'circle' },
+      { x: 0, y: 0.33, width: 0.33, height: 0.34, shape: 'circle' },
+      { x: 0.15, y: 0.08, width: 0.18, height: 0.25, shape: 'circle' },
+      { x: 0.67, y: 0.08, width: 0.18, height: 0.25, shape: 'circle' },
+      { x: 0.15, y: 0.67, width: 0.18, height: 0.25, shape: 'circle' },
+      { x: 0.67, y: 0.67, width: 0.18, height: 0.25, shape: 'circle' },
+    ],
+  },
+  {
+    id: '9-magazine',
+    label: '9',
+    count: 9,
+    category: 'editorial',
+    cells: [
+      { x: 0, y: 0, width: 1, height: 0.4 },
+      { x: 0, y: 0.4, width: 0.25, height: 0.3 },
+      { x: 0.25, y: 0.4, width: 0.25, height: 0.3 },
+      { x: 0.5, y: 0.4, width: 0.25, height: 0.3 },
+      { x: 0.75, y: 0.4, width: 0.25, height: 0.3 },
+      { x: 0, y: 0.7, width: 0.25, height: 0.3 },
+      { x: 0.25, y: 0.7, width: 0.25, height: 0.3 },
+      { x: 0.5, y: 0.7, width: 0.25, height: 0.3 },
+      { x: 0.75, y: 0.7, width: 0.25, height: 0.3 },
+    ],
+  },
+  {
+    id: '9-pinterest',
+    label: '9',
+    count: 9,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1 / 3, height: 0.3 },
+      { x: 1 / 3, y: 0, width: 1 / 3, height: 0.45 },
+      { x: 2 / 3, y: 0, width: 1 / 3, height: 0.35 },
+      { x: 0, y: 0.3, width: 1 / 3, height: 0.35 },
+      { x: 1 / 3, y: 0.45, width: 1 / 3, height: 0.25 },
+      { x: 2 / 3, y: 0.35, width: 1 / 3, height: 0.3 },
+      { x: 0, y: 0.65, width: 1 / 3, height: 0.35 },
+      { x: 1 / 3, y: 0.7, width: 1 / 3, height: 0.3 },
+      { x: 2 / 3, y: 0.65, width: 1 / 3, height: 0.35 },
+    ],
+  },
+
+  // ---- 10+ photos ----
+  {
+    id: '10-grid',
+    label: '10',
+    count: 10,
+    category: 'classic',
+    cells: [
+      { x: 0, y: 0, width: 0.5, height: 0.2 },
+      { x: 0.5, y: 0, width: 0.5, height: 0.2 },
+      { x: 0, y: 0.2, width: 0.5, height: 0.2 },
+      { x: 0.5, y: 0.2, width: 0.5, height: 0.2 },
+      { x: 0, y: 0.4, width: 0.5, height: 0.2 },
+      { x: 0.5, y: 0.4, width: 0.5, height: 0.2 },
+      { x: 0, y: 0.6, width: 0.5, height: 0.2 },
+      { x: 0.5, y: 0.6, width: 0.5, height: 0.2 },
+      { x: 0, y: 0.8, width: 0.5, height: 0.2 },
+      { x: 0.5, y: 0.8, width: 0.5, height: 0.2 },
+    ],
+  },
+  {
+    id: '10-circle',
+    label: '10',
+    count: 10,
+    category: 'creative',
+    cells: [
+      { x: 0.35, y: 0.35, width: 0.3, height: 0.3, shape: 'circle' },
+      { x: 0.35, y: 0.02, width: 0.3, height: 0.28, shape: 'circle' },
+      { x: 0.35, y: 0.7, width: 0.3, height: 0.28, shape: 'circle' },
+      { x: 0.02, y: 0.35, width: 0.28, height: 0.3, shape: 'circle' },
+      { x: 0.7, y: 0.35, width: 0.28, height: 0.3, shape: 'circle' },
+      { x: 0.15, y: 0.08, width: 0.2, height: 0.22, shape: 'circle' },
+      { x: 0.65, y: 0.08, width: 0.2, height: 0.22, shape: 'circle' },
+      { x: 0.15, y: 0.7, width: 0.2, height: 0.22, shape: 'circle' },
+      { x: 0.65, y: 0.7, width: 0.2, height: 0.22, shape: 'circle' },
+      { x: 0, y: 0, width: 0.15, height: 0.15, shape: 'circle' },
+    ],
+  },
+  {
+    id: '12-grid',
+    label: '12',
+    count: 12,
+    category: 'classic',
+    cells: [
+      { x: 0, y: 0, width: 1 / 3, height: 0.25 },
+      { x: 1 / 3, y: 0, width: 1 / 3, height: 0.25 },
+      { x: 2 / 3, y: 0, width: 1 / 3, height: 0.25 },
+      { x: 0, y: 0.25, width: 1 / 3, height: 0.25 },
+      { x: 1 / 3, y: 0.25, width: 1 / 3, height: 0.25 },
+      { x: 2 / 3, y: 0.25, width: 1 / 3, height: 0.25 },
+      { x: 0, y: 0.5, width: 1 / 3, height: 0.25 },
+      { x: 1 / 3, y: 0.5, width: 1 / 3, height: 0.25 },
+      { x: 2 / 3, y: 0.5, width: 1 / 3, height: 0.25 },
+      { x: 0, y: 0.75, width: 1 / 3, height: 0.25 },
+      { x: 1 / 3, y: 0.75, width: 1 / 3, height: 0.25 },
+      { x: 2 / 3, y: 0.75, width: 1 / 3, height: 0.25 },
+    ],
+  },
+  {
+    id: '12-masonry',
+    label: '12',
+    count: 12,
+    category: 'social',
+    cells: [
+      { x: 0, y: 0, width: 1 / 3, height: 0.2 },
+      { x: 1 / 3, y: 0, width: 1 / 3, height: 0.3 },
+      { x: 2 / 3, y: 0, width: 1 / 3, height: 0.25 },
+      { x: 0, y: 0.2, width: 1 / 3, height: 0.25 },
+      { x: 1 / 3, y: 0.3, width: 1 / 3, height: 0.2 },
+      { x: 2 / 3, y: 0.25, width: 1 / 3, height: 0.25 },
+      { x: 0, y: 0.45, width: 1 / 3, height: 0.25 },
+      { x: 1 / 3, y: 0.5, width: 1 / 3, height: 0.25 },
+      { x: 2 / 3, y: 0.5, width: 1 / 3, height: 0.2 },
+      { x: 0, y: 0.7, width: 1 / 3, height: 0.3 },
+      { x: 1 / 3, y: 0.75, width: 1 / 3, height: 0.25 },
+      { x: 2 / 3, y: 0.7, width: 1 / 3, height: 0.3 },
+    ],
+  },
+  {
+    id: '16-grid',
+    label: '16',
+    count: 16,
+    category: 'classic',
+    cells: [
+      { x: 0, y: 0, width: 0.25, height: 0.25 },
+      { x: 0.25, y: 0, width: 0.25, height: 0.25 },
+      { x: 0.5, y: 0, width: 0.25, height: 0.25 },
+      { x: 0.75, y: 0, width: 0.25, height: 0.25 },
+      { x: 0, y: 0.25, width: 0.25, height: 0.25 },
+      { x: 0.25, y: 0.25, width: 0.25, height: 0.25 },
+      { x: 0.5, y: 0.25, width: 0.25, height: 0.25 },
+      { x: 0.75, y: 0.25, width: 0.25, height: 0.25 },
+      { x: 0, y: 0.5, width: 0.25, height: 0.25 },
+      { x: 0.25, y: 0.5, width: 0.25, height: 0.25 },
+      { x: 0.5, y: 0.5, width: 0.25, height: 0.25 },
+      { x: 0.75, y: 0.5, width: 0.25, height: 0.25 },
+      { x: 0, y: 0.75, width: 0.25, height: 0.25 },
+      { x: 0.25, y: 0.75, width: 0.25, height: 0.25 },
+      { x: 0.5, y: 0.75, width: 0.25, height: 0.25 },
+      { x: 0.75, y: 0.75, width: 0.25, height: 0.25 },
+    ],
+  },
+
   // ---- Template-specific asymmetric layouts ----
   {
     id: 'moodboard',
     label: '5',
     count: 5,
+    category: 'editorial',
     cells: [
       { x: 0, y: 0, width: 0.55, height: 0.5 },
       { x: 0.55, y: 0, width: 0.45, height: 0.3 },
@@ -282,16 +777,26 @@ export const GRID_LAYOUTS: GridLayout[] = [
     id: 'celebration',
     label: '5',
     count: 5,
+    category: 'creative',
     cells: [
-      { x: 0.35, y: 0.35, width: 0.3, height: 0.3 },
-      { x: 0.35, y: 0.02, width: 0.3, height: 0.28 },
-      { x: 0.35, y: 0.7, width: 0.3, height: 0.28 },
-      { x: 0.02, y: 0.35, width: 0.28, height: 0.3 },
-      { x: 0.7, y: 0.35, width: 0.28, height: 0.3 },
+      { x: 0.35, y: 0.35, width: 0.3, height: 0.3, shape: 'circle' },
+      { x: 0.35, y: 0.02, width: 0.3, height: 0.28, shape: 'circle' },
+      { x: 0.35, y: 0.7, width: 0.3, height: 0.28, shape: 'circle' },
+      { x: 0.02, y: 0.35, width: 0.28, height: 0.3, shape: 'circle' },
+      { x: 0.7, y: 0.35, width: 0.28, height: 0.3, shape: 'circle' },
     ],
   },
 ]
 
 export function getGridById(id: string): GridLayout | undefined {
   return GRID_LAYOUTS.find((g) => g.id === id)
+}
+
+export function getLayoutsByCategory(category: string): GridLayout[] {
+  if (category === 'all') return GRID_LAYOUTS
+  return GRID_LAYOUTS.filter((g) => g.category === category)
+}
+
+export function getLayoutsByCount(count: number): GridLayout[] {
+  return GRID_LAYOUTS.filter((g) => g.count === count)
 }

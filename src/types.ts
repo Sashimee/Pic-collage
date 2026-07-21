@@ -229,7 +229,17 @@ export interface Frame {
 
 // ---- Grid collage mode ---------------------------------------------------
 
-export type EditorMode = 'free' | 'grid'
+export type EditorMode = 'free' | 'grid' | 'custom-layout'
+
+export type GridCellShape =
+  | 'rect'
+  | 'circle'
+  | 'rounded-rect'
+  | 'ellipse'
+  | 'polygon'
+  | 'path'
+
+export type LayoutCategory = 'classic' | 'editorial' | 'social' | 'creative' | 'custom'
 
 // Cells are normalised to the 0..1 unit square and scaled to the board size.
 export interface GridCell {
@@ -237,6 +247,16 @@ export interface GridCell {
   y: number
   width: number
   height: number
+  /** Visual shape of this cell. Defaults to 'rect'. */
+  shape?: GridCellShape
+  /** Per-cell corner radius (design units). Overrides gridRadius for this cell. */
+  cornerRadius?: number
+  /** Normalised polygon vertices for shape='polygon'. Each vertex in 0..1. */
+  polygon?: { x: number; y: number }[]
+  /** SVG path string for shape='path'. Normalised to 0..1 viewBox. */
+  path?: string
+  /** Rotation in degrees, applied to the cell content. Default 0. */
+  rotation?: number
 }
 
 export interface GridLayout {
@@ -244,6 +264,12 @@ export interface GridLayout {
   label: string
   count: number
   cells: GridCell[]
+  /** Gallery category for organisation. */
+  category?: LayoutCategory
+  /** Search tags (future). */
+  tags?: string[]
+  /** If true this layout was created by the user and is stored in localStorage. */
+  isCustom?: boolean
 }
 
 export const DEFAULT_FILTERS: PhotoFilters = {

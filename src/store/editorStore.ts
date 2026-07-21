@@ -20,6 +20,7 @@ import {
   DEFAULT_WATERMARK,
   DEFAULT_PRINT_SETTINGS,
 } from '../types'
+import type { DividerLine } from '../lib/customLayout'
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -82,6 +83,8 @@ interface EditorState {
   boardHeight: number
   background: Background
   mode: EditorMode
+  customLayoutLines: DividerLine[]
+  customLayoutMode: boolean
   gridId: string | null
   gridGap: number
   gridRadius: number
@@ -158,6 +161,7 @@ interface EditorState {
   // board / background / mode / frame / grid style
   setBackground: (patch: Partial<Background>) => void
   setMode: (mode: EditorMode) => void
+  applyLayout: (layoutId: string, opts?: { boardSize?: { w: number; h: number } }) => void
   setGrid: (gridId: string | null) => void
   setGridGap: (gap: number) => void
   setGridRadius: (radius: number) => void
@@ -168,6 +172,12 @@ interface EditorState {
 
   setWatermark: (patch: Partial<WatermarkSettings>) => void
   setPrint: (patch: Partial<PrintSettings>) => void
+
+  // custom layout
+  addCustomLayoutLine: (line: DividerLine) => void
+  removeCustomLayoutLine: (id: string) => void
+  clearCustomLayoutLines: () => void
+  setCustomLayoutMode: (v: boolean) => void
 
   // history
   undo: () => void
@@ -210,6 +220,8 @@ export const useEditor = create<EditorState>((set, get) => ({
   boardHeight: 1350,
   background: DEFAULT_BACKGROUND,
   mode: 'free',
+  customLayoutLines: [],
+  customLayoutMode: false,
   gridId: null,
   gridGap: 12,
   gridRadius: 0,
@@ -498,6 +510,15 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   setMode: (mode) => set((s) => ({ mode, ...record(s) })),
 
+  applyLayout: (layoutId: string, opts?: { boardSize?: { w: number; h: number } }) => {
+    const { setGrid, setBoardSize, setMode } = get()
+    if (opts?.boardSize) {
+      setBoardSize(opts.boardSize.w, opts.boardSize.h)
+    }
+    setMode('grid')
+    setGrid(layoutId)
+  },
+
   setGrid: (gridId) =>
     set((s) => ({
       gridId,
@@ -599,6 +620,17 @@ export const useEditor = create<EditorState>((set, get) => ({
     set((s) => ({ watermark: { ...s.watermark, ...patch }, ...record(s, 'watermark') })),
   setPrint: (patch) =>
     set((s) => ({ print: { ...s.print, ...patch }, ...record(s, 'print') })),
+
+  addCustomLayoutLine: (line) =>
+    set((s) => ({
+      customLayoutLines: [...s.customLayoutLines, line],
+    })),
+  removeCustomLayoutLine: (id) =>
+    set((s) => ({
+      customLayoutLines: s.customLayoutLines.filter((l) => l.id !== id),
+    })),
+  clearCustomLayoutLines: () => set({ customLayoutLines: [] }),
+  setCustomLayoutMode: (v) => set({ customLayoutMode: v, mode: v ? 'custom-layout' : 'free', selectedId: null }),
 }))
 
 // Dev-only handle so the editor state can be driven from the console / tests.

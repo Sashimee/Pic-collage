@@ -88,6 +88,14 @@ const ASPECTS = [
   { key: 'wide', w: 1080, h: 566 },
 ]
 
+const LAYOUT_CATEGORIES: { id: string; labelKey: string }[] = [
+  { id: 'all', labelKey: 'layout.catAll' },
+  { id: 'classic', labelKey: 'layout.catClassic' },
+  { id: 'editorial', labelKey: 'layout.catEditorial' },
+  { id: 'social', labelKey: 'layout.catSocial' },
+  { id: 'creative', labelKey: 'layout.catCreative' },
+]
+
 const PRESET_CATEGORIES: Record<string, string> = {
   social: 'Social Media',
   print: 'Print',
@@ -192,7 +200,14 @@ export function LayoutPanel() {
   const setGridGap = useEditor((s) => s.setGridGap)
   const setGridRadius = useEditor((s) => s.setGridRadius)
 
+  const [catFilter, setCatFilter] = useState('all')
+
   const isPreset = ASPECTS.some((a) => a.w === boardWidth && a.h === boardHeight)
+
+  const filteredLayouts =
+    catFilter === 'all'
+      ? GRID_LAYOUTS
+      : GRID_LAYOUTS.filter((g) => g.category === catFilter || (!g.category && catFilter === 'classic'))
 
   return (
     <div className="flex flex-col gap-4">
@@ -251,6 +266,25 @@ export function LayoutPanel() {
       </Section>
 
       <Section title={t('layout.grids')}>
+        {/* Category filter tabs */}
+        <div className="scroll-x flex gap-1 overflow-x-auto pb-1">
+          {LAYOUT_CATEGORIES.map((c) => {
+            const active = catFilter === c.id
+            return (
+              <button
+                key={c.id}
+                onClick={() => setCatFilter(c.id)}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-[0.7rem] font-medium transition active:scale-95 ${
+                  active
+                    ? 'bg-accent text-accent-fg'
+                    : 'bg-surface-2 text-muted hover:bg-surface-3'
+                }`}
+              >
+                {t(c.labelKey)}
+              </button>
+            )
+          })}
+        </div>
         <div className="scroll-x flex gap-2.5 overflow-x-auto pb-1">
           <button
             onClick={() => setGrid(null)}
@@ -259,7 +293,7 @@ export function LayoutPanel() {
           >
             <LayoutPreview layout={null} width={72} height={90} active={gridId === null} />
           </button>
-          {GRID_LAYOUTS.map((g) => (
+          {filteredLayouts.map((g) => (
             <button
               key={g.id}
               onClick={() => setGrid(g.id)}

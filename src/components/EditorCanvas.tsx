@@ -18,6 +18,8 @@ import { exportBoard, type ExportFormat } from '../lib/exportImage'
 import type { CanvasElement, PhotoElement } from '../types'
 import { computeSnap, type SnapLine } from '../lib/snap'
 import { useToasts } from './ToastContainer'
+import { CustomLayoutEditor } from './CustomLayoutEditor'
+import { CustomLayoutToolbar } from './CustomLayoutToolbar'
 
 export interface EditorHandle {
   exportImage: (format: ExportFormat) => string | null
@@ -58,6 +60,13 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const brushColor = useEditor((s) => s.brushColor)
   const brushSize = useEditor((s) => s.brushSize)
   const addDrawing = useEditor((s) => s.addDrawing)
+
+  const customLayoutLines = useEditor((s) => s.customLayoutLines)
+  const addCustomLayoutLine = useEditor((s) => s.addCustomLayoutLine)
+  const removeCustomLayoutLine = useEditor((s) => s.removeCustomLayoutLine)
+
+  const [customLayoutTool, setCustomLayoutTool] = useState<'horizontal' | 'vertical'>('horizontal')
+  const [customSnapEnabled, setCustomSnapEnabled] = useState(true)
 
   const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null)
   const pinchHintShown = useRef(false)
@@ -392,7 +401,49 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
 
   return (
     <div ref={hostRef} className="canvas-host relative h-full w-full">
-      {/* Toggles */}
+      {mode === 'custom-layout' && (
+        <CustomLayoutToolbar
+          tool={customLayoutTool}
+          snapEnabled={customSnapEnabled}
+          canUndo={customLayoutLines.length > 0}
+          onToolChange={setCustomLayoutTool}
+          onUndo={() => {
+            useEditor.getState().removeCustomLayoutLine(customLayoutLines[customLayoutLines.length - 1]?.id)
+          }}
+          onClear={() => {
+            useEditor.getState().clearCustomLayoutLines()
+          }}
+          onSnapToggle={() => setCustomSnapEnabled((v) => !v)}
+          onApply={() => {
+            // Build a GridLayout from current custom lines and store it
+            const { computeCellsFromLines } = require('../lib/customLayout')
+            const { saveCustomLayout } = require('../lib/customLayoutStorage')
+            const state = useEditor.getState()
+            const cells = computeCellsFromLines(state.customLayoutLines)
+            const layout = {
+              id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? crypto.randomUUID()
+                : Math.random().toString(36).slice(2),
+              name: `Custom ${new Date().toLocaleString()}`,
+              createdAt: Date.now(),
+              cells,
+              lines: state.customLayoutLines,
+            }
+            saveCustomLayout(layout)
+            // Switch to grid mode with this custom layout
+            // We need to inject into grids.ts at runtime? No, instead
+            // use setGrid with a synthetic id? The grid system uses
+            // getGridById which only reads GRID_LAYOUTS.
+            // We'll need to modify setGrid to handle custom IDs.
+            // For now, enter free mode and rely on user to re-select layout.
+            useEditor.getState().setCustomLayoutMode(false)
+          }}
+          onCancel={() => {
+            useEditor.getState().setCustomLayoutMode(false)
+            useEditor.getState().clearCustomLayoutLines()
+          }}
+        />
+      )}
       <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
         <button
           onClick={() => setSnapEnabled((v) => !v)}
@@ -529,6 +580,18 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
                     selectedId={selectedId}
                     onSelect={select}
                     onUpdate={updateElement}
+                  />
+                )}
+                {mode === 'custom-layout' && (
+                  <CustomLayoutEditor
+                    boardWidth={boardWidth}
+                    boardHeight={boardHeight}
+                    lines={customLayoutLines}
+                    onAddLine={addCustomLayoutLine}
+                    onRemoveLine={removeCustomLayoutLine}
+                    tf={tf}
+                    tool={customLayoutTool}
+                    snapEnabled={customSnapEnabled}
                   />
                 )}
                 {freeElements.map(renderElement)}
