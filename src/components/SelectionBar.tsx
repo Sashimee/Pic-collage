@@ -11,6 +11,9 @@ import {
   Group,
   X,
   Wand2,
+  Scissors,
+  Sparkles,
+  Zap,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
@@ -72,6 +75,45 @@ export function SelectionBar() {
       }
     } catch {
       toast.error('Smart crop failed')
+    }
+  }
+
+  const handleRemoveBg = async () => {
+    if (el?.type !== 'photo' || !selectedId) return
+    toast.info('Removing background...')
+    try {
+      const { removeBackground } = await import('../ai/bgRemoval')
+      const result = await removeBackground(el.src)
+      updateElement(selectedId, { src: result })
+      toast.success('Background removed!')
+    } catch {
+      toast.error('BG removal failed')
+    }
+  }
+
+  const handleRetouch = async () => {
+    if (el?.type !== 'photo' || !selectedId) return
+    toast.info('Retouching...')
+    try {
+      const { portraitRetouch } = await import('../ai/portraitRetouch')
+      const result = await portraitRetouch(el.src, { skinSmooth: 0.3, teethWhite: 0.2, eyeBrighten: 0.4 })
+      updateElement(selectedId, { src: result })
+      toast.success('Retouched!')
+    } catch {
+      toast.error('Retouch failed')
+    }
+  }
+
+  const handleEnhance = async () => {
+    if (el?.type !== 'photo' || !selectedId) return
+    toast.info('Enhancing...')
+    try {
+      const { autoEnhance } = await import('../ai/autoEnhance')
+      const result = await autoEnhance(el.src)
+      updateElement(selectedId, { src: result })
+      toast.success('Enhanced!')
+    } catch {
+      toast.error('Enhancement failed')
     }
   }
 
@@ -211,6 +253,19 @@ export function SelectionBar() {
                 <Btn onClick={handleSmartCrop} label={t('sel.smartCrop')}>
                   <Wand2 size={18} />
                 </Btn>
+              )}
+              {(isFreePhoto || isGridPhoto) && (
+                <>
+                  <Btn onClick={handleRemoveBg} label="Remove BG">
+                    <Scissors size={18} />
+                  </Btn>
+                  <Btn onClick={handleRetouch} label="Retouch">
+                    <Sparkles size={18} />
+                  </Btn>
+                  <Btn onClick={handleEnhance} label="Enhance">
+                    <Zap size={18} />
+                  </Btn>
+                </>
               )}
               {isGridPhoto && (
                 <>
