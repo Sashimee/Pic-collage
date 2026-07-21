@@ -24,3 +24,23 @@ export function LangSwitcher() {
     </div>
   )
 }
+
+// Compact single-button toggle for mobile where space is tight.
+export function LangSwitcherMobile() {
+  const lang = useLang((s) => s.lang)
+  const setLang = useLang((s) => s.setLang)
+  const next = lang === 'de' ? 'en' : 'de'
+  const label = next === 'en' ? 'English' : 'Deutsch'
+  const flag = next === 'en' ? '🇬🇧' : '🇩🇪'
+
+  return (
+    <button
+      onClick={() => setLang(next)}
+      aria-label={label}
+      title={label}
+      className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-lg transition hover:bg-surface-3"
+    >
+      {flag}
+    </button>
+  )
+}

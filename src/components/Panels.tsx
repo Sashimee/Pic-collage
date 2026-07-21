@@ -11,6 +11,7 @@ import { LayoutPreview } from './LayoutPreview'
 import { useT } from '../i18n/useLang'
 import { EMOJI_CATEGORIES } from '../lib/emojis'
 import { PHOTO_SHAPES } from '../lib/shapes'
+import { EXPORT_PRESETS } from '../lib/exportPresets'
 
 // ---- Photos --------------------------------------------------------------
 
@@ -87,6 +88,29 @@ const ASPECTS = [
   { key: 'pin', w: 1080, h: 1620 },
   { key: 'wide', w: 1080, h: 566 },
 ]
+
+const PRESET_CATEGORIES: Record<string, string> = {
+  social: 'Social Media',
+  print: 'Print',
+  screen: 'Screen',
+}
+
+function PresetThumb({ w, h, active }: { w: number; h: number; active: boolean }) {
+  const box = 36
+  const scale = box / Math.max(w, h)
+  return (
+    <span
+      className={`flex h-[42px] w-[42px] items-center justify-center rounded-lg ${
+        active ? 'bg-accent/20' : 'bg-surface-3'
+      }`}
+    >
+      <span
+        style={{ width: w * scale, height: h * scale }}
+        className={`rounded-[3px] ${active ? 'bg-accent' : 'bg-muted/60'}`}
+      />
+    </span>
+  )
+}
 
 function AspectThumb({ w, h, active }: { w: number; h: number; active: boolean }) {
   const box = 30
@@ -251,6 +275,40 @@ export function LayoutPanel() {
               />
             </button>
           ))}
+        </div>
+      </Section>
+
+      <Section title="Export Presets">
+        <div className="flex flex-col gap-3">
+          {(['social', 'print', 'screen'] as const).map((cat) => {
+            const catPresets = EXPORT_PRESETS.filter((p) => p.category === cat)
+            if (!catPresets.length) return null
+            return (
+              <div key={cat}>
+                <p className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-muted">
+                  {PRESET_CATEGORIES[cat]}
+                </p>
+                <div className="scroll-x flex gap-2 overflow-x-auto pb-1">
+                  {catPresets.map((p) => {
+                    const active = boardWidth === p.width && boardHeight === p.height
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setBoardSize(p.width, p.height)}
+                        className={`flex shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[0.65rem] font-medium transition active:scale-95 ${
+                          active ? 'bg-accent/15 text-accent' : 'text-muted hover:bg-surface-2'
+                        }`}
+                        title={`${p.width} × ${p.height}`}
+                      >
+                        <PresetThumb w={p.width} h={p.height} active={active} />
+                        {p.id}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </Section>
 

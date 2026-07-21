@@ -12,6 +12,7 @@ import { useShortcuts } from './hooks/useShortcuts'
 import { CropOverlay } from './components/CropOverlay'
 import { UpdateBanner } from './components/UpdateBanner'
 import { ZoomControls } from './components/ZoomControls'
+import { StatusBar } from './components/StatusBar'
 import { useEditor } from './store/editorStore'
 import { useT } from './i18n/useLang'
 import { useProjects } from './store/projectsStore'
@@ -22,6 +23,8 @@ import {
   type ExportFormat,
 } from './lib/exportImage'
 import { fireConfetti } from './lib/confetti'
+import { ToastContainer } from './components/ToastContainer'
+import { useDefaultShortcuts } from './hooks/useKeyboard'
 import {
   getPhoto,
   loadDoc,
@@ -65,6 +68,7 @@ export default function App() {
   const t = useT()
 
   useVersionCheck()
+  useDefaultShortcuts()
 
   // Restore persisted work on startup: rebuild object URLs from stored blobs
   // (one URL per photoId, so duplicates keep sharing a src). Photos whose blob
@@ -169,16 +173,19 @@ export default function App() {
       <div className="flex h-full flex-col bg-surface text-text">
         <HeaderBar onExport={handleExport} />
         {isDesktop ? (
-          <div className="flex min-h-0 flex-1">
-            <ToolRail panels={panels} />
-            <div className="relative min-h-0 flex-1 bg-bg">
-              <EditorCanvas ref={editorRef} />
-              <SelectionBar />
-              <EmptyState />
-              <CropOverlay />
-              <ZoomControls />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 flex-1">
+              <ToolRail panels={panels} />
+              <div className="relative min-h-0 flex-1 bg-bg">
+                <EditorCanvas ref={editorRef} />
+                <SelectionBar />
+                <EmptyState />
+                <CropOverlay />
+                <ZoomControls />
+              </div>
+              <SidePanel panels={panels} />
             </div>
-            <SidePanel panels={panels} />
+            <StatusBar />
           </div>
         ) : (
           <>
@@ -194,6 +201,7 @@ export default function App() {
           </>
         )}
         <UpdateBanner />
+        <ToastContainer />
       </div>
     </MotionProvider>
   )

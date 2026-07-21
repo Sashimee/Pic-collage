@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
@@ -12,11 +12,13 @@ import { canShareImage } from '../lib/exportImage'
 import { clearPersisted } from '../lib/persistence'
 import { useT } from '../i18n/useLang'
 import { useTheme } from '../i18n/useTheme'
+import { useLang } from '../i18n/useLang'
 import { LangSwitcher } from './LangSwitcher'
 import { IconButton } from './ui'
 import ProjectManager from './ProjectManager'
 import { ActionSheet, ActionItem, ActionDivider, ActionCancel } from './ActionSheet'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useToasts } from './ToastContainer'
 
 export type ExportKind = 'png' | 'jpg' | 'share'
 
@@ -24,7 +26,10 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
   const [sheetOpen, setSheetOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [projectManagerOpen, setProjectManagerOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const t = useT()
+  const lang = useLang((s) => s.lang)
+  const setLang = useLang((s) => s.setLang)
   const clearAll = useEditor((s) => s.clearAll)
   const hasElements = useEditor((s) => s.elements.length > 0)
   const undo = useEditor((s) => s.undo)
@@ -35,6 +40,14 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
   const toggleTheme = useTheme((s) => s.toggleTheme)
   const activeProjectId = useProjects((s) => s.activeProjectId)
   const saveActiveProject = useProjects((s) => s.saveActiveProject)
+  const toast = useToasts()
+
+  // Auto-hide header on scroll (desktop)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const handleSaveAsFile = async () => {
     const { packProject } = await import('../lib/projectFile')
@@ -55,6 +68,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
     a.download = `collage-${Date.now()}.piccollage`
     a.click()
     URL.revokeObjectURL(a.href)
+    toast.success('Project saved as file')
   }
 
   const handleOpenFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,6 +78,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
     const { doc } = await unpackProject(file)
     useEditor.getState().loadDocument(doc)
     e.target.value = ''
+    toast.success('Project opened')
   }
 
   const handleExport = async (kind: ExportKind) => {
@@ -83,13 +98,14 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
     if (hasElements && window.confirm(t('header.clearConfirm'))) {
       clearAll()
       void clearPersisted()
+      toast.info('Canvas cleared')
     }
   }
 
   const handleSave = async () => {
     if (activeProjectId) {
       await saveActiveProject()
-      window.alert(t('project.saved'))
+      toast.success(t('project.saved'))
     } else {
       setProjectManagerOpen(true)
     }
@@ -100,7 +116,12 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
 
   return (
     <>
-      <header className="flex items-center justify-between gap-2 border-b border-border bg-surface px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] select-none">
+      <motion.header
+        initial={{ y: 0 }}
+        animate={{ y: scrolled ? -60 : 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        className="flex items-center justify-between gap-2 border-b border-border/60 bg-surface/80 px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] backdrop-blur-xl select-none z-50"
+      >
         {/* Brand */}
         <h1 className="flex items-center gap-2 shrink-0 min-w-0">
           <span className="bg-grad-accent flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-[var(--shadow-accent)] shrink-0">
@@ -221,7 +242,7 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
             <span className="hidden sm:inline">{t('header.refresh')}</span>
           </button>
         </div>
-      </header>
+      </motion.header>
 
       {/* Mobile Action Sheet */}
       <ActionSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title={t('menu.more')}>
@@ -242,6 +263,11 @@ export function HeaderBar({ onExport }: { onExport: (kind: ExportKind) => void }
           onClick={() => { setSheetOpen(false); toggleTheme() }}
           icon={theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           label={t('header.theme')}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); setLang(lang === 'de' ? 'en' : 'de') }}
+          icon={<span className="text-lg">{lang === 'de' ? '🇬🇧' : '🇩🇪'}</span>}
+          label={lang === 'de' ? 'English' : 'Deutsch'}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); setProjectManagerOpen(true) }}
