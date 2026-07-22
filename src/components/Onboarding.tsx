@@ -125,7 +125,7 @@ export function OnboardingOverlay() {
                 }}
                 className="bg-grad-accent flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-[var(--shadow-accent)] transition hover:brightness-110 active:scale-95"
               >
-                {isLast ? (t('onboard.done') ?? 'Get Started') : (t('onboard.next') ?? 'Next')}
+                {isLast ? (t('onboard.done')) : (t('onboard.next'))}
                 <ChevronRight size={16} />
               </button>
             </div>

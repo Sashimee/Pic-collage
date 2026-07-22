@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react'
 import { useToasts } from './ToastContainer'
+import { useT } from '../i18n/useLang'
 import { saveCustomFont, loadCustomFonts, deleteCustomFont } from '../lib/fonts'
 
 export function FontUploader() {
+  const t = useT()
   const toast = useToasts()
   const [fonts, setFonts] = useState<{ id: string; name: string; family: string }[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
@@ -20,7 +22,7 @@ export function FontUploader() {
       setFonts((prev) => [...prev, { id: font.id, name: font.name, family: font.family }])
       toast.success(`Font "${font.name}" loaded`)
     } catch {
-      toast.error('Failed to load font')
+      toast.error(t('error.loadImage'))
     }
     e.target.value = ''
   }

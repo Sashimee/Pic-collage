@@ -20,9 +20,9 @@ export function WatermarkPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Section title={t('watermark.title') ?? 'Watermark'}>
+      <Section title={t('watermark.title')}>
         <label className="flex items-center justify-between gap-2 text-sm font-medium text-text/80">
-          <span>{t('watermark.enabled') ?? 'Enable watermark'}</span>
+          <span>{t('watermark.enabled')}</span>
           <button
             onClick={() => setWatermark({ enabled: !watermark.enabled })}
             className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition ${
@@ -41,17 +41,17 @@ export function WatermarkPanel() {
 
       {watermark.enabled && (
         <>
-          <Section title={t('watermark.text') ?? 'Text'}>
+          <Section title={t('watermark.text')}>
             <input
               type="text"
               value={watermark.text}
               onChange={(e) => setWatermark({ text: e.target.value })}
-              placeholder={t('watermark.placeholder') ?? 'Your watermark'}
+              placeholder={t('watermark.placeholder')}
               className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-sm text-text outline-none placeholder:text-muted focus:border-accent"
             />
           </Section>
 
-          <Section title={t('watermark.position') ?? 'Position'}>
+          <Section title={t('watermark.position')}>
             <div className="grid grid-cols-2 gap-2">
               {POSITIONS.map((p) => (
                 <Chip
@@ -65,7 +65,7 @@ export function WatermarkPanel() {
             </div>
           </Section>
 
-          <Section title={t('common.color') ?? 'Color'}>
+          <Section title={t('common.color')}>
             <ColorField
               label=""
               value={watermark.color}
@@ -73,7 +73,7 @@ export function WatermarkPanel() {
             />
           </Section>
 
-          <Section title={t('common.opacity') ?? 'Opacity'}>
+          <Section title={t('common.opacity')}>
             <Slider
               label=""
               min={0}
@@ -84,7 +84,7 @@ export function WatermarkPanel() {
             />
           </Section>
 
-          <Section title={t('common.size') ?? 'Font size'}>
+          <Section title={t('common.size')}>
             <Slider
               label=""
               min={12}
@@ -107,9 +107,9 @@ export function PrintPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Section title={t('print.title') ?? 'Print Mode'}>
+      <Section title={t('print.title')}>
         <label className="flex items-center justify-between gap-2 text-sm font-medium text-text/80">
-          <span>{t('print.enabled') ?? 'Enable print mode'}</span>
+          <span>{t('print.enabled')}</span>
           <button
             onClick={() => setPrint({ enabled: !print.enabled })}
             className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition ${
@@ -128,9 +128,9 @@ export function PrintPanel() {
 
       {print.enabled && (
         <>
-          <Section title={t('print.bleed') ?? 'Bleed marks'}>
+          <Section title={t('print.bleed')}>
             <label className="flex items-center justify-between gap-2 text-sm font-medium text-text/80">
-              <span>{t('print.bleedEnabled') ?? 'Show bleed marks (3mm)'}</span>
+              <span>{t('print.bleedEnabled')}</span>
               <button
                 onClick={() => setPrint({ bleedMarks: !print.bleedMarks })}
                 className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition ${
@@ -147,9 +147,9 @@ export function PrintPanel() {
             </label>
           </Section>
 
-          <Section title={t('print.crop') ?? 'Crop marks'}>
+          <Section title={t('print.crop')}>
             <label className="flex items-center justify-between gap-2 text-sm font-medium text-text/80">
-              <span>{t('print.cropEnabled') ?? 'Show crop marks'}</span>
+              <span>{t('print.cropEnabled')}</span>
               <button
                 onClick={() => setPrint({ cropMarks: !print.cropMarks })}
                 className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition ${
@@ -167,8 +167,7 @@ export function PrintPanel() {
           </Section>
 
           <p className="text-xs text-muted">
-            {t('print.hint') ??
-              'Print mode applies a CMYK-like simulation and adds professional bleed/crop marks to the export.'}
+            {t('print.hint')}
           </p>
         </>
       )}

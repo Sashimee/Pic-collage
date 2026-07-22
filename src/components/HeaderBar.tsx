@@ -69,7 +69,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
     a.download = `collage-${Date.now()}.piccollage`
     a.click()
     URL.revokeObjectURL(a.href)
-    toast.success('Project saved as file')
+    toast.success(t('toast.projectSavedFile'))
   }
 
   const handleOpenFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,7 +79,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
     const { doc } = await unpackProject(file)
     useEditor.getState().loadDocument(doc)
     e.target.value = ''
-    toast.success('Project opened')
+    toast.success(t('toast.projectOpened'))
   }
 
   const handleExport = async (kind: ExportKind) => {
@@ -92,7 +92,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
     const s = useEditor.getState()
     const elements = s.elements.filter((e) => e.type === 'photo')
     if (!elements.length) {
-      toast.info('No photos to export')
+      toast.info(t('toast.noPhotosExport'))
       return
     }
     const files: { name: string; dataUrl: string }[] = []
@@ -117,7 +117,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
       }
     }
     if (!files.length) {
-      toast.info('No exportable photos found')
+      toast.info(t('toast.noExportablePhotos'))
       return
     }
     const zip = await batchExport(files)
@@ -126,7 +126,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
     a.download = `collage-batch-${Date.now()}.zip`
     a.click()
     URL.revokeObjectURL(a.href)
-    toast.success('Batch export downloaded')
+    toast.success(t('toast.batchExportDone'))
   }
 
   const handleRefresh = async () => {
@@ -141,7 +141,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
     if (hasElements && window.confirm(t('header.clearConfirm'))) {
       clearAll()
       void clearPersisted()
-      toast.info('Canvas cleared')
+      toast.info(t('toast.canvasCleared'))
     }
   }
 

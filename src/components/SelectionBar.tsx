@@ -74,39 +74,39 @@ export function SelectionBar() {
         toast.info(t('sel.smartCropFail'))
       }
     } catch {
-      toast.error('Smart crop failed')
+      toast.error(t('toast.smartCropFailed'))
     }
   }
 
   const handleRemoveBg = async () => {
     if (el?.type !== 'photo' || !selectedId) return
-    toast.info('Removing background...')
+    toast.info(t('toast.removingBg'))
     try {
       const { removeBackground } = await import('../ai/bgRemoval')
       const result = await removeBackground(el.src)
       updateElement(selectedId, { src: result })
-      toast.success('Background removed!')
+      toast.success(t('toast.bgRemoved'))
     } catch {
-      toast.error('BG removal failed')
+      toast.error(t('toast.bgRemovalFailed'))
     }
   }
 
   const handleRetouch = async () => {
     if (el?.type !== 'photo' || !selectedId) return
-    toast.info('Retouching...')
+    toast.info(t('toast.retouching'))
     try {
       const { portraitRetouch } = await import('../ai/portraitRetouch')
       const result = await portraitRetouch(el.src, { skinSmooth: 0.3, teethWhite: 0.2, eyeBrighten: 0.4 })
       updateElement(selectedId, { src: result })
-      toast.success('Retouched!')
+      toast.success(t('toast.retouched'))
     } catch {
-      toast.error('Retouch failed')
+      toast.error(t('toast.retouchFailed'))
     }
   }
 
   const handleEnhance = async () => {
     if (el?.type !== 'photo' || !selectedId) return
-    toast.info('Enhancing...')
+    toast.info(t('toast.enhancing'))
     try {
       const { autoEnhance } = await import('../ai/autoEnhance')
       const result = await autoEnhance(el.src)

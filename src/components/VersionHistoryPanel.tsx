@@ -38,7 +38,7 @@ export default function VersionHistoryPanel() {
   const handleRestore = async (id: string) => {
     const data = await useVersionStore.getState().restoreSnapshot(id)
     if (!data) {
-      toast.error(t('version.restoreFail') ?? 'Restore failed')
+      toast.error(t('version.restoreFail'))
       return
     }
     useEditor.getState().loadDocument({
@@ -52,7 +52,7 @@ export default function VersionHistoryPanel() {
       frame: useEditor.getState().frame,
       elements: data.elements,
     })
-    toast.success(t('version.restored') ?? 'Snapshot restored')
+    toast.success(t('version.restored'))
   }
 
   const handleDelete = async (id: string) => {
@@ -64,13 +64,13 @@ export default function VersionHistoryPanel() {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h3 className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted">
-          {t('version.title') ?? 'Version History'}
+          {t('version.title')}
         </h3>
         <button
           onClick={loadSnapshots}
           className="rounded-lg bg-surface-2 px-2 py-1 text-xs text-text/70 transition hover:bg-surface-3 hover:text-text"
         >
-          {t('common.refresh') ?? 'Refresh'}
+          {t('common.refresh')}
         </button>
       </div>
 
@@ -81,7 +81,7 @@ export default function VersionHistoryPanel() {
       )}
 
       {!loading && snapshots.length === 0 && (
-        <p className="text-sm text-muted">{t('version.empty') ?? 'No snapshots yet.'}</p>
+        <p className="text-sm text-muted">{t('version.empty')}</p>
       )}
 
       <ul className="flex flex-col gap-2">
@@ -94,7 +94,7 @@ export default function VersionHistoryPanel() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-text">{formatDate(snap.timestamp)}</p>
               <p className="text-xs text-muted">
-                {snap.elementCount} {snap.elementCount === 1 ? (t('version.element') ?? 'element') : (t('version.elements') ?? 'elements')}
+                {snap.elementCount} {snap.elementCount === 1 ? (t('version.element')) : (t('version.elements'))}
               </p>
             </div>
             <button
@@ -102,12 +102,12 @@ export default function VersionHistoryPanel() {
               className="flex shrink-0 items-center gap-1 rounded-lg bg-accent/10 px-2.5 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
             >
               <RotateCcw size={13} />
-              {t('version.restore') ?? 'Restore'}
+              {t('version.restore')}
             </button>
             <button
               onClick={() => handleDelete(snap.id)}
               className="flex shrink-0 items-center justify-center rounded-lg p-1.5 text-muted transition hover:bg-danger/10 hover:text-danger"
-              aria-label={t('version.delete') ?? 'Delete'}
+              aria-label={t('version.delete')}
             >
               <Trash2 size={13} />
             </button>
