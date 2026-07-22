@@ -90,6 +90,10 @@ function PhotoNode({ el, onSelect, onChange, onDragMove }: NodeProps<PhotoElemen
     node.luminance(cfg.luminance)
     node.blurRadius(cfg.blurRadius)
     node.getLayer()?.batchDraw()
+    return () => {
+      node.clearCache()
+      node.filters([])
+    }
   }, [image, el.filters, el.filterStack, el.crop, el.width, el.height])
 
   const v = el.filters.vignette

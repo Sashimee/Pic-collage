@@ -62,6 +62,7 @@ export function CustomLayoutEditor({
   const handleStart = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     if ('touches' in e.evt && e.evt.touches.length !== 1) return
     e.evt.stopPropagation()
+    e.evt.preventDefault()
     const pos = getEventPos(e)
     if (!pos) return
     const p = toBoard(pos.x, pos.y)
@@ -74,6 +75,7 @@ export function CustomLayoutEditor({
 
   const handleMove = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     e.evt.stopPropagation()
+    e.evt.preventDefault()
     if (!drawing || !startRef.current) return
     const pos = getEventPos(e)
     if (!pos) return

@@ -178,6 +178,10 @@ function CellPhoto({
     node.luminance(cfg.luminance)
     node.blurRadius(cfg.blurRadius)
     node.getLayer()?.batchDraw()
+    return () => {
+      node.clearCache()
+      node.filters([])
+    }
   }, [image, el.filters])
 
   if (!image) return null
