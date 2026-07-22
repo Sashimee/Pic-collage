@@ -88,87 +88,81 @@ export function EmptyState() {
     setSelectedLayoutId(null)
   }
 
-  // Only hide when truly empty AND sheet is closed AND not in custom-layout
-  if (!showGallery && !showAssignment) return null
-
   return (
-    <AnimatePresence>
-      {(showGallery || showAssignment) && (
-        <m.div
-          className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4 ${
-            showAssignment ? 'bg-transparent' : 'bg-surface/80 backdrop-blur-sm'
-          }`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.25 }}
-        >
-          {showGallery && (
-            <>
-              <input
-                id={GALLERY_ID}
-                type="file"
-                accept="image/*"
-                multiple
-                className="sr-only"
-                onChange={handleGalleryChange}
-              />
-              <input
-                id={CAMERA_ID}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="sr-only"
-                onChange={handleCameraChange}
-              />
-
-              <m.div
-                className="pointer-events-auto flex w-full max-w-lg flex-col gap-4 max-h-[85vh] overflow-y-auto no-scrollbar"
-                initial={{ y: 16, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-              >
-                {/* Layout Gallery */}
-                <LayoutGallery
-                  onSelectLayout={handleSelectLayout}
-                  onCustomLayout={handleCustomLayout}
-                  onSkip={handleSkip}
-                />
-
-                {/* Secondary: direct photo add buttons */}
-                <div className="flex justify-center gap-3">
-                  <label
-                    htmlFor={GALLERY_ID}
-                    className="flex cursor-pointer items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-sm font-medium text-text transition hover:bg-surface-3 active:scale-95"
-                  >
-                    <ImagePlus size={17} strokeWidth={2.5} />
-                    {t('photos.add')}
-                  </label>
-                  <label
-                    htmlFor={CAMERA_ID}
-                    className="flex cursor-pointer items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-sm font-medium text-text transition hover:bg-surface-3 active:scale-95"
-                  >
-                    <Camera size={17} strokeWidth={2.5} />
-                    {t('photos.camera')}
-                  </label>
-                </div>
-              </m.div>
-            </>
-          )}
-
-          {/* Photo Assignment Sheet — stays open even when isEmpty becomes false */}
-          {selectedLayout && (
-            <PhotoAssignmentSheet
-              layout={selectedLayout}
-              open={showAssignment}
-              onClose={handleSkipAssignment}
-              onAssign={handleAssign}
-              onSkip={handleSkipAssignment}
-              onDone={handleDoneAssignment}
+    <>
+      {/* Gallery overlay — only when gallery should be visible */}
+      <AnimatePresence>
+        {showGallery && (
+          <m.div
+            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4 bg-surface/80 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.25 }}
+          >
+            <input
+              id={GALLERY_ID}
+              type="file"
+              accept="image/*"
+              multiple
+              className="sr-only"
+              onChange={handleGalleryChange}
             />
-          )}
-        </m.div>
+            <input
+              id={CAMERA_ID}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={handleCameraChange}
+            />
+
+            <m.div
+              className="pointer-events-auto flex w-full max-w-lg flex-col gap-4 max-h-[85vh] overflow-y-auto no-scrollbar"
+              initial={{ y: 16, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+            >
+              {/* Layout Gallery */}
+              <LayoutGallery
+                onSelectLayout={handleSelectLayout}
+                onCustomLayout={handleCustomLayout}
+                onSkip={handleSkip}
+              />
+
+              {/* Secondary: direct photo add buttons */}
+              <div className="flex justify-center gap-3">
+                <label
+                  htmlFor={GALLERY_ID}
+                  className="flex cursor-pointer items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-sm font-medium text-text transition hover:bg-surface-3 active:scale-95"
+                >
+                  <ImagePlus size={17} strokeWidth={2.5} />
+                  {t('photos.add')}
+                </label>
+                <label
+                  htmlFor={CAMERA_ID}
+                  className="flex cursor-pointer items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-sm font-medium text-text transition hover:bg-surface-3 active:scale-95"
+                >
+                  <Camera size={17} strokeWidth={2.5} />
+                  {t('photos.camera')}
+                </label>
+              </div>
+            </m.div>
+          </m.div>
+        )}
+      </AnimatePresence>
+
+      {/* Photo Assignment Sheet — sibling to gallery, NOT nested inside overlay */}
+      {selectedLayout && (
+        <PhotoAssignmentSheet
+          layout={selectedLayout}
+          open={showAssignment}
+          onClose={handleSkipAssignment}
+          onAssign={handleAssign}
+          onSkip={handleSkipAssignment}
+          onDone={handleDoneAssignment}
+        />
       )}
-    </AnimatePresence>
+    </>
   )
 }
