@@ -37,10 +37,10 @@ export function PhotoAssignmentSheet({
   const multiInputRef = useRef<HTMLInputElement>(null)
   const isDesktop = useIsDesktop()
 
-  // Reset previews when layout changes (different slot count)
+  // Reset previews when layout changes or sheet opens
   useEffect(() => {
     setPreviews(new Array(layout.cells.length).fill(null))
-  }, [layout.cells.length])
+  }, [open, layout.id, layout.cells.length])
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -78,7 +78,7 @@ export function PhotoAssignmentSheet({
           setPreviews((prev) => {
             const next = [...prev]
             urls.forEach((url, i) => {
-              const slot = prev.findIndex((p) => p === null)
+              const slot = next.findIndex((p) => p === null)
               if (slot !== -1) next[slot] = url
               else if (i < next.length) next[i] = url
             })

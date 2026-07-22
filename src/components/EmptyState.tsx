@@ -80,12 +80,13 @@ export function EmptyState() {
 
   const handleDoneAssignment = () => {
     setShowAssignment(false)
-    // Don't clear selectedLayoutId here — let AnimatePresence finish exit animation
+    // Unmount after exit animation completes (~300ms for spring)
+    setTimeout(() => setSelectedLayoutId(null), 350)
   }
 
   const handleSkipAssignment = () => {
     setShowAssignment(false)
-    // Don't clear selectedLayoutId here — let AnimatePresence finish exit animation
+    setTimeout(() => setSelectedLayoutId(null), 350)
   }
 
   return (
@@ -153,11 +154,7 @@ export function EmptyState() {
       </AnimatePresence>
 
       {/* Photo Assignment Sheet — sibling to gallery, NOT nested inside overlay */}
-      <AnimatePresence
-        onExitComplete={() => {
-          if (!showAssignment) setSelectedLayoutId(null)
-        }}
-      >
+      <AnimatePresence>
         {selectedLayout && (
           <PhotoAssignmentSheet
             layout={selectedLayout}
