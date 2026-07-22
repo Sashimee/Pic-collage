@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { useToast } from '../store/toastStore'
 import type { ReactNode } from 'react'
+import { useT } from '../i18n/useLang'
 
 const ICONS: Record<string, ReactNode> = {
   success: <CheckCircle size={18} className="text-emerald-400" />,
@@ -10,6 +11,7 @@ const ICONS: Record<string, ReactNode> = {
 }
 
 export function ToastContainer() {
+  const t = useT()
   const toasts = useToast((s) => s.toasts)
   const remove = useToast((s) => s.remove)
 
@@ -30,7 +32,7 @@ export function ToastContainer() {
             <button
               onClick={() => remove(toast.id)}
               className="ml-1 rounded-md p-1 text-muted transition hover:text-text hover:bg-surface-2"
-              aria-label="Dismiss"
+              aria-label={t('aria.dismiss')}
             >
               ✕
             </button>

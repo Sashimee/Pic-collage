@@ -27,7 +27,7 @@ export function EmptyState() {
       try {
         await importFiles(e.target.files, addPhoto)
       } catch {
-        window.alert('Failed to load image. Please try a different file.')
+        window.alert(t('error.loadImage'))
       }
     }
     e.currentTarget.value = ''
@@ -38,7 +38,7 @@ export function EmptyState() {
       try {
         await importFiles(e.target.files, addPhoto)
       } catch {
-        window.alert('Failed to load camera photo. Please try again.')
+        window.alert(t('error.loadCamera'))
       }
     }
     e.currentTarget.value = ''
@@ -66,7 +66,7 @@ export function EmptyState() {
       input.type = 'file'
       input.files = dataTransfer.files
       await importFiles(input.files, addPhoto).catch(() => {
-        window.alert('Failed to load images.')
+        window.alert(t('error.loadImages'))
       })
     }
     // Sheet stays open so user can fill remaining slots

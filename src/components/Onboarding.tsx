@@ -39,28 +39,28 @@ export function OnboardingOverlay() {
   const steps: Step[] = [
     {
       id: 'welcome',
-      title: t('onboard.welcomeTitle') ?? 'Welcome to Pic Collage',
-      body: t('onboard.welcomeBody') ?? 'Create beautiful collages entirely on your device. No uploads, no accounts.',
+      title: t('onboard.welcomeTitle'),
+      body: t('onboard.welcomeBody'),
       icon: <span className="text-4xl">🎨</span>,
     },
     {
       id: 'photos',
-      title: t('onboard.photosTitle') ?? 'Add Photos',
-      body: t('onboard.photosBody') ?? 'Tap the Photos tab to add images from your gallery or camera.',
+      title: t('onboard.photosTitle'),
+      body: t('onboard.photosBody'),
       icon: <ImagePlus size={40} className="text-accent" />,
       target: '[data-tab="photos"]',
     },
     {
       id: 'text',
-      title: t('onboard.textTitle') ?? 'Add Text',
-      body: t('onboard.textBody') ?? 'Use the Text tab to add captions, titles, and stylish labels.',
+      title: t('onboard.textTitle'),
+      body: t('onboard.textBody'),
       icon: <Type size={40} className="text-accent" />,
       target: '[data-tab="text"]',
     },
     {
       id: 'export',
-      title: t('onboard.exportTitle') ?? 'Export & Share',
-      body: t('onboard.exportBody') ?? 'When ready, hit Export to download as PNG, JPG, or share directly.',
+      title: t('onboard.exportTitle'),
+      body: t('onboard.exportBody'),
       icon: <Download size={40} className="text-accent" />,
     },
   ]
@@ -97,7 +97,7 @@ export function OnboardingOverlay() {
               <button
                 onClick={dismiss}
                 className="rounded-lg p-1 text-muted transition hover:bg-surface-2 hover:text-text"
-                aria-label="Skip onboarding"
+                aria-label={t('aria.skipOnboarding')}
               >
                 <X size={18} />
               </button>

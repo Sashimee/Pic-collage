@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { useT } from '../i18n/useLang'
 import { m, AnimatePresence, useDragControls } from './motion'
 
 // Mobile editing surface: a draggable bottom sheet with two snap points
@@ -17,6 +18,7 @@ export function BottomSheet({
   onClose: () => void
   children: ReactNode
 }) {
+  const t = useT()
   const [expanded, setExpanded] = useState(false)
   const controls = useDragControls()
 
@@ -63,7 +65,7 @@ export function BottomSheet({
                 <h2 className="text-sm font-semibold text-text">{title}</h2>
                 <button
                   onClick={onClose}
-                  aria-label="Close"
+                  aria-label={t('common.close')}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-muted transition hover:bg-surface-2 hover:text-text"
                 >
                   <ChevronDown size={18} />

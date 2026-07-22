@@ -1,17 +1,19 @@
 import { ZoomIn, ZoomOut, RotateCcw, Maximize } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
+import { useT } from '../i18n/useLang'
 
 export function ZoomControls() {
+  const t = useT()
   const zoom = useEditor((s) => s.canvasZoom)
   const setZoom = useEditor((s) => s.setCanvasZoom)
 
   return (
     <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 rounded-xl bg-surface/90 p-1 shadow-lg backdrop-blur-sm sm:bottom-6 sm:right-6 sm:gap-1.5 sm:p-1.5">
       <button
-        title="Zoom out"
+        title={t('aria.zoomOut')}
         onClick={() => setZoom(zoom - 0.1)}
-        className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
-        aria-label="Zoom out"
+        className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95 sm:h-9 sm:w-9"
+        aria-label={t('aria.zoomOut')}
       >
         <ZoomOut size={18} strokeWidth={2.5} />
       </button>
@@ -19,26 +21,26 @@ export function ZoomControls() {
         {Math.round(zoom * 100)}%
       </span>
       <button
-        title="Zoom in"
+        title={t('aria.zoomIn')}
         onClick={() => setZoom(zoom + 0.1)}
-        className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
-        aria-label="Zoom in"
+        className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95 sm:h-9 sm:w-9"
+        aria-label={t('aria.zoomIn')}
       >
         <ZoomIn size={18} strokeWidth={2.5} />
       </button>
       <button
-        title="Reset zoom"
+        title={t('aria.resetZoom')}
         onClick={() => setZoom(1)}
-        className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
-        aria-label="Reset zoom"
+        className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95 sm:h-9 sm:w-9"
+        aria-label={t('aria.resetZoom')}
       >
         <RotateCcw size={16} strokeWidth={2.5} />
       </button>
       <button
-        title="Fit to screen"
+        title={t('aria.fitScreen')}
         onClick={() => setZoom(0.8)}
-        className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95"
-        aria-label="Fit to screen"
+        className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3 active:scale-95 sm:h-9 sm:w-9"
+        aria-label={t('aria.fitScreen')}
       >
         <Maximize size={16} strokeWidth={2.5} />
       </button>
