@@ -14,6 +14,7 @@ const CAMERA_ID = 'empty-camera-input'
 export function EmptyState() {
   const t = useT()
   const isEmpty = useEditor((s) => s.elements.length === 0)
+  const mode = useEditor((s) => s.mode)
   const addPhoto = useEditor((s) => s.addPhoto)
   const setMode = useEditor((s) => s.setMode)
   const applyLayout = useEditor((s) => s.applyLayout)
@@ -21,6 +22,9 @@ export function EmptyState() {
   const [showAssignment, setShowAssignment] = useState(false)
 
   const selectedLayout = selectedLayoutId ? getGridById(selectedLayoutId) : null
+
+  // Don't show gallery overlay when in custom-layout mode — let user draw on canvas
+  const showGallery = isEmpty && mode !== 'custom-layout'
 
   const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -51,6 +55,8 @@ export function EmptyState() {
   }
 
   const handleCustomLayout = () => {
+    setSelectedLayoutId(null)
+    setShowAssignment(false)
     setMode('custom-layout')
   }
 
@@ -82,12 +88,12 @@ export function EmptyState() {
     setSelectedLayoutId(null)
   }
 
-  // Only hide when truly empty AND sheet is closed
-  if (!isEmpty && !showAssignment) return null
+  // Only hide when truly empty AND sheet is closed AND not in custom-layout
+  if (!showGallery && !showAssignment) return null
 
   return (
     <AnimatePresence>
-      {(isEmpty || showAssignment) && (
+      {(showGallery || showAssignment) && (
         <m.div
           className={`pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4 ${
             showAssignment ? 'bg-transparent' : 'bg-surface/80 backdrop-blur-sm'
@@ -97,7 +103,7 @@ export function EmptyState() {
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.25 }}
         >
-          {isEmpty && (
+          {showGallery && (
             <>
               <input
                 id={GALLERY_ID}
