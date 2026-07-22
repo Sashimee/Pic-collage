@@ -322,43 +322,43 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
         <ActionItem
           onClick={() => { setSheetOpen(false); document.documentElement.requestFullscreen().catch(() => {}) }}
           icon={<Maximize size={18} />}
-          label="Full screen"
+          label={t('fullscreen.enter')}
         />
         <ActionDivider />
         <ActionItem
           onClick={() => { setSheetOpen(false); setLang('de') }}
           icon={<span className="text-lg">🇩🇪</span>}
-          label="Deutsch"
+          label={t('lang.de')}
           active={lang === 'de'}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); setLang('en') }}
           icon={<span className="text-lg">🇬🇧</span>}
-          label="English"
+          label={t('lang.en')}
           active={lang === 'en'}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); setLang('es') }}
           icon={<span className="text-lg">🇪🇸</span>}
-          label="Español"
+          label={t('lang.es')}
           active={lang === 'es'}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); setLang('fr') }}
           icon={<span className="text-lg">🇫🇷</span>}
-          label="Français"
+          label={t('lang.fr')}
           active={lang === 'fr'}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); setLang('it') }}
           icon={<span className="text-lg">🇮🇹</span>}
-          label="Italiano"
+          label={t('lang.it')}
           active={lang === 'it'}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); setLang('pt') }}
           icon={<span className="text-lg">🇧🇷</span>}
-          label="Português"
+          label={t('lang.pt')}
           active={lang === 'pt'}
         />
         <ActionItem
@@ -399,27 +399,27 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
         <ActionItem
           onClick={() => { setSheetOpen(false); onExportSVG?.() }}
           icon={<FileCode size={18} />}
-          label="Export SVG"
+          label={t('export.svg')}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); handleExport('pdf') }}
           icon={<FileText size={18} />}
-          label="Export PDF"
+          label={t('export.pdf')}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); handleExport('webm') }}
           icon={<Video size={18} />}
-          label="Export WebM"
+          label={t('export.webm')}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); handleBatchExport() }}
           icon={<Package size={18} />}
-          label="Batch Export"
+          label={t('export.batch')}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); handleSaveAsFile() }}
           icon={<Upload size={18} />}
-          label="Save as .piccollage"
+          label={t('export.saveProject')}
         />
         <label className="flex min-h-[48px] w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-text transition hover:bg-surface-3 active:scale-[0.98]">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-muted">

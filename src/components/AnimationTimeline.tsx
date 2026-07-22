@@ -10,6 +10,7 @@ import {
 } from '../lib/animationEngine'
 import type { CanvasElement } from '../types'
 import { m } from './motion'
+import { useT } from '../i18n/useLang'
 
 const ANIMATABLE_PROPS: AnimatableProp[] = ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'opacity']
 const DEFAULT_DURATION = 5 // seconds
@@ -53,6 +54,7 @@ function getElementProp(el: CanvasElement, prop: AnimatableProp): number {
 }
 
 export default function AnimationTimeline() {
+  const t = useT()
   const elements = useEditor((s) => s.elements)
 
   const [duration, setDuration] = useState(DEFAULT_DURATION)
@@ -207,7 +209,7 @@ export default function AnimationTimeline() {
           whileTap={{ scale: 0.9 }}
           onClick={handleStop}
           className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-text hover:bg-surface-3"
-          title="Stop"
+          title={t('animation.stop')}
         >
           <Square size={16} />
         </m.button>

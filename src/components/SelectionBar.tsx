@@ -111,9 +111,9 @@ export function SelectionBar() {
       const { autoEnhance } = await import('../ai/autoEnhance')
       const result = await autoEnhance(el.src)
       updateElement(selectedId, { src: result })
-      toast.success('Enhanced!')
+      toast.success(t('toast.enhanced'))
     } catch {
-      toast.error('Enhancement failed')
+      toast.error(t('toast.enhanceFailed'))
     }
   }
 
@@ -256,13 +256,13 @@ export function SelectionBar() {
               )}
               {(isFreePhoto || isGridPhoto) && (
                 <>
-                  <Btn onClick={handleRemoveBg} label="Remove BG">
+                  <Btn onClick={handleRemoveBg} label={t('sel.removeBg')}>
                     <Scissors size={18} />
                   </Btn>
-                  <Btn onClick={handleRetouch} label="Retouch">
+                  <Btn onClick={handleRetouch} label={t('sel.retouch')}>
                     <Sparkles size={18} />
                   </Btn>
-                  <Btn onClick={handleEnhance} label="Enhance">
+                  <Btn onClick={handleEnhance} label={t('sel.enhance')}>
                     <Zap size={18} />
                   </Btn>
                 </>

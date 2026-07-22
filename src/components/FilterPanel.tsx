@@ -61,7 +61,7 @@ export function FilterPanel() {
   const removeOp = (index: number) => {
     const next = stack.filter((_, i) => i !== index)
     updateStack(next)
-    toast.info('Filter removed')
+    toast.info(t('filter.removed'))
   }
 
   const addOp = (type: string) => {
@@ -93,7 +93,7 @@ export function FilterPanel() {
       { type: 'preset', id: 'none' } as any,
     ])
     updateFilters(selectedId, { brightness: 0, contrast: 0, saturation: 0, preset: 'none', blur: 0, vignette: 0 })
-    toast.success('Filters reset')
+    toast.success(t('filter.resetAll'))
   }
 
   // Quick preview config
@@ -137,7 +137,7 @@ export function FilterPanel() {
       </Section>
 
       {/* Filter stack */}
-      <Section title="Filter Stack">
+      <Section title={t('filter.stackTitle')}>
         <div className="flex flex-col gap-1">
           {stack.map((op, i) => {
             const isExpanded = expanded.has(i)
@@ -242,9 +242,9 @@ export function FilterPanel() {
               sharpen: true,
             })
             updateElement(selectedId, { src: enhanced })
-            toast.success('Photo auto-enhanced!')
+            toast.success(t('toast.enhanced'))
           } catch {
-            toast.error('Enhancement failed')
+            toast.error(t('toast.enhanceFailed'))
           }
         }}
         className="flex items-center justify-center gap-2 rounded-lg bg-accent/10 py-2.5 text-sm font-medium text-accent transition hover:bg-accent/20"

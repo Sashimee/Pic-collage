@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Maximize, Minimize } from 'lucide-react'
+import { useT } from '../i18n/useLang'
 
 export function useFullScreen() {
   const [isFullScreen, setIsFullScreen] = useState(false)
@@ -51,13 +52,14 @@ export function useFullScreen() {
 }
 
 export function FullScreenButton() {
+  const t = useT()
   const { isFullScreen, toggle } = useFullScreen()
 
   return (
     <button
       onClick={toggle}
       className="hidden sm:flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-text/80 transition hover:bg-surface-3"
-      aria-label={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
+      aria-label={isFullScreen ? t('fullscreen.exit') : t('fullscreen.enter')}
       title={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
     >
       {isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}

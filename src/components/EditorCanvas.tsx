@@ -9,6 +9,7 @@ import {
 import { Group, Layer, Line, Stage, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useEditor } from '../store/editorStore'
+import { useT } from '../i18n/useLang'
 import { getGridById } from '../lib/grids'
 import { Background } from './Background'
 import { BoardFrame } from './BoardFrame'
@@ -29,6 +30,7 @@ const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v))
 
 export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
+  const t = useT()
   const hostRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const boardRef = useRef<Konva.Group>(null)
@@ -87,7 +89,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     if (pinchHintShown.current) return
     pinchHintShown.current = true
     localStorage.setItem('piccollage-pinch-hint-shown', '1')
-    toast.info('Pinch with two fingers to zoom')
+    toast.info(t('canvas.pinchZoom'))
   }
 
   // Inline text editor overlay (replaces window.prompt on double-tap).
@@ -450,7 +452,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
             snapEnabled ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
           }`}
-          title="Snap to guides (Shift to temporarily disable while dragging)"
+          title={t('canvas.snapToGuides')}
         >
           Snap
         </button>
@@ -459,7 +461,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
             showGrid ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
           }`}
-          title="Toggle grid"
+          title={t('canvas.toggleGrid')}
         >
           Grid
         </button>
@@ -476,7 +478,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
             showRulers ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
           }`}
-          title="Toggle rulers"
+          title={t('canvas.toggleRulers')}
         >
           Rulers
         </button>

@@ -311,7 +311,7 @@ export function LayoutPanel() {
         </div>
       </Section>
 
-      <Section title="Export Presets">
+      <Section title={t('export.presets')}>
         <div className="flex flex-col gap-3">
           {(['social', 'print', 'screen'] as const).map((cat) => {
             const catPresets = EXPORT_PRESETS.filter((p) => p.category === cat)
@@ -361,7 +361,7 @@ export function LayoutPanel() {
 
       <ShapePicker />
 
-      <Section title="Shapes">
+      <Section title={t('shape.title')}>
         <div className="flex flex-wrap gap-2">
           {[
             { type: 'rect' as const, label: 'Rectangle', icon: '▭' },
@@ -383,7 +383,7 @@ export function LayoutPanel() {
         </div>
         <div className="mt-2 flex items-center gap-2">
           <ColorField
-            label="Default fill"
+            label={t('shape.defaultFill')}
             value="#6366f1"
             onChange={() => { /* shapes created after this will use this color — future enhancement */ }}
           />
