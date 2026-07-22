@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { Fragment, useCallback, useRef, useState } from 'react'
 import { Group, Line, Rect, Text as KonvaText } from 'react-konva'
 import type Konva from 'konva'
 import type { GridCell } from '../types'
@@ -252,29 +252,27 @@ export function CustomLayoutEditor({
       )}
       {/* Preview cells */}
       {previewCells?.map((cell, i) => (
-        <Rect
-          key={`cell-${i}`}
-          x={cell.x * boardWidth}
-          y={cell.y * boardHeight}
-          width={cell.width * boardWidth}
-          height={cell.height * boardHeight}
-          stroke="#22c55e"
-          strokeWidth={2}
-          dash={[8, 4]}
-          listening={false}
-        />
-      ))}
-      {previewCells?.map((cell, i) => (
-        <KonvaText
-          key={`cell-label-${i}`}
-          x={cell.x * boardWidth + 8}
-          y={cell.y * boardHeight + 8}
-          text={String(i + 1)}
-          fill="#22c55e"
-          fontSize={16}
-          fontFamily="Poppins, system-ui, sans-serif"
-          listening={false}
-        />
+        <Fragment key={`cell-frag-${i}`}>
+          <Rect
+            x={cell.x * boardWidth}
+            y={cell.y * boardHeight}
+            width={cell.width * boardWidth}
+            height={cell.height * boardHeight}
+            stroke="#22c55e"
+            strokeWidth={2}
+            dash={[8, 4]}
+            listening={false}
+          />
+          <KonvaText
+            x={cell.x * boardWidth + 8}
+            y={cell.y * boardHeight + 8}
+            text={String(i + 1)}
+            fill="#22c55e"
+            fontSize={16}
+            fontFamily="Poppins, system-ui, sans-serif"
+            listening={false}
+          />
+        </Fragment>
       ))}
     </Group>
   )

@@ -21,6 +21,8 @@ import { computeSnap, type SnapLine } from '../lib/snap'
 import { useToasts } from './ToastContainer'
 import { CustomLayoutEditor } from './CustomLayoutEditor'
 import { CustomLayoutToolbar } from './CustomLayoutToolbar'
+import { computeCellsFromLines } from '../lib/customLayout'
+import { saveCustomLayout } from '../lib/customLayoutStorage'
 
 export interface EditorHandle {
   exportImage: (format: ExportFormat) => string | null
@@ -205,6 +207,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     if (touches.length !== 2) return
     showPinchHint()
     e.evt.preventDefault()
+    e.evt.stopPropagation()
     const p1 = localPoint(touches[0])
     const p2 = localPoint(touches[1])
     const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y)
@@ -418,8 +421,6 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           onSnapToggle={() => setCustomSnapEnabled((v) => !v)}
           onApply={() => {
             // Build a GridLayout from current custom lines and store it
-            const { computeCellsFromLines } = require('../lib/customLayout')
-            const { saveCustomLayout } = require('../lib/customLayoutStorage')
             const state = useEditor.getState()
             const cells = computeCellsFromLines(state.customLayoutLines)
             const layout = {
