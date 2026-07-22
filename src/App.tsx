@@ -263,7 +263,7 @@ export default function App() {
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1">
               <ToolRail panels={panels} />
-              <div className="relative min-h-0 flex-1 bg-bg">
+              <div className="relative min-h-0 flex-1 bg-bg pt-[calc(env(safe-area-inset-top)+3rem)]">
                 {/* Subtle dot grid on empty canvas */}
                 <div
                   className="pointer-events-none absolute inset-0 opacity-[0.03]"
@@ -284,7 +284,8 @@ export default function App() {
           </div>
         ) : (
           <>
-            <div className="relative min-h-0 flex-1 bg-bg">
+            {/* Mobile: canvas area with insets for header overlay + bottom controls */}
+            <div className="relative min-h-0 flex-1 bg-bg pt-[calc(env(safe-area-inset-top)+3rem)] pb-[calc(env(safe-area-inset-bottom)+3.5rem)]">
               {/* Subtle dot grid on empty canvas */}
               <div
                 className="pointer-events-none absolute inset-0 opacity-[0.03]"
