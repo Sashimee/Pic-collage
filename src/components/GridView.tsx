@@ -88,7 +88,7 @@ function getClipFunc(cell: GridCell, rect: Rect2, radius: number) {
     return (ctx: any) => roundedRectPath(ctx, rect, cell.cornerRadius ?? radius)
   }
   if (shape === 'polygon') {
-    const pts = cell.polygon ?? CELL_SHAPE_PRESETS.diamond
+    const pts = cell.polygon?.length ? cell.polygon : CELL_SHAPE_PRESETS.diamond
     return (ctx: any) => {
       ctx.beginPath()
       pts.forEach((p, i) => {

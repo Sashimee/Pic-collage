@@ -17,7 +17,7 @@ function readStore(): SavedCustomLayout[] {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) return parsed
+    if (Array.isArray(parsed)) return parsed.slice(0, MAX_LAYOUTS)
     return []
   } catch {
     return []
