@@ -224,6 +224,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
         setTf((t) => {
           const newScale = clamp(t.scale * factor, 0.2, 6)
           const pointTo = { x: (cx - t.x) / t.scale, y: (cy - t.y) / t.scale }
+          setCanvasZoom(newScale)
           return {
             scale: newScale,
             x: cx - pointTo.x * newScale + (cx - prev.cx),

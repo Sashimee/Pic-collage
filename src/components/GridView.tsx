@@ -135,6 +135,9 @@ function getClipBounds(cell: GridCell, rect: Rect2): Rect2 {
   if (shape === 'ellipse') {
     return rect
   }
+  // For polygon, path, and rounded-rect we return the full bounding rect
+  // since computing exact clip bounds for arbitrary shapes is non-trivial.
+  // dragBoundFunc will still clamp within this bounding rect.
   return rect
 }
 
@@ -228,8 +231,12 @@ function CellPhoto({
           if (!t) return pos
           const local = t.copy().invert().point(pos)
           const bounds = getClipBounds(cell, rect)
-          const lx = clamp(local.x, bounds.x + (bounds.w - dw) / 2, bounds.x + (bounds.w + dw) / 2 - dw)
-          const ly = clamp(local.y, bounds.y + (bounds.h - dh) / 2, bounds.y + (bounds.h + dh) / 2 - dh)
+          const minX = Math.min(bounds.x, bounds.x + bounds.w - dw)
+          const maxX = Math.max(bounds.x, bounds.x + bounds.w - dw)
+          const minY = Math.min(bounds.y, bounds.y + bounds.h - dh)
+          const maxY = Math.max(bounds.y, bounds.y + bounds.h - dh)
+          const lx = clamp(local.x, minX, maxX)
+          const ly = clamp(local.y, minY, maxY)
           return t.point({ x: lx, y: ly })
         }}
         onDragMove={(e) => commitPan(e.target as Konva.Image)}

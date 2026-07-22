@@ -21,6 +21,8 @@ import {
   DEFAULT_PRINT_SETTINGS,
 } from '../types'
 import type { DividerLine } from '../lib/customLayout'
+import { getGridById } from '../lib/grids'
+import { getCustomLayoutById } from '../lib/customLayoutStorage'
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -512,6 +514,12 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   applyLayout: (layoutId: string, opts?: { boardSize?: { w: number; h: number } }) => {
     const { setGrid, setBoardSize, setMode } = get()
+    // Validate layout exists before applying
+    const layout = getGridById(layoutId) || getCustomLayoutById(layoutId)
+    if (!layout) {
+      console.error(`[applyLayout] Layout not found: ${layoutId}`)
+      return
+    }
     if (opts?.boardSize) {
       setBoardSize(opts.boardSize.w, opts.boardSize.h)
     }
