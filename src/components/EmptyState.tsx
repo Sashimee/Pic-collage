@@ -80,12 +80,12 @@ export function EmptyState() {
 
   const handleDoneAssignment = () => {
     setShowAssignment(false)
-    setSelectedLayoutId(null)
+    // Don't clear selectedLayoutId here — let AnimatePresence finish exit animation
   }
 
   const handleSkipAssignment = () => {
     setShowAssignment(false)
-    setSelectedLayoutId(null)
+    // Don't clear selectedLayoutId here — let AnimatePresence finish exit animation
   }
 
   return (
@@ -153,16 +153,22 @@ export function EmptyState() {
       </AnimatePresence>
 
       {/* Photo Assignment Sheet — sibling to gallery, NOT nested inside overlay */}
-      {selectedLayout && (
-        <PhotoAssignmentSheet
-          layout={selectedLayout}
-          open={showAssignment}
-          onClose={handleSkipAssignment}
-          onAssign={handleAssign}
-          onSkip={handleSkipAssignment}
-          onDone={handleDoneAssignment}
-        />
-      )}
+      <AnimatePresence
+        onExitComplete={() => {
+          if (!showAssignment) setSelectedLayoutId(null)
+        }}
+      >
+        {selectedLayout && (
+          <PhotoAssignmentSheet
+            layout={selectedLayout}
+            open={showAssignment}
+            onClose={handleSkipAssignment}
+            onAssign={handleAssign}
+            onSkip={handleSkipAssignment}
+            onDone={handleDoneAssignment}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }

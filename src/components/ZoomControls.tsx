@@ -14,8 +14,8 @@ export function ZoomControls() {
       <button
         onClick={() => setExpanded(true)}
         className="absolute bottom-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface/90 text-sm font-bold text-text shadow-lg backdrop-blur-sm transition hover:bg-surface-2 active:scale-95 sm:bottom-6 sm:right-6"
-        title={t('aria.zoomIn')}
-        aria-label={`Zoom ${Math.round(zoom * 100)}% — ${t('aria.zoomIn')}`}
+        title={t('aria.zoomIn') + ' / ' + t('aria.zoomOut')}
+        aria-label={`Zoom ${Math.round(zoom * 100)}% — ${t('aria.zoomIn')} / ${t('aria.zoomOut')}`}
       >
         <span className="tabular-nums">{Math.round(zoom * 100)}</span>
         <span className="text-[0.6rem]">%</span>

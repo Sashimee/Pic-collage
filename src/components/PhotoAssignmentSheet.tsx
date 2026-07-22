@@ -1,8 +1,19 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import type { GridLayout } from '../types'
 import { useT } from '../i18n/useLang'
 import { m, AnimatePresence } from './motion'
 import { Plus, Images, SkipForward, Check, X } from 'lucide-react'
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false)
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 1024)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return isDesktop
+}
 
 export function PhotoAssignmentSheet({
   layout,
@@ -24,6 +35,12 @@ export function PhotoAssignmentSheet({
     () => new Array(layout.cells.length).fill(null),
   )
   const multiInputRef = useRef<HTMLInputElement>(null)
+  const isDesktop = useIsDesktop()
+
+  // Reset previews when layout changes (different slot count)
+  useEffect(() => {
+    setPreviews(new Array(layout.cells.length).fill(null))
+  }, [layout.cells.length])
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -82,8 +99,6 @@ export function PhotoAssignmentSheet({
     input.onchange = (e) => handleFileChange(e as unknown as React.ChangeEvent<HTMLInputElement>, index)
     input.click()
   }
-
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024
 
   return (
     <AnimatePresence>
