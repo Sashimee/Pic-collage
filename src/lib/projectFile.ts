@@ -63,15 +63,51 @@ export async function packProject(
   return new Blob([JSON.stringify(file)], { type: 'application/json' })
 }
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v)
+}
+
+function validatePicCollageFile(raw: unknown): PicCollageFile {
+  if (!isPlainObject(raw)) throw new Error('Invalid .piccollage: not an object')
+  if (raw.version !== 1) throw new Error(`Unsupported .piccollage version: ${raw.version}`)
+
+  const project = raw.project
+  if (!isPlainObject(project) || typeof project.name !== 'string') {
+    throw new Error('Invalid .piccollage: missing project.name')
+  }
+
+  const photos = raw.photos
+  if (!isPlainObject(photos)) {
+    throw new Error('Invalid .piccollage: missing photos map')
+  }
+
+  const doc = raw.doc
+  if (!isPlainObject(doc) || !Array.isArray(doc.elements)) {
+    throw new Error('Invalid .piccollage: missing doc.elements')
+  }
+
+  // Validate photo URLs are data: images (block HTTP/HTTPS egress)
+  for (const [photoId, dataUrl] of Object.entries(photos)) {
+    if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+      throw new Error(`Invalid .piccollage: photo "${photoId}" is not a data:image/ URL`)
+    }
+  }
+
+  return raw as unknown as PicCollageFile
+}
+
 export async function unpackProject(
   blob: Blob,
 ): Promise<{ name: string; doc: LoadedDocument }> {
   const text = await blob.text()
-  const file = JSON.parse(text) as PicCollageFile
-
-  if (file.version !== 1) {
-    throw new Error(`Unsupported .piccollage version: ${file.version}`)
+  let raw: unknown
+  try {
+    raw = JSON.parse(text)
+  } catch {
+    throw new Error('Invalid .piccollage: not valid JSON')
   }
+
+  const file = validatePicCollageFile(raw)
 
   // Decode base64 photos and store back into IndexedDB
   for (const [photoId, dataUrl] of Object.entries(file.photos)) {

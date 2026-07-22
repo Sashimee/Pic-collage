@@ -75,11 +75,16 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
   const handleOpenFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const { unpackProject } = await import('../lib/projectFile')
-    const { doc } = await unpackProject(file)
-    useEditor.getState().loadDocument(doc)
-    e.target.value = ''
-    toast.success(t('toast.projectOpened'))
+    try {
+      const { unpackProject } = await import('../lib/projectFile')
+      const { doc } = await unpackProject(file)
+      useEditor.getState().loadDocument(doc)
+      e.target.value = ''
+      toast.success(t('toast.projectOpened'))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('error.loadImage'))
+      e.target.value = ''
+    }
   }
 
   const handleExport = async (kind: ExportKind) => {
@@ -101,7 +106,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
       const dataUrl = el.src
       if (dataUrl && dataUrl.startsWith('data:')) {
         files.push({ name: `photo-${i + 1}.png`, dataUrl })
-      } else if (dataUrl) {
+      } else if (dataUrl && dataUrl.startsWith('blob:')) {
         // Convert blob URL to data URL
         try {
           const res = await fetch(dataUrl)
