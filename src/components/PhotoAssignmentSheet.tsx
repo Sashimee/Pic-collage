@@ -91,7 +91,7 @@ export function PhotoAssignmentSheet({
 
           {/* Panel */}
           <m.div
-            className={`fixed z-50 flex flex-col bg-surface shadow-[var(--shadow-card)] ${
+            className={`fixed z-50 flex flex-col bg-surface shadow-[var(--shadow-card)] max-h-[90vh] ${
               isDesktop
                 ? 'right-0 top-0 h-full w-80 border-l border-border'
                 : 'bottom-0 left-0 right-0 rounded-t-3xl border-t border-border'

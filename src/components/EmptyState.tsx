@@ -117,7 +117,7 @@ export function EmptyState() {
               />
 
               <m.div
-                className="pointer-events-auto flex w-full max-w-lg flex-col gap-4"
+                className="pointer-events-auto flex w-full max-w-lg flex-col gap-4 max-h-[85vh] overflow-y-auto no-scrollbar"
                 initial={{ y: 16, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ type: 'spring', damping: 26, stiffness: 300 }}

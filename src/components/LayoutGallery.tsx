@@ -149,7 +149,7 @@ export function LayoutGallery({
 
       <div
         ref={galleryRef}
-        className="grid grid-cols-3 gap-3 md:grid-cols-4 max-h-[40vh] overflow-y-auto no-scrollbar px-1"
+        className="grid grid-cols-3 gap-3 md:grid-cols-4 px-1"
       >
         <AnimatePresence mode="popLayout">
           {filtered.map((layout) => (
