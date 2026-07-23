@@ -144,29 +144,3 @@ export function computeFilterConfig(f: PhotoFilters): FilterConfig {
 function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v))
 }
-
-// ---- Optional WebGPU backend -----------------------------------------------
-
-import {
-  adjustBrightnessContrast,
-  adjustBrightnessContrastCanvas,
-  isWebGPUAvailable,
-} from './webgpuFilters'
-
-export { adjustBrightnessContrastCanvas, isWebGPUAvailable }
-
-/**
- * Apply brightness/contrast via WebGPU when available, returning a processed
- * ImageBitmap. Returns null when WebGPU is unavailable so the caller can fall
- * back to the Konva filter stack.
- */
-export async function applyFilterWebGPU(
-  image: ImageBitmap,
-  brightness: number,
-  contrast: number,
-): Promise<ImageBitmap | null> {
-  if (await isWebGPUAvailable()) {
-    return adjustBrightnessContrast(image, brightness, contrast)
-  }
-  return null
-}
