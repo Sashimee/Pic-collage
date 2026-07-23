@@ -7,17 +7,20 @@ import type { FilterOperation } from '../types'
 import { Chip, Section, Slider } from './ui'
 import { useToasts } from './ToastContainer'
 import { autoEnhance } from '../ai/autoEnhance'
+import { STYLE_OPTIONS, applyStyleTransfer } from '../ai/styleTransfer'
 
 const FILTER_OPS = [
-  { type: 'brightness', label: 'Brightness', min: -1, max: 1, step: 0.02, default: 0 },
-  { type: 'contrast', label: 'Contrast', min: -100, max: 100, step: 1, default: 0 },
-  { type: 'saturation', label: 'Saturation', min: -2, max: 4, step: 0.1, default: 0 },
-  { type: 'hueShift', label: 'Hue', min: -180, max: 180, step: 5, default: 0 },
-  { type: 'exposure', label: 'Exposure', min: -1, max: 1, step: 0.05, default: 0 },
-  { type: 'shadows', label: 'Shadows', min: -1, max: 1, step: 0.05, default: 0 },
-  { type: 'highlights', label: 'Highlights', min: -1, max: 1, step: 0.05, default: 0 },
-  { type: 'blur', label: 'Blur', min: 0, max: 40, step: 1, default: 0 },
-  { type: 'vignette', label: 'Vignette', min: 0, max: 0.9, step: 0.05, default: 0 },
+  { type: 'brightness', labelKey: 'filter.brightness', min: -1, max: 1, step: 0.02, default: 0 },
+  { type: 'contrast', labelKey: 'filter.contrast', min: -100, max: 100, step: 1, default: 0 },
+  { type: 'saturation', labelKey: 'filter.saturation', min: -2, max: 4, step: 0.1, default: 0 },
+  { type: 'hueShift', labelKey: 'filter.hue', min: -180, max: 180, step: 5, default: 0 },
+  { type: 'temperature', labelKey: 'filter.temperature', min: -100, max: 100, step: 1, default: 0 },
+  { type: 'tint', labelKey: 'filter.tint', min: -100, max: 100, step: 1, default: 0 },
+  { type: 'exposure', labelKey: 'filter.exposure', min: -1, max: 1, step: 0.05, default: 0 },
+  { type: 'shadows', labelKey: 'filter.shadows', min: -1, max: 1, step: 0.05, default: 0 },
+  { type: 'highlights', labelKey: 'filter.highlights', min: -1, max: 1, step: 0.05, default: 0 },
+  { type: 'blur', labelKey: 'filter.blur', min: 0, max: 40, step: 1, default: 0 },
+  { type: 'vignette', labelKey: 'filter.vignette', min: 0, max: 0.9, step: 0.05, default: 0 },
 ] as const
 
 export function FilterPanel() {
@@ -113,7 +116,7 @@ export function FilterPanel() {
         />
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="rounded-lg bg-black/50 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-            {stack.length} filter{stack.length !== 1 ? 's' : ''}
+            {stack.length} {t('filter.countLabel')}
           </span>
         </div>
       </div>
@@ -143,12 +146,8 @@ export function FilterPanel() {
             const isExpanded = expanded.has(i)
             const label =
               op.type === 'preset'
-                ? `Preset: ${op.id}`
-                : op.type === 'blur'
-                  ? 'Blur'
-                  : op.type === 'vignette'
-                    ? 'Vignette'
-                    : FILTER_OPS.find((o) => o.type === op.type)?.label ?? op.type
+                ? `${t('filter.presetLabel')}: ${t('filter.' + op.id)}`
+                : t(FILTER_OPS.find((o) => o.type === op.type)?.labelKey ?? '') || op.type
 
             const value =
               op.type === 'preset'
@@ -225,7 +224,33 @@ export function FilterPanel() {
               className="flex items-center gap-1 rounded-md bg-surface-3 px-2 py-1 text-xs text-muted transition hover:text-text"
             >
               <Plus size={12} />
-              {op.label}
+              {t(op.labelKey)}
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      {/* Artistic styles (destructive: replaces the photo bitmap) */}
+      <Section title={t('style.title')}>
+        <div className="scroll-x flex gap-2 overflow-x-auto pb-1">
+          {STYLE_OPTIONS.filter((s) => s.id !== 'none').map((s) => (
+            <button
+              key={s.id}
+              onClick={async () => {
+                if (!photo?.src) return
+                toast.info(t('style.applying'))
+                try {
+                  const out = await applyStyleTransfer(photo.src, s.id)
+                  updateElement(selectedId, { src: out })
+                  toast.success(t('style.applied'))
+                } catch {
+                  toast.error(t('style.failed'))
+                }
+              }}
+              className="flex shrink-0 flex-col items-center gap-1 rounded-xl bg-surface-2 px-3 py-2 text-[0.7rem] font-medium text-text transition hover:bg-surface-3 active:scale-95"
+            >
+              <span className="text-lg">{s.emoji}</span>
+              {t('style.' + s.id)}
             </button>
           ))}
         </div>
@@ -250,7 +275,7 @@ export function FilterPanel() {
         className="flex items-center justify-center gap-2 rounded-lg bg-accent/10 py-2.5 text-sm font-medium text-accent transition hover:bg-accent/20"
       >
         <Sparkles size={16} />
-        Auto-Enhance
+        {t('filter.autoEnhance')}
       </button>
 
       {/* Reset */}
@@ -259,7 +284,7 @@ export function FilterPanel() {
         className="flex items-center justify-center gap-2 rounded-lg border border-border bg-surface-2 py-2.5 text-sm text-muted transition hover:text-text"
       >
         <Wand2 size={16} />
-        Reset All Filters
+        {t('filter.resetBtn')}
       </button>
     </div>
   )

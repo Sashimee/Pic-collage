@@ -184,6 +184,12 @@ function CellPhoto({
     }
   }, [image, el.filters])
 
+  // NOTE: all hooks must run before any early return. `image` starts null and
+  // becomes an HTMLImageElement once decoded; a `useMemo` placed after an
+  // `if (!image) return null` would change the hook count between renders and
+  // crash the whole Konva stage (Rules of Hooks).
+  const clipFunc = useMemo(() => getClipFunc(cell, rect, radius), [cell, rect, radius])
+
   if (!image) return null
 
   const box = placePhoto(
@@ -204,7 +210,6 @@ function CellPhoto({
     })
   }
 
-  const clipFunc = useMemo(() => getClipFunc(cell, rect, radius), [cell, rect, radius])
   const clipRect = getClipBounds(cell, rect)
 
   return (

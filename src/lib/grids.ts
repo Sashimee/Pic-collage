@@ -1,4 +1,5 @@
 import type { GridLayout } from '../types'
+import { getCustomLayoutById } from './customLayoutStorage'
 
 // Normalised (0..1) collage layouts. A small gutter is applied at render time,
 // so cells here tile the full unit square edge-to-edge. Rendered as visual
@@ -790,6 +791,26 @@ export const GRID_LAYOUTS: GridLayout[] = [
 
 export function getGridById(id: string): GridLayout | undefined {
   return GRID_LAYOUTS.find((g) => g.id === id)
+}
+
+/**
+ * Resolve a layout id to a GridLayout, checking built-in presets first and then
+ * user-drawn custom layouts persisted in localStorage. This is what the canvas
+ * uses so an applied custom layout actually renders (presets alone would miss it).
+ */
+export function resolveLayoutById(id: string): GridLayout | undefined {
+  const preset = GRID_LAYOUTS.find((g) => g.id === id)
+  if (preset) return preset
+  const custom = getCustomLayoutById(id)
+  if (!custom) return undefined
+  return {
+    id: custom.id,
+    label: custom.name,
+    count: custom.cells.length,
+    cells: custom.cells,
+    category: 'custom',
+    isCustom: true,
+  }
 }
 
 export function getLayoutsByCategory(category: string): GridLayout[] {

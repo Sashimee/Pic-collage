@@ -4,7 +4,7 @@ import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
   Share2, FileImage, Image as ImageIcon, Sparkles,
   RefreshCcw, Menu, FolderOpen, Save, Upload,
-  ChevronDown, FileCode, Maximize, FileText, Video, Package,
+  ChevronDown, FileCode, Maximize, FileText, Package,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -21,7 +21,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useToasts } from './ToastContainer'
 import { FullScreenButton } from './FullScreen'
 
-export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'webm' | 'batch'
+export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'batch'
 
 export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKind) => void; onExportSVG?: () => void }) {
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -244,24 +244,21 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
                       {t('export.jpg')}
                     </MenuItem>
                     <MenuItem onClick={() => { setExportOpen(false); onExportSVG?.() }} icon={<FileCode size={16} />}>
-                      Export SVG
+                      {t('export.svg')}
                     </MenuItem>
                     <MenuItem onClick={() => handleExport('pdf')} icon={<FileText size={16} />}>
-                      Export PDF
-                    </MenuItem>
-                    <MenuItem onClick={() => handleExport('webm')} icon={<Video size={16} />}>
-                      Export WebM
+                      {t('export.pdf')}
                     </MenuItem>
                     <MenuItem onClick={() => { setExportOpen(false); handleBatchExport() }} icon={<Package size={16} />}>
-                      Batch Export ZIP
+                      {t('export.batch')}
                     </MenuItem>
                     <div className="mx-3 my-1 h-px bg-border" />
                     <MenuItem onClick={handleSaveAsFile} icon={<Upload size={16} />}>
-                      Save as .piccollage
+                      {t('export.saveProject')}
                     </MenuItem>
                     <label className="flex min-h-[44px] w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-left text-sm text-text/90 transition hover:bg-surface-3">
                       <Upload size={16} className="text-muted" />
-                      <span>Open .piccollage</span>
+                      <span>{t('export.openProject')}</span>
                       <input
                         type="file"
                         accept=".piccollage,application/json"
@@ -412,11 +409,6 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           label={t('export.pdf')}
         />
         <ActionItem
-          onClick={() => { setSheetOpen(false); handleExport('webm') }}
-          icon={<Video size={18} />}
-          label={t('export.webm')}
-        />
-        <ActionItem
           onClick={() => { setSheetOpen(false); handleBatchExport() }}
           icon={<Package size={18} />}
           label={t('export.batch')}
@@ -430,7 +422,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-3 text-muted">
             <Upload size={18} />
           </span>
-          <span>Open .piccollage</span>
+          <span>{t('export.openProject')}</span>
           <input
             type="file"
             accept=".piccollage,application/json"

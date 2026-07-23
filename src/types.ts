@@ -81,7 +81,6 @@ export interface PhotoElement extends BaseElement {
   // Per-cell framing in grid mode (ignored in free mode):
   cellZoom?: number // zoom within the cell, >= 1; default 1 = plain cover-fit
   cellPan?: { x: number; y: number } // normalised pan, each axis in [-1, 1]; default centred
-  kenBurns?: boolean // auto-generate pan/zoom keyframes for animation
 }
 
 export interface TextChip {
@@ -291,12 +290,9 @@ export type FilterOperation =
   | { type: 'highlights'; value: number }
   | { type: 'temperature'; value: number }
   | { type: 'tint'; value: number }
-  | { type: 'clarity'; value: number }
   | { type: 'preset'; id: FilterPreset }
   | { type: 'blur'; radius: number }
   | { type: 'vignette'; strength: number }
-  | { type: 'aiBgRemoval'; enabled: boolean; replacementColor?: string }
-  | { type: 'styleTransfer'; styleId: string; intensity: number }
 
 export const DEFAULT_FILTER_STACK: FilterOperation[] = [
   { type: 'brightness', value: 0 },

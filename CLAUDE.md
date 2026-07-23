@@ -3,7 +3,7 @@
 A **Pic Collage Maker** — a photo collage maker & editor that runs **100 %
 client-side** in the browser. No backend, no account, nothing uploaded; the build
 is static files hosted for free on GitHub Pages, installable as a PWA on iPhone
-and Android. Bilingual UI (German / English).
+and Android. Multilingual UI (**DE / EN / ES / FR / IT / PT**).
 
 > **Read the [Git workflow](#git-workflow) section before committing anything.**
 > Short version: branch every feature off `dev`; **never push or merge without
@@ -22,9 +22,14 @@ and Android. Bilingual UI (German / English).
 | State | **zustand** | `src/store/editorStore.ts`, `src/i18n/useLang.ts` |
 | PWA | **vite-plugin-pwa** | manifest + service worker, `registerType: 'autoUpdate'` |
 | Hosting | **GitHub Pages** | `.github/workflows/deploy.yml` on push to `main` |
+| Motion / icons | **framer-motion** + **lucide-react** | animations + icon set |
+| Export / misc | **pdf-lib**, **jszip**, **canvas-confetti**, **piexif**, **idb** | PDF/ZIP export, confetti, EXIF, IndexedDB |
 
-No runtime dependency beyond the above — filters, export, i18n, icons are all
-hand-rolled to stay lightweight and dependency-free.
+Core editor logic (filters, snapping, grids, i18n, image processing, the
+"AI" photo tools) stays **hand-rolled and dependency-light**. The libraries
+above are the deliberate exceptions (UI polish + heavier export formats);
+everything still runs on-device with **no network calls** (except a same-origin
+`version.json` poll for PWA update detection). Don't add runtime deps casually.
 
 ## Commands
 
@@ -55,7 +60,7 @@ Pic-Collage-Maker/
     ├── store/
     │   └── editorStore.ts      # zustand: elements, selection, background, mode, z-order, actions
     ├── i18n/
-    │   ├── translations.ts     # Lang type, LANGS (flags), de/en string maps
+    │   ├── translations.ts     # Lang type, LANGS (flags), 6-language string maps
     │   └── useLang.ts          # lang store (detect+persist) + useT() translator hook
     ├── hooks/
     │   └── useImage.ts         # URL → decoded HTMLImageElement
@@ -165,14 +170,17 @@ clipped `Group`. Selecting a cell selects that photo (for filters/delete).
 
 ## i18n (`src/i18n/`)
 
-Lightweight, dependency-free. `translations.ts` holds flat `de`/`en` key→string
-maps and `LANGS` (flag + label). `useLang.ts` is a zustand store that **defaults
-to the browser language** (`navigator.language`, `de-*` → German else English),
-**persists** the choice in `localStorage`, and sets `<html lang>`. `useT()`
-returns a `t(key)` translator (English is the fallback; unknown key → the key).
+Lightweight, dependency-free. `translations.ts` holds flat key→string maps for
+**six languages** (`en`, `de`, `es`, `fr`, `it`, `pt`) plus `LANGS` (flag +
+label). `useLang.ts` is a zustand store that **defaults to the browser language**
+(`navigator.languages`, matched by prefix; English otherwise), **persists** the
+choice in `localStorage`, and sets `<html lang>`. `useT()` returns a `t(key)`
+translator (English is the fallback; unknown key → the key). `t()` takes a key
+only — **no interpolation**, so compose counts as `` `${n} ${t('key')}` ``.
 `LangSwitcher` (in the header) toggles language live. **To add a UI string:** add
-the key to *both* `de` and `en`, then `const t = useT()` and `t('your.key')`.
-Font names, the bold "B", emoji and grid glyphs stay untranslated.
+the key to **all six** language maps, then `const t = useT()` and `t('your.key')`.
+Font names, the bold "B", emoji, grid glyphs, and caption suggestions stay
+untranslated.
 
 ## PWA & deployment
 
@@ -232,16 +240,27 @@ git switch -c feat/my-thing      # branch off dev
 ## Roadmap
 
 Done: multi-photo import (gallery + camera), free canvas with move/resize/rotate,
-preset grids (2/3/4), text, emoji stickers, solid/gradient backgrounds, filters
-(brightness/contrast/saturation + Vivid/Warm/Cool/Sepia/B&W), layer reorder /
-duplicate / delete, PNG/JPG export + Web Share, mobile pinch/wheel zoom + aspect
-presets, installable PWA + Pages CI/CD, bilingual DE/EN UI.
+preset grids + **custom draw-your-own layouts**, per-cell pan & zoom, text (rich
+spans, curve, chip, custom-font upload), emoji stickers, shapes + freehand draw,
+solid/gradient/pattern/photo backgrounds, filter stack (brightness/contrast/
+saturation/hue/**temperature**/**tint**/exposure/shadows/highlights/blur/vignette
++ presets), artistic **style transfer** (oil/sketch/pop-art), on-device "AI"
+tools (auto-enhance, background removal, portrait retouch, smart crop, caption
+suggestions), layers panel + reorder/duplicate/delete/group, undo/redo, snapping
+guides, watermark + print marks, PNG/JPG/SVG/PDF/ZIP export + Web Share,
+autosave/restore + projects + version history (IndexedDB), mobile pinch/wheel
+zoom + aspect presets, installable PWA + Pages CI/CD, **6-language UI**.
 
-Next ideas: undo/redo history · per-cell pan & zoom inside grid cells · richer
-touch gestures (two-finger rotate on elements) · more grid layouts + adjustable
-gutter/corner radius · persist work in localStorage/IndexedDB · crop tool · more
-filters (blur, vignette) · **Capacitor** wrapper for App Store / Play Store
-(structure is ready; not installed).
+Next ideas: richer touch gestures (two-finger rotate) · more grid layouts +
+adjustable gutter/corner radius · crop tool polish · a real animation/export-video
+pipeline (the half-baked one was removed) · **Capacitor** wrapper for App Store /
+Play Store (structure is ready; not installed).
+
+> **Gotcha (grid rendering):** Konva nodes rendered from data that loads async
+> (e.g. `useImage` in `GridView`/`CanvasNodes`) must keep **all hooks above any
+> early `return null`** — a hook after `if (!image) return null` changes the hook
+> count when the image resolves and crashes the whole stage. This once made every
+> grid layout blank the board.
 
 ## Conventions
 

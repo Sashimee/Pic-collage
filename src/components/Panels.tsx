@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ImagePlus, Camera } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
+import { FontUploader } from './FontUploader'
+import { loadCustomFonts } from '../lib/fonts'
+import { analyzePhoto, getSuggestions } from '../ai/textSuggestions'
 import { GRID_LAYOUTS } from '../lib/grids'
 import { PATTERN_GLYPH, PATTERN_IDS } from '../lib/patterns'
 import { importFiles } from '../lib/importFiles'
@@ -22,25 +25,29 @@ export function PhotosPanel() {
   const addPhoto = useEditor((s) => s.addPhoto)
 
   const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+    // Capture before awaiting — `currentTarget` is nulled once the handler
+    // returns, so reading it after the await can throw.
+    const input = e.target
+    if (input.files && input.files.length > 0) {
       try {
-        await importFiles(e.target.files, addPhoto)
+        await importFiles(input.files, addPhoto)
       } catch {
         window.alert(t('error.loadImage'))
       }
     }
-    e.currentTarget.value = ''
+    input.value = ''
   }
 
   const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+    const input = e.target
+    if (input.files && input.files.length > 0) {
       try {
-        await importFiles(e.target.files, addPhoto)
+        await importFiles(input.files, addPhoto)
       } catch {
         window.alert(t('error.loadCamera'))
       }
     }
-    e.currentTarget.value = ''
+    input.value = ''
   }
 
   return (
@@ -445,9 +452,74 @@ export function TextPanel() {
   const update = useEditor((s) => s.updateElement)
   const text = el?.type === 'text' ? (el as TextElement) : null
 
+  // Uploaded fonts are registered as FontFaces at startup; surface their
+  // families in the picker so they're actually selectable.
+  const [customFonts, setCustomFonts] = useState<string[]>([])
+  const reloadFonts = useCallback(() => {
+    loadCustomFonts().then((f) => setCustomFonts(f.map((x) => x.family)))
+  }, [])
+  useEffect(() => reloadFonts(), [reloadFonts])
+  const fontOptions = [...FONTS, ...customFonts.filter((f) => !FONTS.includes(f))]
+
+  // AI caption suggestions from the selected photo (or the first photo).
+  const elements = useEditor((s) => s.elements)
+  const [captions, setCaptions] = useState<string[]>([])
+  const [captionsBusy, setCaptionsBusy] = useState(false)
+  const captionPhoto =
+    (el?.type === 'photo' ? (el as PhotoElement) : null) ??
+    elements.find((e): e is PhotoElement => e.type === 'photo') ??
+    null
+
+  const suggestCaptions = async () => {
+    if (!captionPhoto) return
+    setCaptionsBusy(true)
+    try {
+      setCaptions(getSuggestions(await analyzePhoto(captionPhoto.src)))
+    } catch {
+      setCaptions([])
+    } finally {
+      setCaptionsBusy(false)
+    }
+  }
+
+  const addCaption = (caption: string) => {
+    addText()
+    const id = useEditor.getState().selectedId
+    if (id) update(id, { text: caption })
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <PrimaryButton onClick={addText}>{t('text.add')}</PrimaryButton>
+
+      {captionPhoto && (
+        <Section title={t('caption.title')}>
+          <button
+            onClick={suggestCaptions}
+            disabled={captionsBusy}
+            className="w-full rounded-lg bg-accent/10 py-2 text-sm font-medium text-accent transition hover:bg-accent/20 disabled:opacity-50"
+          >
+            {captionsBusy ? t('caption.analyzing') : `✨ ${t('caption.suggest')}`}
+          </button>
+          {captions.length > 0 && (
+            <div className="mt-2 flex flex-col gap-1">
+              {captions.map((c, i) => (
+                <button
+                  key={i}
+                  onClick={() => addCaption(c)}
+                  className="rounded-lg bg-surface-2 px-3 py-2 text-left text-sm text-text transition hover:bg-surface-3 active:scale-[0.98]"
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </Section>
+      )}
+
+      <Section title={t('font.section')}>
+        <FontUploader onFontsChange={reloadFonts} />
+      </Section>
       {text && selectedId ? (
         <>
           <Section title={t('text.content')}>
@@ -467,7 +539,7 @@ export function TextPanel() {
                 }
                 className="min-h-[44px] rounded-lg border border-border bg-surface-2 px-2 py-2.5 text-sm text-text"
               >
-                {FONTS.map((f) => (
+                {fontOptions.map((f) => (
                   <option key={f} value={f}>
                     {f}
                   </option>

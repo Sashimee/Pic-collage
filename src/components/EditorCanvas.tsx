@@ -7,10 +7,11 @@ import {
   useState,
 } from 'react'
 import { Group, Layer, Line, Stage, Transformer } from 'react-konva'
+import { Magnet, Grid3x3, Ruler } from 'lucide-react'
 import type Konva from 'konva'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
-import { getGridById } from '../lib/grids'
+import { resolveLayoutById } from '../lib/grids'
 import { Background } from './Background'
 import { BoardFrame } from './BoardFrame'
 import { ElementNode } from './CanvasNodes'
@@ -338,7 +339,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     setSnapGuides(result.guides)
   }
 
-  const gridLayout = gridId ? getGridById(gridId) : undefined
+  const gridLayout = gridId ? resolveLayoutById(gridId) : undefined
   const photos = elements.filter((e): e is PhotoElement => e.type === 'photo')
   const inGrid = mode === 'grid' && !!gridLayout
   const freeElements = inGrid
@@ -421,26 +422,28 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           }}
           onSnapToggle={() => setCustomSnapEnabled((v) => !v)}
           onApply={() => {
-            // Build a GridLayout from current custom lines and store it
+            // Turn the drawn dividers into grid cells, persist the layout, then
+            // apply it. resolveLayoutById (used by the canvas) reads custom
+            // layouts from storage, so applyLayout → grid mode renders it.
             const state = useEditor.getState()
             const cells = computeCellsFromLines(state.customLayoutLines)
-            const layout = {
-              id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            if (cells.length < 2) {
+              toast.info(t('customLayout.needMore'))
+              return
+            }
+            const id =
+              typeof crypto !== 'undefined' && 'randomUUID' in crypto
                 ? crypto.randomUUID()
-                : Math.random().toString(36).slice(2),
-              name: `Custom ${new Date().toLocaleString()}`,
+                : Math.random().toString(36).slice(2)
+            saveCustomLayout({
+              id,
+              name: `Custom ${new Date().toLocaleDateString()}`,
               createdAt: Date.now(),
               cells,
               lines: state.customLayoutLines,
-            }
-            saveCustomLayout(layout)
-            // Switch to grid mode with this custom layout
-            // We need to inject into grids.ts at runtime? No, instead
-            // use setGrid with a synthetic id? The grid system uses
-            // getGridById which only reads GRID_LAYOUTS.
-            // We'll need to modify setGrid to handle custom IDs.
-            // For now, enter free mode and rely on user to re-select layout.
-            useEditor.getState().setCustomLayoutMode(false)
+            })
+            state.clearCustomLayoutLines()
+            state.applyLayout(id)
           }}
           onCancel={() => {
             useEditor.getState().setCustomLayoutMode(false)
@@ -448,41 +451,49 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           }}
         />
       )}
-      <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
+      <div className="absolute left-2 top-2 z-10 flex flex-col gap-1.5">
         <button
           onClick={() => setSnapEnabled((v) => !v)}
-          className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
-            snapEnabled ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
-          }`}
+          aria-label={t('canvas.snapToGuides')}
+          aria-pressed={snapEnabled}
           title={t('canvas.snapToGuides')}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl shadow backdrop-blur transition ${
+            snapEnabled ? 'bg-accent text-white' : 'bg-surface-2/90 text-muted hover:text-text'
+          }`}
         >
-          Snap
+          <Magnet size={18} />
         </button>
         <button
           onClick={() => setShowGrid((v) => !v)}
-          className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
-            showGrid ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
-          }`}
+          aria-label={t('canvas.toggleGrid')}
+          aria-pressed={showGrid}
           title={t('canvas.toggleGrid')}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl shadow backdrop-blur transition ${
+            showGrid ? 'bg-accent text-white' : 'bg-surface-2/90 text-muted hover:text-text'
+          }`}
         >
-          Grid
+          <Grid3x3 size={18} />
         </button>
         {showGrid && (
           <button
-            onClick={() => setGridType((t) => (t === 'dot' ? 'line' : 'dot'))}
-            className="rounded-md bg-surface-2/90 px-2 py-1 text-xs font-medium text-muted shadow backdrop-blur transition hover:text-text"
+            onClick={() => setGridType((g) => (g === 'dot' ? 'line' : 'dot'))}
+            aria-label={t(gridType === 'dot' ? 'canvas.gridDots' : 'canvas.gridLines')}
+            title={t(gridType === 'dot' ? 'canvas.gridDots' : 'canvas.gridLines')}
+            className="flex h-10 min-w-10 items-center justify-center rounded-xl bg-surface-2/90 px-2 text-[0.65rem] font-semibold text-muted shadow backdrop-blur transition hover:text-text"
           >
-            {gridType === 'dot' ? 'Dots' : 'Lines'}
+            {t(gridType === 'dot' ? 'canvas.gridDots' : 'canvas.gridLines')}
           </button>
         )}
         <button
           onClick={() => setShowRulers((v) => !v)}
-          className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
-            showRulers ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
-          }`}
+          aria-label={t('canvas.toggleRulers')}
+          aria-pressed={showRulers}
           title={t('canvas.toggleRulers')}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl shadow backdrop-blur transition ${
+            showRulers ? 'bg-accent text-white' : 'bg-surface-2/90 text-muted hover:text-text'
+          }`}
         >
-          Rulers
+          <Ruler size={18} />
         </button>
       </div>
 

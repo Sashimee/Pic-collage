@@ -279,10 +279,13 @@ export function downloadDataURL(
 }
 
 export function canShareImage(): boolean {
+  // Check the members are actually callable — `'canShare' in navigator` is true
+  // even when the property exists but is undefined, which would wrongly report
+  // support (and then throw when invoked).
   return (
     typeof navigator !== 'undefined' &&
-    'canShare' in navigator &&
-    'share' in navigator
+    typeof navigator.canShare === 'function' &&
+    typeof navigator.share === 'function'
   )
 }
 

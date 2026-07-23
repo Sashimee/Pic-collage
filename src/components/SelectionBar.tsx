@@ -186,12 +186,12 @@ export function SelectionBar() {
                   }
                   className="min-h-[44px] rounded-lg border border-border bg-surface px-2 py-1 text-xs text-text outline-none"
                 >
-                  <option value="normal">Normal</option>
-                  <option value="multiply">Multiply</option>
-                  <option value="screen">Screen</option>
-                  <option value="overlay">Overlay</option>
-                  <option value="darken">Darken</option>
-                  <option value="lighten">Lighten</option>
+                  <option value="normal">{t('blend.normal')}</option>
+                  <option value="multiply">{t('blend.multiply')}</option>
+                  <option value="screen">{t('blend.screen')}</option>
+                  <option value="overlay">{t('blend.overlay')}</option>
+                  <option value="darken">{t('blend.darken')}</option>
+                  <option value="lighten">{t('blend.lighten')}</option>
                 </select>
               </m.div>
             )}
@@ -206,13 +206,13 @@ export function SelectionBar() {
                 className="pointer-events-auto flex items-center gap-2 rounded-full bg-accent/90 px-3 py-1.5 shadow-xl ring-1 ring-accent backdrop-blur"
               >
                 <span className="text-xs font-medium text-white">
-                  {multiSelected.length} selected
+                  {multiSelected.length} {t('sel.selected')}
                 </span>
                 <button
                   onClick={() => groupElements(multiSelected)}
                   className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-1 text-xs text-white transition hover:bg-white/30"
                 >
-                  <Group size={14} /> Group
+                  <Group size={14} /> {t('sel.group')}
                 </button>
                 <button
                   onClick={clearMultiSelect}
@@ -266,14 +266,6 @@ export function SelectionBar() {
                     <Zap size={18} />
                   </Btn>
                 </>
-              )}
-              {isFreePhoto && (
-                <button
-                  onClick={() => updateElement(selectedId, { kenBurns: !el?.kenBurns })}
-                  className={'flex items-center gap-1.5 rounded-full px-3 py-2 text-xs transition ' + (el?.kenBurns ? 'bg-accent text-white' : 'bg-surface-2 text-text hover:bg-surface-3')}
-                >
-                  Ken Burns
-                </button>
               )}
               {isGridPhoto && (
                 <>
