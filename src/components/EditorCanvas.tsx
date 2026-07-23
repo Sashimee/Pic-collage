@@ -10,7 +10,7 @@ import { Group, Layer, Line, Stage, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
-import { getGridById } from '../lib/grids'
+import { resolveLayoutById } from '../lib/grids'
 import { Background } from './Background'
 import { BoardFrame } from './BoardFrame'
 import { ElementNode } from './CanvasNodes'
@@ -338,7 +338,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     setSnapGuides(result.guides)
   }
 
-  const gridLayout = gridId ? getGridById(gridId) : undefined
+  const gridLayout = gridId ? resolveLayoutById(gridId) : undefined
   const photos = elements.filter((e): e is PhotoElement => e.type === 'photo')
   const inGrid = mode === 'grid' && !!gridLayout
   const freeElements = inGrid
@@ -421,26 +421,28 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           }}
           onSnapToggle={() => setCustomSnapEnabled((v) => !v)}
           onApply={() => {
-            // Build a GridLayout from current custom lines and store it
+            // Turn the drawn dividers into grid cells, persist the layout, then
+            // apply it. resolveLayoutById (used by the canvas) reads custom
+            // layouts from storage, so applyLayout → grid mode renders it.
             const state = useEditor.getState()
             const cells = computeCellsFromLines(state.customLayoutLines)
-            const layout = {
-              id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            if (cells.length < 2) {
+              toast.info(t('customLayout.needMore'))
+              return
+            }
+            const id =
+              typeof crypto !== 'undefined' && 'randomUUID' in crypto
                 ? crypto.randomUUID()
-                : Math.random().toString(36).slice(2),
-              name: `Custom ${new Date().toLocaleString()}`,
+                : Math.random().toString(36).slice(2)
+            saveCustomLayout({
+              id,
+              name: `Custom ${new Date().toLocaleDateString()}`,
               createdAt: Date.now(),
               cells,
               lines: state.customLayoutLines,
-            }
-            saveCustomLayout(layout)
-            // Switch to grid mode with this custom layout
-            // We need to inject into grids.ts at runtime? No, instead
-            // use setGrid with a synthetic id? The grid system uses
-            // getGridById which only reads GRID_LAYOUTS.
-            // We'll need to modify setGrid to handle custom IDs.
-            // For now, enter free mode and rely on user to re-select layout.
-            useEditor.getState().setCustomLayoutMode(false)
+            })
+            state.clearCustomLayoutLines()
+            state.applyLayout(id)
           }}
           onCancel={() => {
             useEditor.getState().setCustomLayoutMode(false)
