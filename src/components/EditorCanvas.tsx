@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react'
 import { Group, Layer, Line, Stage, Transformer } from 'react-konva'
+import { Magnet, Grid3x3, Ruler } from 'lucide-react'
 import type Konva from 'konva'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
@@ -450,41 +451,49 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           }}
         />
       )}
-      <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
+      <div className="absolute left-2 top-2 z-10 flex flex-col gap-1.5">
         <button
           onClick={() => setSnapEnabled((v) => !v)}
-          className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
-            snapEnabled ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
-          }`}
+          aria-label={t('canvas.snapToGuides')}
+          aria-pressed={snapEnabled}
           title={t('canvas.snapToGuides')}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl shadow backdrop-blur transition ${
+            snapEnabled ? 'bg-accent text-white' : 'bg-surface-2/90 text-muted hover:text-text'
+          }`}
         >
-          Snap
+          <Magnet size={18} />
         </button>
         <button
           onClick={() => setShowGrid((v) => !v)}
-          className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
-            showGrid ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
-          }`}
+          aria-label={t('canvas.toggleGrid')}
+          aria-pressed={showGrid}
           title={t('canvas.toggleGrid')}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl shadow backdrop-blur transition ${
+            showGrid ? 'bg-accent text-white' : 'bg-surface-2/90 text-muted hover:text-text'
+          }`}
         >
-          Grid
+          <Grid3x3 size={18} />
         </button>
         {showGrid && (
           <button
-            onClick={() => setGridType((t) => (t === 'dot' ? 'line' : 'dot'))}
-            className="rounded-md bg-surface-2/90 px-2 py-1 text-xs font-medium text-muted shadow backdrop-blur transition hover:text-text"
+            onClick={() => setGridType((g) => (g === 'dot' ? 'line' : 'dot'))}
+            aria-label={t(gridType === 'dot' ? 'canvas.gridDots' : 'canvas.gridLines')}
+            title={t(gridType === 'dot' ? 'canvas.gridDots' : 'canvas.gridLines')}
+            className="flex h-10 min-w-10 items-center justify-center rounded-xl bg-surface-2/90 px-2 text-[0.65rem] font-semibold text-muted shadow backdrop-blur transition hover:text-text"
           >
-            {gridType === 'dot' ? 'Dots' : 'Lines'}
+            {t(gridType === 'dot' ? 'canvas.gridDots' : 'canvas.gridLines')}
           </button>
         )}
         <button
           onClick={() => setShowRulers((v) => !v)}
-          className={`rounded-md px-2 py-1 text-xs font-medium shadow backdrop-blur transition ${
-            showRulers ? 'bg-accent/90 text-white' : 'bg-surface-2/90 text-muted'
-          }`}
+          aria-label={t('canvas.toggleRulers')}
+          aria-pressed={showRulers}
           title={t('canvas.toggleRulers')}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl shadow backdrop-blur transition ${
+            showRulers ? 'bg-accent text-white' : 'bg-surface-2/90 text-muted hover:text-text'
+          }`}
         >
-          Rulers
+          <Ruler size={18} />
         </button>
       </div>
 
