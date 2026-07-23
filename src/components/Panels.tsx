@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ImagePlus, Camera } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
+import { FontUploader } from './FontUploader'
+import { loadCustomFonts } from '../lib/fonts'
 import { GRID_LAYOUTS } from '../lib/grids'
 import { PATTERN_GLYPH, PATTERN_IDS } from '../lib/patterns'
 import { importFiles } from '../lib/importFiles'
@@ -449,9 +451,21 @@ export function TextPanel() {
   const update = useEditor((s) => s.updateElement)
   const text = el?.type === 'text' ? (el as TextElement) : null
 
+  // Uploaded fonts are registered as FontFaces at startup; surface their
+  // families in the picker so they're actually selectable.
+  const [customFonts, setCustomFonts] = useState<string[]>([])
+  const reloadFonts = useCallback(() => {
+    loadCustomFonts().then((f) => setCustomFonts(f.map((x) => x.family)))
+  }, [])
+  useEffect(() => reloadFonts(), [reloadFonts])
+  const fontOptions = [...FONTS, ...customFonts.filter((f) => !FONTS.includes(f))]
+
   return (
     <div className="flex flex-col gap-4">
       <PrimaryButton onClick={addText}>{t('text.add')}</PrimaryButton>
+      <Section title={t('font.section')}>
+        <FontUploader onFontsChange={reloadFonts} />
+      </Section>
       {text && selectedId ? (
         <>
           <Section title={t('text.content')}>
@@ -471,7 +485,7 @@ export function TextPanel() {
                 }
                 className="min-h-[44px] rounded-lg border border-border bg-surface-2 px-2 py-2.5 text-sm text-text"
               >
-                {FONTS.map((f) => (
+                {fontOptions.map((f) => (
                   <option key={f} value={f}>
                     {f}
                   </option>

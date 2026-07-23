@@ -1,35 +1,40 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useToasts } from './ToastContainer'
 import { useT } from '../i18n/useLang'
 import { saveCustomFont, loadCustomFonts, deleteCustomFont } from '../lib/fonts'
 
-export function FontUploader() {
+export function FontUploader({ onFontsChange }: { onFontsChange?: () => void }) {
   const t = useT()
   const toast = useToasts()
   const [fonts, setFonts] = useState<{ id: string; name: string; family: string }[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Load saved fonts on mount
-  useState(() => {
-    loadCustomFonts().then((f) => setFonts(f.map((x) => ({ id: x.id, name: x.name, family: x.family }))))
-  })
+  useEffect(() => {
+    loadCustomFonts().then((f) =>
+      setFonts(f.map((x) => ({ id: x.id, name: x.name, family: x.family }))),
+    )
+  }, [])
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const input = e.target
+    const file = input.files?.[0]
     if (!file) return
     try {
       const font = await saveCustomFont(file.name.replace(/\.\w+$/, ''), file)
       setFonts((prev) => [...prev, { id: font.id, name: font.name, family: font.family }])
-      toast.success(`Font "${font.name}" loaded`)
+      toast.success(t('font.loaded'))
+      onFontsChange?.()
     } catch {
-      toast.error(t('error.loadImage'))
+      toast.error(t('font.loadFailed'))
     }
-    e.target.value = ''
+    input.value = ''
   }
 
   const handleDelete = async (id: string) => {
     await deleteCustomFont(id)
     setFonts((prev) => prev.filter((f) => f.id !== id))
+    onFontsChange?.()
   }
 
   return (
@@ -45,7 +50,7 @@ export function FontUploader() {
         onClick={() => inputRef.current?.click()}
         className="rounded-lg border border-dashed border-border bg-surface-2 px-3 py-2 text-sm text-muted transition hover:text-text hover:border-accent"
       >
-        ＋ Upload custom font (.ttf, .otf, .woff)
+        ＋ {t('font.upload')}
       </button>
 
       {fonts.length > 0 && (
@@ -57,7 +62,7 @@ export function FontUploader() {
                 onClick={() => handleDelete(f.id)}
                 className="text-xs text-danger transition hover:opacity-70"
               >
-                Remove
+                {t('font.remove')}
               </button>
             </div>
           ))}
