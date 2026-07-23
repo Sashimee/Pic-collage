@@ -39,6 +39,10 @@ export function computeFilterConfigFromStack(
   let hue = 0
   const luminance = 0
   let blurRadius = 0
+  // Per-channel RGB offsets accumulated from temperature/tint (see channelShiftFilter).
+  let rShift = 0
+  let gShift = 0
+  let bShift = 0
   const filters: Filter[] = []
 
   for (const op of stack) {
@@ -63,6 +67,17 @@ export function computeFilterConfigFromStack(
         break
       case 'highlights':
         brightness -= op.value * 0.2
+        break
+      case 'temperature':
+        // Warm (+) pushes red up and blue down; cool (−) does the reverse.
+        rShift += op.value * 0.6
+        bShift -= op.value * 0.6
+        break
+      case 'tint':
+        // Magenta (+) lifts red/blue and drops green; green (−) does the reverse.
+        rShift += op.value * 0.3
+        bShift += op.value * 0.3
+        gShift -= op.value * 0.5
         break
       case 'blur':
         blurRadius = Math.max(blurRadius, op.radius)
@@ -112,6 +127,10 @@ export function computeFilterConfigFromStack(
     }
   }
 
+  // Temperature/tint run first as a per-channel offset, before HSL/tone.
+  if (rShift !== 0 || gShift !== 0 || bShift !== 0) {
+    filters.push(channelShiftFilter(rShift, gShift, bShift))
+  }
   // Always push HSL, Brighten, Contrast
   filters.push(Konva.Filters.HSL, Konva.Filters.Brighten, Konva.Filters.Contrast)
   if (blurRadius > 0) filters.push(Konva.Filters.Blur)
@@ -143,4 +162,18 @@ export function computeFilterConfig(f: PhotoFilters): FilterConfig {
 
 function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v))
+}
+
+// Konva custom filter that offsets each RGB channel by a fixed amount. The
+// offsets are captured in the closure, so a fresh filter is produced whenever
+// the stack changes (PhotoNode re-applies node.filters() on every filter edit).
+function channelShiftFilter(r: number, g: number, b: number): Filter {
+  return function (imageData: ImageData) {
+    const d = imageData.data
+    for (let i = 0; i < d.length; i += 4) {
+      d[i] = clamp(d[i] + r, 0, 255)
+      d[i + 1] = clamp(d[i + 1] + g, 0, 255)
+      d[i + 2] = clamp(d[i + 2] + b, 0, 255)
+    }
+  }
 }

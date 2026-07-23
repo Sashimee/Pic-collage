@@ -291,12 +291,9 @@ export type FilterOperation =
   | { type: 'highlights'; value: number }
   | { type: 'temperature'; value: number }
   | { type: 'tint'; value: number }
-  | { type: 'clarity'; value: number }
   | { type: 'preset'; id: FilterPreset }
   | { type: 'blur'; radius: number }
   | { type: 'vignette'; strength: number }
-  | { type: 'aiBgRemoval'; enabled: boolean; replacementColor?: string }
-  | { type: 'styleTransfer'; styleId: string; intensity: number }
 
 export const DEFAULT_FILTER_STACK: FilterOperation[] = [
   { type: 'brightness', value: 0 },

@@ -13,6 +13,8 @@ const FILTER_OPS = [
   { type: 'contrast', label: 'Contrast', min: -100, max: 100, step: 1, default: 0 },
   { type: 'saturation', label: 'Saturation', min: -2, max: 4, step: 0.1, default: 0 },
   { type: 'hueShift', label: 'Hue', min: -180, max: 180, step: 5, default: 0 },
+  { type: 'temperature', label: 'Temperature', min: -100, max: 100, step: 1, default: 0 },
+  { type: 'tint', label: 'Tint', min: -100, max: 100, step: 1, default: 0 },
   { type: 'exposure', label: 'Exposure', min: -1, max: 1, step: 0.05, default: 0 },
   { type: 'shadows', label: 'Shadows', min: -1, max: 1, step: 0.05, default: 0 },
   { type: 'highlights', label: 'Highlights', min: -1, max: 1, step: 0.05, default: 0 },

@@ -42,6 +42,26 @@ describe('computeFilterConfigFromStack', () => {
     expect(cfg.saturation).toBe(2)
   })
 
+  it('adds a channel-shift filter for temperature and warms pixels', () => {
+    const base = computeFilterConfigFromStack([])
+    const cfg = computeFilterConfigFromStack([{ type: 'temperature', value: 50 }])
+    // temperature pushes an extra custom filter beyond the always-on HSL/Brighten/Contrast
+    expect(cfg.filters.length).toBe(base.filters.length + 1)
+    const shift = cfg.filters.find(
+      (f) => f !== Konva.Filters.HSL && f !== Konva.Filters.Brighten && f !== Konva.Filters.Contrast,
+    )!
+    const data = new Uint8ClampedArray([100, 100, 100, 255])
+    // @ts-expect-error minimal ImageData stand-in for the custom filter
+    shift({ data })
+    expect(data[0]).toBeGreaterThan(100) // red lifted (warmer)
+    expect(data[2]).toBeLessThan(100) // blue reduced
+  })
+
+  it('does not add a channel-shift filter when temperature/tint are zero', () => {
+    const cfg = computeFilterConfigFromStack([{ type: 'temperature', value: 0 }])
+    expect(cfg.filters).toHaveLength(3) // HSL, Brighten, Contrast only
+  })
+
   it('applies hueShift', () => {
     const stack: FilterOperation[] = [
       { type: 'hueShift', value: 45 },
