@@ -27,25 +27,29 @@ export function EmptyState() {
   const showGallery = isEmpty && mode !== 'custom-layout'
 
   const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+    // Capture the input before awaiting: adding a photo unmounts this overlay,
+    // so `e.currentTarget` is null by the time the promise resolves.
+    const input = e.target
+    if (input.files && input.files.length > 0) {
       try {
-        await importFiles(e.target.files, addPhoto)
+        await importFiles(input.files, addPhoto)
       } catch {
         window.alert(t('error.loadImage'))
       }
     }
-    e.currentTarget.value = ''
+    input.value = ''
   }
 
   const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+    const input = e.target
+    if (input.files && input.files.length > 0) {
       try {
-        await importFiles(e.target.files, addPhoto)
+        await importFiles(input.files, addPhoto)
       } catch {
         window.alert(t('error.loadCamera'))
       }
     }
-    e.currentTarget.value = ''
+    input.value = ''
   }
 
   const handleSelectLayout = (layoutId: string) => {

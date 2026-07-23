@@ -22,25 +22,29 @@ export function PhotosPanel() {
   const addPhoto = useEditor((s) => s.addPhoto)
 
   const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+    // Capture before awaiting — `currentTarget` is nulled once the handler
+    // returns, so reading it after the await can throw.
+    const input = e.target
+    if (input.files && input.files.length > 0) {
       try {
-        await importFiles(e.target.files, addPhoto)
+        await importFiles(input.files, addPhoto)
       } catch {
         window.alert(t('error.loadImage'))
       }
     }
-    e.currentTarget.value = ''
+    input.value = ''
   }
 
   const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+    const input = e.target
+    if (input.files && input.files.length > 0) {
       try {
-        await importFiles(e.target.files, addPhoto)
+        await importFiles(input.files, addPhoto)
       } catch {
         window.alert(t('error.loadCamera'))
       }
     }
-    e.currentTarget.value = ''
+    input.value = ''
   }
 
   return (

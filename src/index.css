@@ -107,6 +107,13 @@ body {
 }
 
 #root {
+  /* A *definite* height is required so descendants using `h-full`
+     (height: 100%) resolve correctly. `min-height` alone leaves the height
+     indefinite, which collapses the flex-1 canvas host to 0 on mobile
+     (where no tall sibling props it open) — making the board disappear once
+     the empty-state overlay is dismissed. `100dvh` still tracks the dynamic
+     mobile viewport (shrinking browser chrome). */
+  height: 100dvh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
