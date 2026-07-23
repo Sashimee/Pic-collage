@@ -3,6 +3,7 @@ import { ImagePlus, Camera } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { FontUploader } from './FontUploader'
 import { loadCustomFonts } from '../lib/fonts'
+import { analyzePhoto, getSuggestions } from '../ai/textSuggestions'
 import { GRID_LAYOUTS } from '../lib/grids'
 import { PATTERN_GLYPH, PATTERN_IDS } from '../lib/patterns'
 import { importFiles } from '../lib/importFiles'
@@ -460,9 +461,62 @@ export function TextPanel() {
   useEffect(() => reloadFonts(), [reloadFonts])
   const fontOptions = [...FONTS, ...customFonts.filter((f) => !FONTS.includes(f))]
 
+  // AI caption suggestions from the selected photo (or the first photo).
+  const elements = useEditor((s) => s.elements)
+  const [captions, setCaptions] = useState<string[]>([])
+  const [captionsBusy, setCaptionsBusy] = useState(false)
+  const captionPhoto =
+    (el?.type === 'photo' ? (el as PhotoElement) : null) ??
+    elements.find((e): e is PhotoElement => e.type === 'photo') ??
+    null
+
+  const suggestCaptions = async () => {
+    if (!captionPhoto) return
+    setCaptionsBusy(true)
+    try {
+      setCaptions(getSuggestions(await analyzePhoto(captionPhoto.src)))
+    } catch {
+      setCaptions([])
+    } finally {
+      setCaptionsBusy(false)
+    }
+  }
+
+  const addCaption = (caption: string) => {
+    addText()
+    const id = useEditor.getState().selectedId
+    if (id) update(id, { text: caption })
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <PrimaryButton onClick={addText}>{t('text.add')}</PrimaryButton>
+
+      {captionPhoto && (
+        <Section title={t('caption.title')}>
+          <button
+            onClick={suggestCaptions}
+            disabled={captionsBusy}
+            className="w-full rounded-lg bg-accent/10 py-2 text-sm font-medium text-accent transition hover:bg-accent/20 disabled:opacity-50"
+          >
+            {captionsBusy ? t('caption.analyzing') : `✨ ${t('caption.suggest')}`}
+          </button>
+          {captions.length > 0 && (
+            <div className="mt-2 flex flex-col gap-1">
+              {captions.map((c, i) => (
+                <button
+                  key={i}
+                  onClick={() => addCaption(c)}
+                  className="rounded-lg bg-surface-2 px-3 py-2 text-left text-sm text-text transition hover:bg-surface-3 active:scale-[0.98]"
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </Section>
+      )}
+
       <Section title={t('font.section')}>
         <FontUploader onFontsChange={reloadFonts} />
       </Section>
