@@ -12,7 +12,6 @@ import {
   Layers,
   History,
   Settings,
-  Film,
 } from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
@@ -29,7 +28,6 @@ const FilterPanel = lazy(() => import('./FilterPanel').then((m) => ({ default: m
 const SettingsPanel = lazy(() => import('./WatermarkPanel').then((m) => ({ default: m.SettingsPanel })))
 const LayerPanel = lazy(() => import('./LayerPanel'))
 const VersionHistoryPanel = lazy(() => import('./VersionHistoryPanel'))
-const AnimationTimelinePanel = lazy(() => import('./AnimationTimeline').then((m) => ({ default: m.default })))
 
 function PanelFallback() {
   return (
@@ -56,7 +54,6 @@ export const PANEL_TABS: PanelTab[] = [
   { id: 'filters', labelKey: 'tab.filters', Icon: Wand2, panel: <Suspense fallback={<PanelFallback />}><FilterPanel /></Suspense> },
   { id: 'layers', labelKey: 'tab.layers', Icon: Layers, panel: <Suspense fallback={<PanelFallback />}><LayerPanel /></Suspense> },
   { id: 'history', labelKey: 'tab.history', Icon: History, panel: <Suspense fallback={<PanelFallback />}><VersionHistoryPanel /></Suspense> },
-  { id: 'animation', labelKey: 'tab.animation', Icon: Film, panel: <Suspense fallback={<PanelFallback />}><AnimationTimelinePanel /></Suspense> },
   { id: 'settings', labelKey: 'tab.settings', Icon: Settings, panel: <Suspense fallback={<PanelFallback />}><SettingsPanel /></Suspense> },
 ]
 

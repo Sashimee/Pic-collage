@@ -4,7 +4,7 @@ import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
   Share2, FileImage, Image as ImageIcon, Sparkles,
   RefreshCcw, Menu, FolderOpen, Save, Upload,
-  ChevronDown, FileCode, Maximize, FileText, Video, Package,
+  ChevronDown, FileCode, Maximize, FileText, Package,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -21,7 +21,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useToasts } from './ToastContainer'
 import { FullScreenButton } from './FullScreen'
 
-export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'webm' | 'batch'
+export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'batch'
 
 export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKind) => void; onExportSVG?: () => void }) {
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -249,9 +249,6 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
                     <MenuItem onClick={() => handleExport('pdf')} icon={<FileText size={16} />}>
                       Export PDF
                     </MenuItem>
-                    <MenuItem onClick={() => handleExport('webm')} icon={<Video size={16} />}>
-                      Export WebM
-                    </MenuItem>
                     <MenuItem onClick={() => { setExportOpen(false); handleBatchExport() }} icon={<Package size={16} />}>
                       Batch Export ZIP
                     </MenuItem>
@@ -410,11 +407,6 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           onClick={() => { setSheetOpen(false); handleExport('pdf') }}
           icon={<FileText size={18} />}
           label={t('export.pdf')}
-        />
-        <ActionItem
-          onClick={() => { setSheetOpen(false); handleExport('webm') }}
-          icon={<Video size={18} />}
-          label={t('export.webm')}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); handleBatchExport() }}

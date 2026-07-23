@@ -18,7 +18,6 @@
   "dependencies": {
     "canvas-confetti": "^1.9.4",
     "framer-motion": "^12.42.2",
-    "gif.js": "^0.2.0",
     "idb": "^8.0.3",
     "jszip": "^3.10.1",
     "konva": "^10.3.0",
