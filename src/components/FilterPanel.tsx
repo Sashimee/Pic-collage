@@ -7,6 +7,7 @@ import type { FilterOperation } from '../types'
 import { Chip, Section, Slider } from './ui'
 import { useToasts } from './ToastContainer'
 import { autoEnhance } from '../ai/autoEnhance'
+import { STYLE_OPTIONS, applyStyleTransfer } from '../ai/styleTransfer'
 
 const FILTER_OPS = [
   { type: 'brightness', label: 'Brightness', min: -1, max: 1, step: 0.02, default: 0 },
@@ -228,6 +229,32 @@ export function FilterPanel() {
             >
               <Plus size={12} />
               {op.label}
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      {/* Artistic styles (destructive: replaces the photo bitmap) */}
+      <Section title={t('style.title')}>
+        <div className="scroll-x flex gap-2 overflow-x-auto pb-1">
+          {STYLE_OPTIONS.filter((s) => s.id !== 'none').map((s) => (
+            <button
+              key={s.id}
+              onClick={async () => {
+                if (!photo?.src) return
+                toast.info(t('style.applying'))
+                try {
+                  const out = await applyStyleTransfer(photo.src, s.id)
+                  updateElement(selectedId, { src: out })
+                  toast.success(t('style.applied'))
+                } catch {
+                  toast.error(t('style.failed'))
+                }
+              }}
+              className="flex shrink-0 flex-col items-center gap-1 rounded-xl bg-surface-2 px-3 py-2 text-[0.7rem] font-medium text-text transition hover:bg-surface-3 active:scale-95"
+            >
+              <span className="text-lg">{s.emoji}</span>
+              {t('style.' + s.id)}
             </button>
           ))}
         </div>
