@@ -2,40 +2,40 @@ import { Fragment, useCallback, useRef, useState } from 'react'
 import { Group, Line, Rect, Text as KonvaText } from 'react-konva'
 import type Konva from 'konva'
 import type { GridCell } from '../types'
-import type { DividerLine } from '../lib/customLayout'
+import { cellAtPoint, type Pt } from '../lib/customLayout'
 
-const SNAP = 0.05
-
-function snap(v: number) {
-  return Math.max(0, Math.min(1, Math.round(v / SNAP) * SNAP))
-}
+/** Snap grid step in normalised board units. */
+const SNAP_STEP = 0.05
 
 interface Props {
   boardWidth: number
   boardHeight: number
-  lines: DividerLine[]
-  onAddLine: (line: DividerLine) => void
-  onRemoveLine: (id: string) => void
-  previewCells?: GridCell[]
+  /** Current zones (normalised). */
+  cells: GridCell[]
+  /** Preview gap in board px so zones read exactly like a real layout. */
+  gap: number
+  radius: number
+  onStroke: (pts: Pt[]) => void
+  onTapCell: (index: number) => void
   tf: { x: number; y: number; scale: number }
-  tool: 'horizontal' | 'vertical'
   snapEnabled?: boolean
 }
 
 export function CustomLayoutEditor({
   boardWidth,
   boardHeight,
-  lines,
-  onAddLine,
-  onRemoveLine,
-  previewCells,
+  cells,
+  gap,
+  radius,
+  onStroke,
+  onTapCell,
   tf,
-  tool,
   snapEnabled = true,
 }: Props) {
-  const [drawing, setDrawing] = useState(false)
-  const [preview, setPreview] = useState<DividerLine | null>(null)
-  const startRef = useRef<{ x: number; y: number } | null>(null)
+  // Live stroke points in BOARD pixels (for rendering).
+  const [stroke, setStroke] = useState<number[]>([])
+  const drawing = useRef(false)
+  const ptsRef = useRef<Pt[]>([])
 
   const toBoard = useCallback(
     (px: number, py: number) => ({
@@ -60,93 +60,64 @@ export function CustomLayoutEditor({
   )
 
   const handleStart = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Let two-finger gestures fall through to the stage (pinch/zoom).
     if ('touches' in e.evt && e.evt.touches.length !== 1) return
-    e.evt.stopPropagation()
     e.evt.preventDefault()
+    e.cancelBubble = true
     const pos = getEventPos(e)
     if (!pos) return
-    const p = toBoard(pos.x, pos.y)
-    const sx = snapEnabled ? snap(p.x / boardWidth) : p.x / boardWidth
-    const sy = snapEnabled ? snap(p.y / boardHeight) : p.y / boardHeight
-    startRef.current = { x: sx, y: sy }
-    setDrawing(true)
-    setPreview(null)
+    const b = toBoard(pos.x, pos.y)
+    drawing.current = true
+    ptsRef.current = [{ x: b.x / boardWidth, y: b.y / boardHeight }]
+    setStroke([b.x, b.y])
   }
 
   const handleMove = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    e.evt.stopPropagation()
+    if (!drawing.current) return
+    if ('touches' in e.evt && e.evt.touches.length !== 1) return
     e.evt.preventDefault()
-    if (!drawing || !startRef.current) return
+    e.cancelBubble = true
     const pos = getEventPos(e)
     if (!pos) return
-    const p = toBoard(pos.x, pos.y)
-    let ex = p.x / boardWidth
-    let ey = p.y / boardHeight
-    if (snapEnabled) {
-      ex = snap(ex)
-      ey = snap(ey)
-    }
-    const sx = startRef.current.x
-    const sy = startRef.current.y
-
-    if (tool === 'horizontal') {
-      if (Math.abs(ex - sx) < 0.001) {
-        setPreview(null)
-        return
-      }
-      setPreview({
-        id: 'preview',
-        type: 'horizontal',
-        position: sy,
-        start: Math.min(sx, ex),
-        end: Math.max(sx, ex),
-      })
-    } else {
-      if (Math.abs(ey - sy) < 0.001) {
-        setPreview(null)
-        return
-      }
-      setPreview({
-        id: 'preview',
-        type: 'vertical',
-        position: sx,
-        start: Math.min(sy, ey),
-        end: Math.max(sy, ey),
-      })
-    }
+    const b = toBoard(pos.x, pos.y)
+    ptsRef.current.push({ x: b.x / boardWidth, y: b.y / boardHeight })
+    setStroke((s) => [...s, b.x, b.y])
   }
 
   const handleEnd = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    e.evt.stopPropagation()
-    if (!drawing) return
-    if ('touches' in e.evt && e.evt.touches.length > 0) return
-    setDrawing(false)
-    if (
-      preview &&
-      preview.start !== undefined &&
-      preview.end !== undefined &&
-      preview.end > preview.start
-    ) {
-      const line: DividerLine = {
-        id:
-          typeof crypto !== 'undefined' && 'randomUUID' in crypto
-            ? crypto.randomUUID()
-            : Math.random().toString(36).slice(2),
-        type: preview.type,
-        position: preview.position,
-        start: preview.start,
-        end: preview.end,
-      }
-      onAddLine(line)
+    if (!drawing.current) return
+    e.cancelBubble = true
+    drawing.current = false
+    const pts = ptsRef.current
+    ptsRef.current = []
+    setStroke([])
+
+    if (pts.length < 1) return
+
+    // Distinguish a tap (merge two zones back together) from a drag (cut).
+    const xs = pts.map((p) => p.x)
+    const ys = pts.map((p) => p.y)
+    const span = Math.max(
+      Math.max(...xs) - Math.min(...xs),
+      Math.max(...ys) - Math.min(...ys),
+    )
+    if (span < 0.03) {
+      const idx = cellAtPoint(cells, pts[0])
+      if (idx >= 0) onTapCell(idx)
+      return
     }
-    setPreview(null)
-    startRef.current = null
+
+    onStroke(pts)
   }
 
+  // Snap-grid dots (visual aid only).
   const dots: { x: number; y: number }[] = []
-  for (let xi = 0; xi <= 20; xi++) {
-    for (let yi = 0; yi <= 20; yi++) {
-      dots.push({ x: xi * 0.05 * boardWidth, y: yi * 0.05 * boardHeight })
+  if (snapEnabled) {
+    const n = Math.round(1 / SNAP_STEP)
+    for (let xi = 0; xi <= n; xi++) {
+      for (let yi = 0; yi <= n; yi++) {
+        dots.push({ x: xi * SNAP_STEP * boardWidth, y: yi * SNAP_STEP * boardHeight })
+      }
     }
   }
 
@@ -157,13 +128,48 @@ export function CustomLayoutEditor({
         <Line
           key={`dot-${i}`}
           points={[d.x, d.y, d.x + 0.1, d.y + 0.1]}
-          stroke="rgba(100,100,100,0.2)"
+          stroke="rgba(120,120,120,0.22)"
           strokeWidth={2}
           lineCap="round"
           listening={false}
         />
       ))}
-      {/* Drawing surface */}
+
+      {/* Zones — rendered with the SAME gap/radius the finished layout uses,
+          so what you draw is exactly what you get. */}
+      {cells.map((cell, i) => {
+        const x = cell.x * boardWidth + gap / 2
+        const y = cell.y * boardHeight + gap / 2
+        const w = cell.width * boardWidth - gap
+        const h = cell.height * boardHeight - gap
+        return (
+          <Fragment key={`zone-${i}`}>
+            <Rect
+              x={x}
+              y={y}
+              width={Math.max(1, w)}
+              height={Math.max(1, h)}
+              cornerRadius={radius}
+              fill="rgba(99,102,241,0.10)"
+              stroke="#6366f1"
+              strokeWidth={2}
+              listening={false}
+            />
+            <KonvaText
+              x={x + 10}
+              y={y + 8}
+              text={String(i + 1)}
+              fill="#6366f1"
+              fontSize={Math.max(14, Math.min(w, h) * 0.14)}
+              fontStyle="bold"
+              fontFamily="Poppins, system-ui, sans-serif"
+              listening={false}
+            />
+          </Fragment>
+        )
+      })}
+
+      {/* Drawing surface — on top so strokes always land here. */}
       <Rect
         width={boardWidth}
         height={boardHeight}
@@ -171,111 +177,25 @@ export function CustomLayoutEditor({
         onMouseDown={handleStart}
         onMouseMove={handleMove}
         onMouseUp={handleEnd}
+        onMouseLeave={handleEnd}
         onTouchStart={handleStart}
         onTouchMove={handleMove}
         onTouchEnd={handleEnd}
       />
-      {/* Committed lines */}
-      {lines.map((line) => {
-        if (line.type === 'horizontal') {
-          const y = line.position * boardHeight
-          const x1 = (line.start ?? 0) * boardWidth
-          const x2 = (line.end ?? 1) * boardWidth
-          return (
-            <Line
-              key={line.id}
-              points={[x1, y, x2, y]}
-              stroke="#6366f1"
-              strokeWidth={3}
-              lineCap="round"
-              shadowColor="rgba(0,0,0,0.3)"
-              shadowBlur={4}
-              onTap={(e) => {
-                e.evt.stopPropagation()
-                onRemoveLine(line.id)
-              }}
-              onClick={(e) => {
-                e.evt.stopPropagation()
-                onRemoveLine(line.id)
-              }}
-              hitStrokeWidth={12}
-            />
-          )
-        } else {
-          const x = line.position * boardWidth
-          const y1 = (line.start ?? 0) * boardHeight
-          const y2 = (line.end ?? 1) * boardHeight
-          return (
-            <Line
-              key={line.id}
-              points={[x, y1, x, y2]}
-              stroke="#ec4899"
-              strokeWidth={3}
-              lineCap="round"
-              shadowColor="rgba(0,0,0,0.3)"
-              shadowBlur={4}
-              onTap={(e) => {
-                e.evt.stopPropagation()
-                onRemoveLine(line.id)
-              }}
-              onClick={(e) => {
-                e.evt.stopPropagation()
-                onRemoveLine(line.id)
-              }}
-              hitStrokeWidth={12}
-            />
-          )
-        }
-      })}
-      {/* Preview line */}
-      {preview && (
+
+      {/* Live freehand stroke */}
+      {stroke.length >= 4 && (
         <Line
-          points={
-            preview.type === 'horizontal'
-              ? [
-                  (preview.start ?? 0) * boardWidth,
-                  preview.position * boardHeight,
-                  (preview.end ?? 1) * boardWidth,
-                  preview.position * boardHeight,
-                ]
-              : [
-                  preview.position * boardWidth,
-                  (preview.start ?? 0) * boardHeight,
-                  preview.position * boardWidth,
-                  (preview.end ?? 1) * boardHeight,
-                ]
-          }
-          stroke="rgba(255,255,255,0.8)"
-          strokeWidth={2}
-          dash={[6, 4]}
+          points={stroke}
+          stroke="#ec4899"
+          strokeWidth={4 / tf.scale + 2}
           lineCap="round"
+          lineJoin="round"
+          tension={0.3}
+          dash={[10, 6]}
           listening={false}
         />
       )}
-      {/* Preview cells */}
-      {previewCells?.map((cell, i) => (
-        <Fragment key={`cell-frag-${i}`}>
-          <Rect
-            x={cell.x * boardWidth}
-            y={cell.y * boardHeight}
-            width={cell.width * boardWidth}
-            height={cell.height * boardHeight}
-            stroke="#22c55e"
-            strokeWidth={2}
-            dash={[8, 4]}
-            listening={false}
-          />
-          <KonvaText
-            x={cell.x * boardWidth + 8}
-            y={cell.y * boardHeight + 8}
-            text={String(i + 1)}
-            fill="#22c55e"
-            fontSize={16}
-            fontFamily="Poppins, system-ui, sans-serif"
-            listening={false}
-          />
-        </Fragment>
-      ))}
     </Group>
   )
 }

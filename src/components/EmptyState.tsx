@@ -17,6 +17,7 @@ export function EmptyState() {
   const mode = useEditor((s) => s.mode)
   const addPhoto = useEditor((s) => s.addPhoto)
   const setMode = useEditor((s) => s.setMode)
+  const setCustomLayoutMode = useEditor((s) => s.setCustomLayoutMode)
   const galleryDismissed = useEditor((s) => s.galleryDismissed)
   const setGalleryDismissed = useEditor((s) => s.setGalleryDismissed)
   const applyLayout = useEditor((s) => s.applyLayout)
@@ -63,7 +64,8 @@ export function EmptyState() {
   const handleCustomLayout = () => {
     setSelectedLayoutId(null)
     setShowAssignment(false)
-    setMode('custom-layout')
+    // setCustomLayoutMode also resets the drawing to a single full-board zone.
+    setCustomLayoutMode(true)
   }
 
   const handleSkip = () => {

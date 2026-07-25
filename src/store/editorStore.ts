@@ -6,6 +6,7 @@ import type {
   EditorMode,
   FilterOperation,
   Frame,
+  GridCell,
   PhotoElement,
   PhotoFilters,
   ShapeElement,
@@ -21,6 +22,11 @@ import {
   DEFAULT_PRINT_SETTINGS,
 } from '../types'
 import type { DividerLine } from '../lib/customLayout'
+import {
+  FULL_CELL,
+  splitCellsByStroke,
+  mergeCellInto,
+} from '../lib/customLayout'
 import { getGridById } from '../lib/grids'
 import { getCustomLayoutById } from '../lib/customLayoutStorage'
 
@@ -86,6 +92,9 @@ interface EditorState {
   background: Background
   mode: EditorMode
   customLayoutLines: DividerLine[]
+  /** Freehand custom-layout: current zones + undo stack of previous zone sets. */
+  customLayoutCells: GridCell[]
+  customLayoutPast: GridCell[][]
   customLayoutMode: boolean
   gridId: string | null
   gridGap: number
@@ -181,6 +190,9 @@ interface EditorState {
 
   // custom layout
   addCustomLayoutLine: (line: DividerLine) => void
+  splitCustomLayout: (pts: { x: number; y: number }[], snapStep?: number) => void
+  mergeCustomLayoutCell: (index: number) => void
+  undoCustomLayout: () => void
   removeCustomLayoutLine: (id: string) => void
   clearCustomLayoutLines: () => void
   setCustomLayoutMode: (v: boolean) => void
@@ -228,6 +240,8 @@ export const useEditor = create<EditorState>((set, get) => ({
   mode: 'free',
   galleryDismissed: false,
   customLayoutLines: [],
+  customLayoutCells: [{ ...FULL_CELL }],
+  customLayoutPast: [],
   customLayoutMode: false,
   gridId: null,
   gridGap: 12,
@@ -644,9 +658,46 @@ export const useEditor = create<EditorState>((set, get) => ({
       customLayoutLines: s.customLayoutLines.filter((l) => l.id !== id),
     })),
   clearCustomLayoutLines: () => set({ customLayoutLines: [] }),
+
+  splitCustomLayout: (pts, snapStep) =>
+    set((s) => {
+      const next = splitCellsByStroke(s.customLayoutCells, pts, { snapStep })
+      if (next === s.customLayoutCells) return {}
+      return {
+        customLayoutCells: next,
+        customLayoutPast: [...s.customLayoutPast, s.customLayoutCells].slice(-40),
+      }
+    }),
+
+  mergeCustomLayoutCell: (index) =>
+    set((s) => {
+      const next = mergeCellInto(s.customLayoutCells, index)
+      if (next === s.customLayoutCells) return {}
+      return {
+        customLayoutCells: next,
+        customLayoutPast: [...s.customLayoutPast, s.customLayoutCells].slice(-40),
+      }
+    }),
+
+  undoCustomLayout: () =>
+    set((s) => {
+      if (!s.customLayoutPast.length) return {}
+      return {
+        customLayoutCells: s.customLayoutPast[s.customLayoutPast.length - 1],
+        customLayoutPast: s.customLayoutPast.slice(0, -1),
+      }
+    }),
+
   setGalleryDismissed: (v) => set({ galleryDismissed: v }),
 
-  setCustomLayoutMode: (v) => set({ customLayoutMode: v, mode: v ? 'custom-layout' : 'free', selectedId: null }),
+  setCustomLayoutMode: (v) =>
+    set({
+      customLayoutMode: v,
+      mode: v ? 'custom-layout' : 'free',
+      selectedId: null,
+      // Entering the editor always starts from a single full-board zone.
+      ...(v ? { customLayoutCells: [{ ...FULL_CELL }], customLayoutPast: [] } : {}),
+    }),
 }))
 
 // Dev-only handle so the editor state can be driven from the console / tests.

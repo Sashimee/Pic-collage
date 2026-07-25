@@ -22,7 +22,6 @@ import { computeSnap, type SnapLine } from '../lib/snap'
 import { useToasts } from './ToastContainer'
 import { CustomLayoutEditor } from './CustomLayoutEditor'
 import { CustomLayoutToolbar } from './CustomLayoutToolbar'
-import { computeCellsFromLines } from '../lib/customLayout'
 import { saveCustomLayout } from '../lib/customLayoutStorage'
 
 export interface EditorHandle {
@@ -55,6 +54,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const mode = useEditor((s) => s.mode)
   const gridId = useEditor((s) => s.gridId)
   const gridGap = useEditor((s) => s.gridGap)
+  const setGridGap = useEditor((s) => s.setGridGap)
   const gridRadius = useEditor((s) => s.gridRadius)
   const selectedId = useEditor((s) => s.selectedId)
   const select = useEditor((s) => s.select)
@@ -66,11 +66,11 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const brushSize = useEditor((s) => s.brushSize)
   const addDrawing = useEditor((s) => s.addDrawing)
 
-  const customLayoutLines = useEditor((s) => s.customLayoutLines)
-  const addCustomLayoutLine = useEditor((s) => s.addCustomLayoutLine)
-  const removeCustomLayoutLine = useEditor((s) => s.removeCustomLayoutLine)
+  const customLayoutCells = useEditor((s) => s.customLayoutCells)
+  const customLayoutPast = useEditor((s) => s.customLayoutPast)
+  const splitCustomLayout = useEditor((s) => s.splitCustomLayout)
+  const mergeCustomLayoutCell = useEditor((s) => s.mergeCustomLayoutCell)
 
-  const [customLayoutTool, setCustomLayoutTool] = useState<'horizontal' | 'vertical'>('horizontal')
   const [customSnapEnabled, setCustomSnapEnabled] = useState(true)
 
   const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null)
@@ -410,23 +410,24 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     <div ref={hostRef} className="canvas-host relative h-full w-full">
       {mode === 'custom-layout' && (
         <CustomLayoutToolbar
-          tool={customLayoutTool}
           snapEnabled={customSnapEnabled}
-          canUndo={customLayoutLines.length > 0}
-          onToolChange={setCustomLayoutTool}
-          onUndo={() => {
-            useEditor.getState().removeCustomLayoutLine(customLayoutLines[customLayoutLines.length - 1]?.id)
-          }}
+          canUndo={customLayoutPast.length > 0}
+          zoneCount={customLayoutCells.length}
+          gap={gridGap}
+          onGapChange={setGridGap}
+          onUndo={() => useEditor.getState().undoCustomLayout()}
           onClear={() => {
-            useEditor.getState().clearCustomLayoutLines()
+            const s = useEditor.getState()
+            // Re-entering the mode resets to a single full-board zone.
+            s.setCustomLayoutMode(true)
           }}
           onSnapToggle={() => setCustomSnapEnabled((v) => !v)}
           onApply={() => {
-            // Turn the drawn dividers into grid cells, persist the layout, then
-            // apply it. resolveLayoutById (used by the canvas) reads custom
-            // layouts from storage, so applyLayout → grid mode renders it.
+            // Persist the drawn zones as a reusable layout, then apply it.
+            // resolveLayoutById (used by the canvas) reads custom layouts from
+            // storage, so applyLayout → grid mode renders it immediately.
             const state = useEditor.getState()
-            const cells = computeCellsFromLines(state.customLayoutLines)
+            const cells = state.customLayoutCells
             if (cells.length < 2) {
               toast.info(t('customLayout.needMore'))
               return
@@ -440,14 +441,15 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
               name: `Custom ${new Date().toLocaleDateString()}`,
               createdAt: Date.now(),
               cells,
-              lines: state.customLayoutLines,
+              lines: [],
             })
-            state.clearCustomLayoutLines()
             state.applyLayout(id)
+            // Don't bounce the user back to the layout gallery — they just
+            // built their own layout.
+            state.setGalleryDismissed(true)
           }}
           onCancel={() => {
             useEditor.getState().setCustomLayoutMode(false)
-            useEditor.getState().clearCustomLayoutLines()
           }}
         />
       )}
@@ -601,11 +603,14 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
                   <CustomLayoutEditor
                     boardWidth={boardWidth}
                     boardHeight={boardHeight}
-                    lines={customLayoutLines}
-                    onAddLine={addCustomLayoutLine}
-                    onRemoveLine={removeCustomLayoutLine}
+                    cells={customLayoutCells}
+                    gap={gridGap}
+                    radius={gridRadius}
+                    onStroke={(pts) =>
+                      splitCustomLayout(pts, customSnapEnabled ? 0.05 : undefined)
+                    }
+                    onTapCell={(i) => mergeCustomLayoutCell(i)}
                     tf={tf}
-                    tool={customLayoutTool}
                     snapEnabled={customSnapEnabled}
                   />
                 )}

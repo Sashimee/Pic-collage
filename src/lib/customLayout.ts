@@ -15,6 +15,148 @@ export function spansOverlap(a1: number, a2: number, b1: number, b2: number): bo
   return Math.max(a1, b1) < Math.min(a2, b2)
 }
 
+/* ------------------------------------------------------------------ *
+ * Freehand splitting
+ *
+ * The user drags a freehand stroke across the board. The stroke's
+ * dominant axis decides whether it is a horizontal or a vertical cut,
+ * and every existing cell the stroke meaningfully crosses is split in
+ * two at that position. This always yields clean, non-overlapping
+ * rectangles (unlike a global line + flood-fill), and one stroke can
+ * split several cells at once.
+ * ------------------------------------------------------------------ */
+
+export interface Pt {
+  x: number
+  y: number
+}
+
+/** Smallest allowed normalised cell extent — prevents unusable slivers. */
+export const MIN_CELL = 0.06
+
+/** Fraction of a cell's span the stroke must cover before it cuts it. */
+const CROSS_RATIO = 0.35
+
+export const FULL_CELL: GridCell = { x: 0, y: 0, width: 1, height: 1 }
+
+function overlapLen(a1: number, a2: number, b1: number, b2: number): number {
+  return Math.max(0, Math.min(a2, b2) - Math.max(a1, b1))
+}
+
+/** Sort cells reading-order so photo slots get stable, predictable indices. */
+export function sortCells(cells: GridCell[]): GridCell[] {
+  return [...cells].sort((a, b) => (Math.abs(a.y - b.y) > 1e-6 ? a.y - b.y : a.x - b.x))
+}
+
+/**
+ * Split `cells` with a freehand stroke given in normalised board coords.
+ * Returns a new cell array (input untouched). If the stroke doesn't cross
+ * anything usable the original array is returned unchanged.
+ */
+export function splitCellsByStroke(
+  cells: GridCell[],
+  pts: Pt[],
+  opts: { snapStep?: number } = {},
+): GridCell[] {
+  if (pts.length < 2) return cells
+
+  const xsAll = pts.map((p) => p.x)
+  const ysAll = pts.map((p) => p.y)
+  const minX = Math.min(...xsAll)
+  const maxX = Math.max(...xsAll)
+  const minY = Math.min(...ysAll)
+  const maxY = Math.max(...ysAll)
+
+  const dx = maxX - minX
+  const dy = maxY - minY
+  // Too short to be a deliberate cut.
+  if (Math.max(dx, dy) < 0.08) return cells
+
+  // A mostly-horizontal stroke makes a horizontal divider (cuts along Y).
+  const horizontal = dx >= dy
+
+  // Cut position = mean of the stroke on the perpendicular axis (robust to
+  // wobble), optionally snapped to a grid step.
+  const raw = horizontal
+    ? ysAll.reduce((s, v) => s + v, 0) / ysAll.length
+    : xsAll.reduce((s, v) => s + v, 0) / xsAll.length
+  const step = opts.snapStep ?? 0
+  const cut = step > 0 ? Math.round(raw / step) * step : raw
+
+  const out: GridCell[] = []
+  let didSplit = false
+
+  for (const cell of cells) {
+    if (horizontal) {
+      const covered = overlapLen(minX, maxX, cell.x, cell.x + cell.width)
+      const inside = cut > cell.y + MIN_CELL && cut < cell.y + cell.height - MIN_CELL
+      if (!inside || covered < cell.width * CROSS_RATIO) {
+        out.push(cell)
+        continue
+      }
+      didSplit = true
+      out.push({ x: cell.x, y: cell.y, width: cell.width, height: cut - cell.y })
+      out.push({
+        x: cell.x,
+        y: cut,
+        width: cell.width,
+        height: cell.y + cell.height - cut,
+      })
+    } else {
+      const covered = overlapLen(minY, maxY, cell.y, cell.y + cell.height)
+      const inside = cut > cell.x + MIN_CELL && cut < cell.x + cell.width - MIN_CELL
+      if (!inside || covered < cell.height * CROSS_RATIO) {
+        out.push(cell)
+        continue
+      }
+      didSplit = true
+      out.push({ x: cell.x, y: cell.y, width: cut - cell.x, height: cell.height })
+      out.push({
+        x: cut,
+        y: cell.y,
+        width: cell.x + cell.width - cut,
+        height: cell.height,
+      })
+    }
+  }
+
+  return didSplit ? sortCells(out) : cells
+}
+
+/** Index of the cell containing a normalised point, or -1. */
+export function cellAtPoint(cells: GridCell[], p: Pt): number {
+  return cells.findIndex(
+    (c) => p.x >= c.x && p.x <= c.x + c.width && p.y >= c.y && p.y <= c.y + c.height,
+  )
+}
+
+/**
+ * Merge a cell back into a neighbour sharing a full edge (used to undo a
+ * single split by tapping the divider between two zones).
+ */
+export function mergeCellInto(cells: GridCell[], index: number): GridCell[] {
+  const a = cells[index]
+  if (!a) return cells
+  const eq = (p: number, q: number) => Math.abs(p - q) < 1e-6
+  const partner = cells.findIndex((b, i) => {
+    if (i === index) return false
+    const sameCol = eq(b.x, a.x) && eq(b.width, a.width)
+    const sameRow = eq(b.y, a.y) && eq(b.height, a.height)
+    if (sameCol && (eq(b.y + b.height, a.y) || eq(a.y + a.height, b.y))) return true
+    if (sameRow && (eq(b.x + b.width, a.x) || eq(a.x + a.width, b.x))) return true
+    return false
+  })
+  if (partner < 0) return cells
+  const b = cells[partner]
+  const merged: GridCell = {
+    x: Math.min(a.x, b.x),
+    y: Math.min(a.y, b.y),
+    width: eq(a.x, b.x) ? a.width : a.width + b.width,
+    height: eq(a.y, b.y) ? a.height : a.height + b.height,
+  }
+  return sortCells([...cells.filter((_, i) => i !== index && i !== partner), merged])
+}
+
 /**
  * Compute grid cells from user-drawn divider lines.
  *
