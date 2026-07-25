@@ -172,6 +172,10 @@ interface EditorState {
   clearAll: () => void
   loadDocument: (doc: LoadedDocument) => void
 
+  // start-screen layout gallery
+  galleryDismissed: boolean
+  setGalleryDismissed: (v: boolean) => void
+
   setWatermark: (patch: Partial<WatermarkSettings>) => void
   setPrint: (patch: Partial<PrintSettings>) => void
 
@@ -222,6 +226,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   boardHeight: 1350,
   background: DEFAULT_BACKGROUND,
   mode: 'free',
+  galleryDismissed: false,
   customLayoutLines: [],
   customLayoutMode: false,
   gridId: null,
@@ -561,6 +566,7 @@ export const useEditor = create<EditorState>((set, get) => ({
         selectedId: null,
         gridId: null,
         mode: 'free',
+        galleryDismissed: false,
         frame: DEFAULT_FRAME,
         watermark: { ...DEFAULT_WATERMARK },
         print: { ...DEFAULT_PRINT_SETTINGS },
@@ -638,6 +644,8 @@ export const useEditor = create<EditorState>((set, get) => ({
       customLayoutLines: s.customLayoutLines.filter((l) => l.id !== id),
     })),
   clearCustomLayoutLines: () => set({ customLayoutLines: [] }),
+  setGalleryDismissed: (v) => set({ galleryDismissed: v }),
+
   setCustomLayoutMode: (v) => set({ customLayoutMode: v, mode: v ? 'custom-layout' : 'free', selectedId: null }),
 }))
 

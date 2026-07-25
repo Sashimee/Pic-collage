@@ -17,6 +17,8 @@ export function EmptyState() {
   const mode = useEditor((s) => s.mode)
   const addPhoto = useEditor((s) => s.addPhoto)
   const setMode = useEditor((s) => s.setMode)
+  const galleryDismissed = useEditor((s) => s.galleryDismissed)
+  const setGalleryDismissed = useEditor((s) => s.setGalleryDismissed)
   const applyLayout = useEditor((s) => s.applyLayout)
   const [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null)
   const [showAssignment, setShowAssignment] = useState(false)
@@ -24,7 +26,7 @@ export function EmptyState() {
   const selectedLayout = selectedLayoutId ? getGridById(selectedLayoutId) : null
 
   // Don't show gallery overlay when in custom-layout mode — let user draw on canvas
-  const showGallery = isEmpty && mode !== 'custom-layout'
+  const showGallery = isEmpty && mode !== 'custom-layout' && !galleryDismissed
 
   const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // Capture the input before awaiting: adding a photo unmounts this overlay,
@@ -66,6 +68,7 @@ export function EmptyState() {
 
   const handleSkip = () => {
     setMode('free')
+    setGalleryDismissed(true)
   }
 
   const handleAssign = async (files: File[]) => {
