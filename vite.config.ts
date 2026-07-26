@@ -70,12 +70,6 @@ export default defineConfig({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
-        // This service worker's scope is the whole of BASE, which now also
-        // contains the game at BASE + 'game/'. Without this denylist the SPA
-        // navigation fallback answers every game navigation with the collage's
-        // own index.html — anyone who had opened the collage once would get the
-        // collage when they went to the game.
-        navigateFallbackDenylist: [new RegExp(`^${BASE}game/`)],
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024, // 50MB for WASM models
         globPatterns: ['**/*.{js,css,html,png,jpg,svg,ico,woff2}'],
       },

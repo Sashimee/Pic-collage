@@ -237,37 +237,6 @@ git switch -c feat/my-thing      # branch off dev
 # → merge to dev or main when user gives go-ahead
 ```
 
-## Sibling app: “Royaume Foot” (`game/`)
-
-A **second, independent Vite app** lives in `game/` — a 3D princess football game
-for 6–7 year olds, deployed alongside the collage app at
-`https://sashimee.github.io/Pic-collage/game/`. Full design rationale:
-[`docs/plan-jeu-princesses-foot.md`](docs/plan-jeu-princesses-foot.md).
-
-```bash
-npm run dev:game        # vite -c game/vite.config.ts  (port 5173, base /Pic-collage/game/)
-npm run build:game      # → dist/game/   (emptyOutDir: false — run AFTER npm run build)
-npm run test:e2e:game   # playwright, own config + dev server on 5174
-```
-
-- **Stack:** three.js + `@react-three/fiber` (no drei), reusing React/TS/Tailwind/
-  zustand from the parent. Physics, aiming and scoring are **hand-rolled and pure**
-  (`game/src/game/*.ts`, no three imports) so they unit-test without a canvas.
-- **Zero binary assets.** Princesses, the keeper and the castle are built from
-  primitives; grass, netting and ball skins are drawn with the 2D canvas API at
-  startup (`game/src/three/textures.ts`). No `.glb`, no `.png`, no webfont.
-- **`game/src/game/balance.test.ts` is a difficulty harness, not a unit test.**
-  It sweeps every flick a child could make and asserts the game stays kind —
-  no shot is ever lost sideways, 60–95 % of shots score, a perfect round stays
-  rare. Retuning `constants.ts` into a punishing game fails CI on purpose.
-- **`build` order matters.** The collage build clears `dist/`; the game build then
-  adds `dist/game/` to it. Both CI jobs run them in that order.
-- **The collage service worker's scope covers the game.** `vite.config.ts` sets
-  `workbox.navigateFallbackDenylist` for `BASE + 'game/'` — without it the SPA
-  navigation fallback answers game URLs with the collage's `index.html`. If
-  `BASE` ever changes, that regex follows it automatically.
-- The game has **no service worker of its own yet** (planned phase 4).
-
 ## Roadmap
 
 Done: multi-photo import (gallery + camera), free canvas with move/resize/rotate,
