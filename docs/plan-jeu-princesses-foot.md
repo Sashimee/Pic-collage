@@ -126,19 +126,27 @@ game/
 
 ## 4. Découpage en phases
 
-**Phase 0 — Fondations (½ j)**
-Scaffolding `game/`, 2ᵉ config Vite, script `build:game`, étape CI, écran
-« Hello 3D » qui tourne sur Pages. → *Livrable : l'URL du jeu répond.*
+**Phase 0 — Fondations — ✅ fait**
+Scaffolding `game/`, 2ᵉ config Vite, scripts `build:game` / `dev:game`,
+`tsconfig.game.json`, étapes CI, suite e2e dédiée.
 
-**Phase 1 — MVP jouable (2–3 j)**
-Terrain + but + ballon, physique arcade, visée glisser-relâcher, détection de
-but, gardien basique, confettis + son, HUD 5 tirs / étoiles.
-→ *Livrable : on marque un but et c'est déjà satisfaisant.*
+**Phase 1 — MVP jouable — ✅ fait**
+Terrain + but + filet + château, physique arcade, visée au *flick*, détection de
+but au croisement exact de la ligne, gardien-dragon, couronnes bonus, confettis,
+sons synthétisés, HUD 5 tirs / étoiles, écran de résultat.
 
-**Phase 2 — Princesses & customisation (2 j)**
-Avatar procédural, 6 personnages, écran de tenue, ballons, sauvegarde
-`localStorage`, déblocage par étoiles, animation de course/tir.
-→ *Livrable : la boucle « jouer → gagner → habiller » est fermée.*
+**Phase 2 — Princesses & customisation — ✅ fait**
+Avatar procédural (6 princesses), 5 ballons, écran de tenue, sauvegarde
+`localStorage`, déblocage par paliers d'étoiles, animations idle / tir / joie.
+
+> **Écarts par rapport au plan initial** (mesurés, pas devinés) :
+> - `@react-three/drei` a été **retiré** — aucune de ses aides n'a servi.
+> - La visée découple les axes (horizontal = direction, vertical = puissance) au
+>   lieu d'utiliser l'angle du swipe : coupler les deux rendait un tir puissant
+>   automatiquement imprécis, exactement l'inverse de ce qu'il faut à 6 ans.
+> - L'angle max de tir est passé de 0.55 rad à 0.30 : à 0.55, **deux tirs sur
+>   trois partaient hors du cadre**. C'est le harnais d'équilibrage qui l'a
+>   révélé, pas la lecture du code.
 
 **Phase 3 — Contenu (2–3 j)**
 Mini-jeux 2 et 3, 3 stades, mascottes, écran de carte du royaume, i18n 6 langues,

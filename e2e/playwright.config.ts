@@ -15,7 +15,14 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          // Escape hatch for sandboxes whose pre-installed Chromium build
+          // number differs from the one Playwright expects.
+          executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
+        },
+      },
     },
   ],
   webServer: {

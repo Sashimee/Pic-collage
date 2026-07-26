@@ -34,7 +34,9 @@ jobs:
       - run: npx vitest run
       - run: npx playwright install chromium --with-deps
       - run: npm run test:e2e
+      - run: npm run test:e2e:game
       - run: npm run build
+      - run: npm run build:game
 
   build:
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
@@ -50,7 +52,10 @@ jobs:
       # "out of sync" under npm ci. install is tolerant and still deterministic
       # enough for a static deploy.
       - run: npm install --no-audit --no-fund
+      # Order matters: the collage build clears dist/, the game build then adds
+      # dist/game/ to it (its own config sets emptyOutDir: false).
       - run: npm run build
+      - run: npm run build:game
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
