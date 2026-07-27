@@ -1,72 +1,62 @@
 import { test, expect } from '@playwright/test'
+import { assignmentSheet, getMode, openApp, pngFile, waitForElements } from './helpers'
 
 test.describe('layout-first onboarding', () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem('pic-collage-onboarded-v2', '1')
-    })
-    await page.goto('/')
+    await openApp(page)
   })
 
-  test('app loads and shows LayoutGallery on empty canvas', async ({ page }) => {
+  test('shows the layout gallery on an empty canvas', async ({ page }) => {
     await expect(page.getByText('Choose a Layout')).toBeVisible()
     await expect(page.getByText('Pick a structure, then add your photos')).toBeVisible()
   })
 
-  test('tapping a layout opens the Photo Assignment Sheet', async ({ page }) => {
-    // Find first layout button (aria-label contains "photos")
-    const layoutBtn = page.locator('[aria-label*="photos"]').first()
-    await layoutBtn.click()
-    await expect(page.getByText('Add Photos')).toBeVisible()
+  test('the gallery fits between the header and the tab bar', async ({ page }) => {
+    // Regression: the card used to be capped at 85vh inside a centred flex
+    // parent, so it overflowed symmetrically and hid its own title.
+    const geo = await page.evaluate(() => {
+      const header = document.querySelector('header')!.getBoundingClientRect()
+      const title = document.querySelector('h2')!.getBoundingClientRect()
+      return { headerBottom: header.bottom, titleTop: title.top }
+    })
+    expect(geo.titleTop).toBeGreaterThanOrEqual(geo.headerBottom)
+  })
+
+  test('tapping a layout opens the photo assignment sheet', async ({ page }) => {
+    await page.locator('[aria-label*="photos"]').first().click()
+    await expect(assignmentSheet(page)).toBeVisible()
     await expect(page.getByText('Tap a slot to add a photo')).toBeVisible()
   })
 
-  test('skipping assignment enters grid mode with empty placeholders', async ({ page }) => {
-    const layoutBtn = page.locator('[aria-label*="photos"]').first()
-    await layoutBtn.click()
+  test('skipping assignment enters grid mode', async ({ page }) => {
+    await page.locator('[aria-label*="photos"]').first().click()
     await page.getByRole('button', { name: /Skip for now/i }).click()
-    // After skip, grid mode should be active: empty placeholders visible as dashed rects
-    // We verify via the editor store state that mode === 'grid'
-    await page.waitForFunction(
-      () => {
-        const editor = (window as unknown as { __editor?: { getState: () => { mode: string } } }).__editor
-        return editor?.getState().mode === 'grid'
-      },
-      { timeout: 5000 },
-    )
+    await expect.poll(() => getMode(page)).toBe('grid')
   })
 
-  test('assigning a photo to a cell shows the photo in the grid', async ({ page }) => {
-    const layoutBtn = page.locator('[aria-label*="photos"]').first()
-    await layoutBtn.click()
+  test('assigning a photo to a slot puts it in the collage', async ({ page }) => {
+    await page.locator('[aria-label*="photos"]').first().click()
 
-    // Tap first slot to trigger file picker
-    const slot = page.locator('button', { hasText: /Slot 1/i }).first()
-    await slot.click()
+    // Each slot opens a *detached* input, so the file chooser event is the only
+    // way in — there is no input element in the DOM to target.
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      page.getByRole('button', { name: /Slot 1/i }).click(),
+    ])
+    await chooser.setFiles(pngFile())
 
-    // Simulate file upload via hidden input
-    const fileInput = page.locator('input[type="file"]').first()
-    // Create a tiny 1x1 red PNG in memory via data transfer
-    // Playwright can set files directly on the input element
-    const buffer = Buffer.from(
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-      'base64',
-    )
-    await fileInput.setInputFiles({ name: 'test.png', mimeType: 'image/png', buffer })
+    await waitForElements(page, 'photo')
+    await page.getByRole('button', { name: /^Done$/i }).click()
+    await expect.poll(() => getMode(page)).toBe('grid')
+  })
 
-    // Photo should now appear in slot thumbnail
-    await expect(page.locator('img[alt="Slot 1"]')).toBeVisible()
-
-    // Click Done to assign
-    await page.getByRole('button', { name: /Done/i }).click()
-
-    // Verify editor has a photo element
-    await page.waitForFunction(
-      () => {
-        const editor = (window as unknown as { __editor?: { getState: () => { elements: { type: string }[] } } }).__editor
-        return editor?.getState().elements.some((el) => el.type === 'photo')
-      },
-      { timeout: 5000 },
-    )
+  test('auto-fill adds several photos at once', async ({ page }) => {
+    await page.locator('[aria-label*="photos"]').first().click()
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      page.getByRole('button', { name: /Auto-fill from Gallery/i }).click(),
+    ])
+    await chooser.setFiles([pngFile('a.png'), pngFile('b.png')])
+    await waitForElements(page, 'photo', 2)
   })
 })

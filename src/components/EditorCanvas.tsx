@@ -212,6 +212,22 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   }, [selectedId, mode, elements])
 
   // --- export handle ------------------------------------------------------
+  // Dev-only test seam, alongside `window.__editor` in editorStore. The board
+  // occupies only part of the canvas, and by a different fraction on every
+  // viewport, so e2e gestures need its real on-screen rect to aim at it.
+  useEffect(() => {
+    if (!import.meta.env.DEV || typeof window === 'undefined') return
+    ;(window as unknown as { __boardRect?: () => DOMRectInit }).__boardRect = () => {
+      const host = hostRef.current?.getBoundingClientRect()
+      return {
+        x: (host?.x ?? 0) + tf.x,
+        y: (host?.y ?? 0) + tf.y,
+        width: boardWidth * tf.scale,
+        height: boardHeight * tf.scale,
+      }
+    }
+  }, [tf, boardWidth, boardHeight])
+
   useImperativeHandle(ref, () => ({
     exportImage: (format) => {
       const board = boardRef.current

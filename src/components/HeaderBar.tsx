@@ -4,7 +4,7 @@ import {
   Undo2, Redo2, Sun, Moon, Trash2, Download,
   Share2, FileImage, Image as ImageIcon,
   RefreshCcw, Menu, FolderOpen, Save, Upload,
-  ChevronDown, FileCode, Maximize, FileText, Package,
+  ChevronDown, FileCode, Maximize, FileText, Package, Smartphone,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -20,6 +20,7 @@ import { ActionSheet, ActionItem, ActionDivider, ActionCancel } from './ActionSh
 import { AnimatePresence, motion } from 'framer-motion'
 import { useToasts } from './ToastContainer'
 import { FullScreenButton } from './FullScreen'
+import { useInstall } from '../lib/pwaInstall'
 
 export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'batch'
 
@@ -58,7 +59,15 @@ export function BrandMark({ className = '' }: { className?: string }) {
   )
 }
 
-export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKind) => void; onExportSVG?: () => void }) {
+export function HeaderBar({
+  onExport,
+  onExportSVG,
+  onInstall,
+}: {
+  onExport: (kind: ExportKind) => void
+  onExportSVG?: () => void
+  onInstall?: () => void
+}) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [projectManagerOpen, setProjectManagerOpen] = useState(false)
@@ -78,6 +87,9 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
   const activeProjectId = useProjects((s) => s.activeProjectId)
   const saveActiveProject = useProjects((s) => s.saveActiveProject)
   const toast = useToasts()
+  // Hidden once installed, and on browsers with no install route at all
+  // (Firefox), where an entry point would only lead nowhere.
+  const canInstall = useInstall((s) => !s.standalone && s.platform !== 'unsupported')
 
   const handleSaveAsFile = async () => {
     const { packProject } = await import('../lib/projectFile')
@@ -193,7 +205,11 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
 
   return (
     <>
-      <header className="flex items-center justify-between gap-2 border-b border-border/60 bg-surface/80 px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] backdrop-blur-xl select-none">
+      {/* `relative z-50` is load-bearing: backdrop-blur makes this header its own
+          stacking context, so without it the absolutely-positioned Export
+          dropdown paints *below* the canvas area that follows it in the DOM and
+          becomes invisible on desktop. */}
+      <header className="relative z-50 flex items-center justify-between gap-2 border-b border-border/60 bg-surface/80 px-3 py-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] backdrop-blur-xl select-none">
         {/* Brand */}
         <h1 className="flex items-center gap-2 shrink-0 min-w-0">
           <BrandMark className="h-8 w-8 shrink-0 rounded-xl shadow-[var(--shadow-accent)]" />
@@ -215,6 +231,11 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </IconButton>
           <LangDropdown />
+          {canInstall && onInstall && (
+            <IconButton onClick={onInstall} label={t('install.menu')}>
+              <Smartphone size={18} />
+            </IconButton>
+          )}
           <FullScreenButton />
           <span className="mx-0.5 h-6 w-px bg-border" />
           <IconButton onClick={() => setProjectManagerOpen(true)} label={t('header.projects')}>
@@ -343,6 +364,13 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
           icon={theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           label={themeLabel}
         />
+        {canInstall && onInstall && (
+          <ActionItem
+            onClick={() => { setSheetOpen(false); onInstall() }}
+            icon={<Smartphone size={18} />}
+            label={t('install.menu')}
+          />
+        )}
         <ActionItem
           onClick={() => { setSheetOpen(false); document.documentElement.requestFullscreen().catch(() => {}) }}
           icon={<Maximize size={18} />}

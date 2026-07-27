@@ -27,6 +27,8 @@ import {
 import { exportSVG, downloadSVG } from './lib/exportSVG'
 import { fireConfetti } from './lib/confetti'
 import { track } from './lib/analytics'
+import { InstallSheet } from './components/InstallSheet'
+import { useInstall } from './lib/pwaInstall'
 import { ToastContainer } from './components/ToastContainer'
 import { useDefaultShortcuts } from './hooks/useKeyboard'
 import { OnboardingOverlay } from './components/Onboarding'
@@ -38,6 +40,21 @@ import {
   saveDoc,
   type StoredDoc,
 } from './lib/persistence'
+
+const INSTALL_NUDGE_KEY = 'pic-collage-install-nudged'
+
+/** True at most once ever, and never when installing is impossible or done. */
+function shouldNudgeInstall(): boolean {
+  const { standalone, platform } = useInstall.getState()
+  if (standalone || platform === 'unsupported') return false
+  try {
+    if (localStorage.getItem(INSTALL_NUDGE_KEY)) return false
+    localStorage.setItem(INSTALL_NUDGE_KEY, '1')
+  } catch {
+    return false
+  }
+  return true
+}
 
 const nextFrame = () =>
   new Promise<void>((resolve) =>
@@ -69,6 +86,7 @@ function toStoredDoc(): StoredDoc {
 
 export default function App() {
   const editorRef = useRef<EditorHandle>(null)
+  const [installOpen, setInstallOpen] = useState(false)
   const select = useEditor((s) => s.select)
   const loadDocument = useEditor((s) => s.loadDocument)
   const [hydrated, setHydrated] = useState(false)
@@ -203,6 +221,7 @@ export default function App() {
         const pdf = await exportPDF([{ dataUrl: url, width: s.boardWidth, height: s.boardHeight }])
         downloadPDF(pdf, `collage-${Date.now()}.pdf`)
         fireConfetti()
+        maybeNudgeInstall()
       }
       return
     }
@@ -224,7 +243,17 @@ export default function App() {
       } else {
         downloadDataURL(url, format)
       }
+      maybeNudgeInstall()
     }
+  }
+
+  // Let the confetti and the download land before asking for anything.
+  const maybeNudgeInstall = () => {
+    if (!shouldNudgeInstall()) return
+    setTimeout(() => {
+      track('install-shown')
+      setInstallOpen(true)
+    }, 1400)
   }
 
   const handleExportSVG = () => {
@@ -238,7 +267,14 @@ export default function App() {
   return (
     <MotionProvider>
       <div className="flex h-full flex-col bg-surface text-text">
-        <HeaderBar onExport={handleExport} onExportSVG={handleExportSVG} />
+        <HeaderBar
+          onExport={handleExport}
+          onExportSVG={handleExportSVG}
+          onInstall={() => {
+            track('install-shown')
+            setInstallOpen(true)
+          }}
+        />
         {isDesktop ? (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1">
@@ -284,6 +320,7 @@ export default function App() {
             <MobileTabBar panels={panels} />
           </>
         )}
+        <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
         <UpdateBanner />
         <ToastContainer />
         <OnboardingOverlay />
