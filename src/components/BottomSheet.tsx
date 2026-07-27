@@ -72,7 +72,7 @@ export function BottomSheet({
                 </button>
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-1">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6 pt-1">
               {children}
             </div>
         </m.div>

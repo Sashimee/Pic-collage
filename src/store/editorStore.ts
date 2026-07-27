@@ -21,11 +21,13 @@ import {
   DEFAULT_WATERMARK,
   DEFAULT_PRINT_SETTINGS,
 } from '../types'
-import type { DividerLine } from '../lib/customLayout'
 import {
-  FULL_CELL,
-  splitCellsByStroke,
-  mergeCellInto,
+  fullZone,
+  splitZonesByStroke,
+  circleZoneByStroke,
+  mergeZoneInto,
+  cellsToZones,
+  type Zone,
 } from '../lib/customLayout'
 import { getGridById } from '../lib/grids'
 import { getCustomLayoutById } from '../lib/customLayoutStorage'
@@ -86,15 +88,32 @@ const record = (s: EditorState, key = ''): Partial<EditorState> => {
   return { past: [...s.past, snap(s)].slice(-HISTORY_LIMIT), future: [] }
 }
 
+// Apply a zone operation and push the previous zones onto the custom-layout
+// undo stack. Reports back whether anything changed, so a gesture that did
+// nothing can be explained to the user rather than swallowed.
+const commitZones = (
+  set: (patch: Partial<EditorState>) => void,
+  get: () => EditorState,
+  op: (zones: Zone[]) => Zone[] | null,
+): boolean => {
+  const s = get()
+  const next = op(s.customLayoutZones)
+  if (!next) return false
+  set({
+    customLayoutZones: next,
+    customLayoutPast: [...s.customLayoutPast, s.customLayoutZones].slice(-40),
+  })
+  return true
+}
+
 interface EditorState {
   boardWidth: number
   boardHeight: number
   background: Background
   mode: EditorMode
-  customLayoutLines: DividerLine[]
   /** Freehand custom-layout: current zones + undo stack of previous zone sets. */
-  customLayoutCells: GridCell[]
-  customLayoutPast: GridCell[][]
+  customLayoutZones: Zone[]
+  customLayoutPast: Zone[][]
   customLayoutMode: boolean
   gridId: string | null
   gridGap: number
@@ -184,18 +203,20 @@ interface EditorState {
   // start-screen layout gallery
   galleryDismissed: boolean
   setGalleryDismissed: (v: boolean) => void
+  /** Layout whose photo-assignment sheet should be open (preset id or custom uuid). */
+  assignLayoutId: string | null
+  setAssignLayoutId: (id: string | null) => void
 
   setWatermark: (patch: Partial<WatermarkSettings>) => void
   setPrint: (patch: Partial<PrintSettings>) => void
 
-  // custom layout
-  addCustomLayoutLine: (line: DividerLine) => void
-  splitCustomLayout: (pts: { x: number; y: number }[], snapStep?: number) => void
-  mergeCustomLayoutCell: (index: number) => void
+  // custom layout — the split/merge actions report whether they changed
+  // anything so the UI can explain a no-op instead of failing silently.
+  splitCustomLayout: (pts: { x: number; y: number }[], snapStep?: number) => boolean
+  circleCustomLayout: (pts: { x: number; y: number }[], overlay: boolean) => boolean
+  mergeCustomLayoutCell: (index: number) => boolean
   undoCustomLayout: () => void
-  removeCustomLayoutLine: (id: string) => void
-  clearCustomLayoutLines: () => void
-  setCustomLayoutMode: (v: boolean) => void
+  setCustomLayoutMode: (v: boolean, cells?: GridCell[]) => void
 
   // history
   undo: () => void
@@ -239,8 +260,8 @@ export const useEditor = create<EditorState>((set, get) => ({
   background: DEFAULT_BACKGROUND,
   mode: 'free',
   galleryDismissed: false,
-  customLayoutLines: [],
-  customLayoutCells: [{ ...FULL_CELL }],
+  assignLayoutId: null,
+  customLayoutZones: [fullZone()],
   customLayoutPast: [],
   customLayoutMode: false,
   gridId: null,
@@ -641,7 +662,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       ...record(s, 'shapeAll'),
     })),
 
-  setCanvasZoom: (zoom) => set({ canvasZoom: Math.max(0.25, Math.min(3, zoom)) }),
+  setCanvasZoom: (zoom) => set({ canvasZoom: Math.max(0.25, Math.min(4, zoom)) }),
   setExporting: (v) => set({ exporting: v }),
 
   setWatermark: (patch) =>
@@ -649,54 +670,40 @@ export const useEditor = create<EditorState>((set, get) => ({
   setPrint: (patch) =>
     set((s) => ({ print: { ...s.print, ...patch }, ...record(s, 'print') })),
 
-  addCustomLayoutLine: (line) =>
-    set((s) => ({
-      customLayoutLines: [...s.customLayoutLines, line],
-    })),
-  removeCustomLayoutLine: (id) =>
-    set((s) => ({
-      customLayoutLines: s.customLayoutLines.filter((l) => l.id !== id),
-    })),
-  clearCustomLayoutLines: () => set({ customLayoutLines: [] }),
-
   splitCustomLayout: (pts, snapStep) =>
-    set((s) => {
-      const next = splitCellsByStroke(s.customLayoutCells, pts, { snapStep })
-      if (next === s.customLayoutCells) return {}
-      return {
-        customLayoutCells: next,
-        customLayoutPast: [...s.customLayoutPast, s.customLayoutCells].slice(-40),
-      }
-    }),
+    commitZones(set, get, (zones) => splitZonesByStroke(zones, pts, { snapStep })),
+
+  circleCustomLayout: (pts, overlay) =>
+    commitZones(set, get, (zones) => circleZoneByStroke(zones, pts, { overlay })),
 
   mergeCustomLayoutCell: (index) =>
-    set((s) => {
-      const next = mergeCellInto(s.customLayoutCells, index)
-      if (next === s.customLayoutCells) return {}
-      return {
-        customLayoutCells: next,
-        customLayoutPast: [...s.customLayoutPast, s.customLayoutCells].slice(-40),
-      }
-    }),
+    commitZones(set, get, (zones) => mergeZoneInto(zones, index)),
 
   undoCustomLayout: () =>
     set((s) => {
       if (!s.customLayoutPast.length) return {}
       return {
-        customLayoutCells: s.customLayoutPast[s.customLayoutPast.length - 1],
+        customLayoutZones: s.customLayoutPast[s.customLayoutPast.length - 1],
         customLayoutPast: s.customLayoutPast.slice(0, -1),
       }
     }),
 
   setGalleryDismissed: (v) => set({ galleryDismissed: v }),
+  setAssignLayoutId: (id) => set({ assignLayoutId: id }),
 
-  setCustomLayoutMode: (v) =>
+  setCustomLayoutMode: (v, cells) =>
     set({
       customLayoutMode: v,
       mode: v ? 'custom-layout' : 'free',
       selectedId: null,
-      // Entering the editor always starts from a single full-board zone.
-      ...(v ? { customLayoutCells: [{ ...FULL_CELL }], customLayoutPast: [] } : {}),
+      // Entering the editor starts from a single full-board zone unless an
+      // existing layout is handed in to keep editing.
+      ...(v
+        ? {
+            customLayoutZones: cells?.length ? cellsToZones(cells) : [fullZone()],
+            customLayoutPast: [],
+          }
+        : {}),
     }),
 }))
 
