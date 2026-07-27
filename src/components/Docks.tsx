@@ -4,50 +4,13 @@ import { BottomSheet } from './BottomSheet'
 import type { PanelsApi } from './panels.config'
 import { useWorkspace } from '../store/workspaceStore'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useScrollOverflow } from '../hooks/useScrollOverflow'
 import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
   ChevronDown,
 } from 'lucide-react'
-
-// Tracks scroll position of a ref'd element so callers can show/hide
-// overflow affordances (fade edges, arrow buttons) only when needed.
-function useScrollOverflow<T extends HTMLElement>(axis: 'x' | 'y', deps: unknown[] = []) {
-  const ref = useRef<T>(null)
-  const [canScrollStart, setCanScrollStart] = useState(false)
-  const [canScrollEnd, setCanScrollEnd] = useState(false)
-
-  const update = useCallback(() => {
-    const el = ref.current
-    if (!el) return
-    if (axis === 'y') {
-      setCanScrollStart(el.scrollTop > 4)
-      setCanScrollEnd(el.scrollTop + el.clientHeight < el.scrollHeight - 4)
-    } else {
-      setCanScrollStart(el.scrollLeft > 4)
-      setCanScrollEnd(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
-    }
-  }, [axis])
-
-  useEffect(() => {
-    const el = ref.current
-    update()
-    if (!el) return
-    el.addEventListener('scroll', update, { passive: true })
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    window.addEventListener('resize', update)
-    return () => {
-      el.removeEventListener('scroll', update)
-      ro.disconnect()
-      window.removeEventListener('resize', update)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [update, ...deps])
-
-  return { ref, canScrollStart, canScrollEnd, update }
-}
 
 // ---- Mobile: draggable sheet (overlays canvas) + bottom tab bar ----------
 
