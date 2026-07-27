@@ -16,6 +16,13 @@ Your photos never leave the device: everything is decoded, edited and exported
 in the browser, and projects are stored locally in IndexedDB. Clearing site data
 deletes them, so export anything you want to keep.
 
+The only thing sent anywhere is an anonymous, cookieless page count via
+[GoatCounter](https://www.goatcounter.com) — a path, a country and a referrer,
+with no identifiers and nothing that can be tied back to you, which is why
+there's no cookie banner. It honours **Do Not Track** and **Global Privacy
+Control**, so switching either on in your browser stops it making any request at
+all. See [`src/lib/analytics.ts`](./src/lib/analytics.ts).
+
 Found a bug or want something added?
 [Open an issue](https://github.com/Sashimee/Pic-collage/issues/new) — a
 screenshot plus your browser and phone model is plenty to go on.
@@ -34,6 +41,7 @@ screenshot plus your browser and phone model is plenty to go on.
 - ↩️ Undo/redo · snapping guides · watermark & print marks · autosave & projects
 - 💾 Export to PNG / JPG / SVG / PDF / ZIP and share via the Web Share API
 - 🌍 Six languages (EN / DE / ES / FR / IT / PT), light & dark themes
+- 🔒 No cookies, no accounts, no tracking of you — just an anonymous visit count
 - 📱 Mobile-first touch UI with pinch-to-zoom — installable to the home screen
 
 ## Development
@@ -63,6 +71,15 @@ GitHub Actions**. The app is served from the `/Pic-collage/` subpath — see
 `base` in `vite.config.ts`. The Open Graph tags in `index.html` hardcode the
 absolute live URL (crawlers don't resolve relative paths), so a repo rename means
 updating `base`, the meta tags and the links here together.
+
+## Analytics
+
+Anonymous usage counts live at <https://sashimee.goatcounter.com>. `npm run dev`
+sessions are excluded (localhost is skipped), as are visitors with Do Not Track
+or Global Privacy Control enabled. Beyond page views, five funnel events are
+recorded so it's possible to tell whether people actually finish a collage:
+`photo-added`, `layout-preset`, `layout-custom-applied`, `layout-split`,
+`export-*` and `pwa-installed`.
 
 ## Tech
 

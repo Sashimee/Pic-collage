@@ -293,7 +293,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tab.settings': 'Settings',
 
     'onboard.welcomeTitle': 'Welcome to Pic Collage',
-    'onboard.welcomeBody': 'Create beautiful collages entirely on your device. No uploads, no accounts.',
+    'onboard.welcomeBody': 'Create beautiful collages entirely on your device. No uploads, no accounts — your photos never leave your phone.',
     'onboard.photosTitle': 'Add Photos',
     'onboard.photosBody': 'Tap the Photos tab to add images from your gallery or camera.',
     'onboard.textTitle': 'Add Text',
@@ -716,7 +716,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tab.settings': 'Einstellungen',
 
     'onboard.welcomeTitle': 'Willkommen bei Pic Collage',
-    'onboard.welcomeBody': 'Erstelle wunderschöne Collagen direkt auf deinem Gerät. Kein Upload, kein Konto.',
+    'onboard.welcomeBody': 'Erstelle wunderschöne Collagen direkt auf deinem Gerät. Kein Upload, kein Konto — deine Fotos verlassen dein Handy nie.',
     'onboard.photosTitle': 'Fotos hinzufügen',
     'onboard.photosBody': 'Tippe auf den Fotos-Tab, um Bilder aus der Galerie oder Kamera hinzuzufügen.',
     'onboard.textTitle': 'Text hinzufügen',
@@ -1122,7 +1122,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tab.settings': 'Ajustes',
 
     'onboard.welcomeTitle': 'Bienvenido a Pic Collage',
-    'onboard.welcomeBody': 'Crea collages hermosos directamente en tu dispositivo. Sin subidas, sin cuentas.',
+    'onboard.welcomeBody': 'Crea collages hermosos directamente en tu dispositivo. Sin subidas, sin cuentas: tus fotos nunca salen de tu móvil.',
     'onboard.photosTitle': 'Añadir fotos',
     'onboard.photosBody': 'Toca la pestaña Fotos para añadir imágenes desde tu galería o cámara.',
     'onboard.textTitle': 'Añadir texto',
@@ -1545,7 +1545,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tab.settings': 'Paramètres',
 
     'onboard.welcomeTitle': 'Bienvenue sur Pic Collage',
-    'onboard.welcomeBody': 'Créez de magnifiques collages directement sur votre appareil. Aucun envoi, aucun compte.',
+    'onboard.welcomeBody': 'Créez de magnifiques collages directement sur votre appareil. Aucun envoi, aucun compte — vos photos ne quittent jamais votre téléphone.',
     'onboard.photosTitle': 'Ajouter des photos',
     'onboard.photosBody': "Appuyez sur l'onglet Photos pour ajouter des images depuis votre galerie ou votre appareil photo.",
     'onboard.textTitle': 'Ajouter du texte',
@@ -1968,7 +1968,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'tab.settings': 'Impostazioni',
 
     'onboard.welcomeTitle': 'Benvenuto in Pic Collage',
-    'onboard.welcomeBody': 'Crea bellissimi collage, modifica foto e condividi le tue creazioni — tutto nel browser.',
+    'onboard.welcomeBody': 'Crea bellissimi collage direttamente sul tuo dispositivo. Nessun caricamento, nessun account: le tue foto non lasciano mai il telefono.',
     'onboard.photosTitle': 'Aggiungi foto',
     'onboard.photosBody': 'Importa dalla galleria, scatta una foto o scegli dai nostri modelli.',
     'onboard.textTitle': 'Aggiungi testo',
@@ -2389,7 +2389,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'ctx.selectAll': 'Selecionar tudo',
     'ctx.clear': 'Limpar tudo',
     'onboard.welcomeTitle': 'Bem-vindo ao Pic Collage',
-    'onboard.welcomeBody': 'Crie lindas colagens diretamente no navegador — sem upload, 100% privado.',
+    'onboard.welcomeBody': 'Crie lindas colagens diretamente no seu dispositivo. Sem uploads, sem contas — as suas fotos nunca saem do telemóvel.',
     'onboard.photosTitle': 'Adicione Fotos',
     'onboard.photosBody': 'Use a galeria ou a câmera para adicionar fotos.',
     'onboard.textTitle': 'Adicione Texto',

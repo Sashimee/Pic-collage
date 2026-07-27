@@ -24,12 +24,15 @@ and Android. Multilingual UI (**DE / EN / ES / FR / IT / PT**).
 | Hosting | **GitHub Pages** | `.github/workflows/deploy.yml` on push to `main` |
 | Motion / icons | **framer-motion** + **lucide-react** | animations + icon set |
 | Export / misc | **pdf-lib**, **jszip**, **canvas-confetti**, **piexif**, **idb** | PDF/ZIP export, confetti, EXIF, IndexedDB |
+| Analytics | **GoatCounter** (no npm dep) | cookieless visit + funnel counts, `src/lib/analytics.ts`; honours DNT/GPC, skips localhost |
 
 Core editor logic (filters, snapping, grids, i18n, image processing, the
 "AI" photo tools) stays **hand-rolled and dependency-light**. The libraries
 above are the deliberate exceptions (UI polish + heavier export formats);
-everything still runs on-device with **no network calls** (except a same-origin
-`version.json` poll for PWA update detection). Don't add runtime deps casually.
+all image processing runs on-device and **no photo or user content is ever sent
+anywhere**. The only outbound requests are a same-origin `version.json` poll for
+PWA update detection and a cookieless GoatCounter beacon (`src/lib/analytics.ts`)
+that records anonymous visit + funnel counts. Don't add runtime deps casually.
 
 ## Commands
 
@@ -265,6 +268,8 @@ Play Store (structure is ready; not installed).
 ## Conventions
 
 - Conventional Commits.
-- Everything stays **client-side** — no network calls, nothing leaves the device.
+- Everything stays **client-side** — photos and projects never leave the device.
+  The only outbound traffic is the `version.json` poll and the anonymous,
+  cookieless analytics beacon; keep it that way.
 - Board coordinates are **design units**, not screen pixels (see above).
 - Match the surrounding code's style; keep new code dependency-light.
