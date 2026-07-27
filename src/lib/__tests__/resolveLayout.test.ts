@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { resolveLayoutById, GRID_LAYOUTS } from '../grids'
 import { saveCustomLayout } from '../customLayoutStorage'
-import { computeCellsFromLines } from '../customLayout'
+import { fullZone, splitZonesByStroke, zonesToCells, type Pt } from '../customLayout'
 
 // Node 26 + jsdom leaves the global `localStorage` unavailable, so provide a
 // minimal in-memory stand-in for the custom-layout storage under test.
@@ -26,14 +26,19 @@ describe('resolveLayoutById', () => {
     expect(resolveLayoutById(preset.id)?.id).toBe(preset.id)
   })
 
-  it('resolves a persisted custom layout drawn from dividers', () => {
-    // one vertical + one horizontal divider → a 2x2 grid (4 cells)
-    const cells = computeCellsFromLines([
-      { id: 'v', type: 'vertical', position: 0.5 },
-      { id: 'h', type: 'horizontal', position: 0.5 },
-    ])
+  it('resolves a persisted custom layout drawn by hand', () => {
+    // one vertical + one horizontal stroke → a 2x2 grid (4 cells)
+    const drag = (a: Pt, b: Pt): Pt[] =>
+      Array.from({ length: 10 }, (_, i) => {
+        const t = i / 9
+        return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
+      })
+    let zones = [fullZone()]
+    zones = splitZonesByStroke(zones, drag({ x: 0.05, y: 0.5 }, { x: 0.95, y: 0.5 }))!
+    zones = splitZonesByStroke(zones, drag({ x: 0.5, y: 0.05 }, { x: 0.5, y: 0.95 }))!
+    const cells = zonesToCells(zones)
     expect(cells.length).toBe(4)
-    saveCustomLayout({ id: 'custom-1', name: 'Mine', createdAt: 1, cells, lines: [] })
+    saveCustomLayout({ id: 'custom-1', name: 'Mine', createdAt: 1, cells })
 
     const layout = resolveLayoutById('custom-1')
     expect(layout).toBeTruthy()

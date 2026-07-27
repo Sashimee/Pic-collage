@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import type { GridLayout } from '../types'
 import { GRID_LAYOUTS } from '../lib/grids'
+import { loadCustomLayouts } from '../lib/customLayoutStorage'
 import { LayoutPreview } from './LayoutPreview'
 import { useT } from '../i18n/useLang'
 import { m, AnimatePresence } from './motion'
@@ -77,8 +78,27 @@ export function LayoutGallery({
   const [recentIds] = useState<string[]>(readRecent)
   const galleryRef = useRef<HTMLDivElement>(null)
 
+  // Layouts the user drew live in localStorage, not in GRID_LAYOUTS — without
+  // this the "Custom" tab was always empty and a saved layout could never be
+  // picked again.
+  const [savedLayouts] = useState<GridLayout[]>(() =>
+    loadCustomLayouts()
+      .slice()
+      .reverse()
+      .map((l) => ({
+        id: l.id,
+        label: l.name,
+        count: l.cells.length,
+        cells: l.cells,
+        category: 'custom' as const,
+        isCustom: true,
+      })),
+  )
+
+  const allLayouts = useMemo(() => [...savedLayouts, ...GRID_LAYOUTS], [savedLayouts])
+
   const filtered = useMemo(() => {
-    let layouts = GRID_LAYOUTS.filter((l) => {
+    let layouts = allLayouts.filter((l) => {
       if (activeCategory === 'all') return true
       if (activeCategory === 'custom') return l.isCustom
       return l.category === activeCategory && !l.isCustom
@@ -89,12 +109,12 @@ export function LayoutGallery({
       )
     }
     return layouts
-  }, [activeCategory, activeCount])
+  }, [allLayouts, activeCategory, activeCount])
 
   const recentLayouts = useMemo(() => {
-    const map = new Map(GRID_LAYOUTS.map((l) => [l.id, l]))
+    const map = new Map(allLayouts.map((l) => [l.id, l]))
     return recentIds.map((id) => map.get(id)).filter(Boolean) as GridLayout[]
-  }, [recentIds])
+  }, [allLayouts, recentIds])
 
   const handleSelect = useCallback(
     (id: string) => {

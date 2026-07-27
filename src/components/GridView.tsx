@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Group, Image as KonvaImage, Rect, Text } from 'react-konva'
 import type Konva from 'konva'
 import type { GridCell, GridCellShape, GridLayout, PhotoElement } from '../types'
@@ -274,6 +274,81 @@ function CellPhoto({
   )
 }
 
+/**
+ * Lay photos out over the cells. A photo pinned with `cellIndex` claims that
+ * slot; everything else fills the gaps in array order. Without the pin, a photo
+ * added for a specific empty cell would land in the first free one instead.
+ */
+function assignSlots(count: number, photos: PhotoElement[]): (PhotoElement | undefined)[] {
+  const slots: (PhotoElement | undefined)[] = new Array(count).fill(undefined)
+  const rest: PhotoElement[] = []
+  for (const p of photos) {
+    const i = p.cellIndex
+    if (i != null && i >= 0 && i < count && !slots[i]) slots[i] = p
+    else rest.push(p)
+  }
+  let next = 0
+  for (const p of rest) {
+    while (next < count && slots[next]) next++
+    if (next >= count) break
+    slots[next] = p
+  }
+  return slots
+}
+
+/** Dashed "＋" drop target. Tapping it opens the photo picker for this cell. */
+function EmptyCell({
+  cell,
+  rect,
+  radius,
+  onPick,
+}: {
+  cell: GridCell
+  rect: { x: number; y: number; w: number; h: number }
+  radius: number
+  onPick?: () => void
+}) {
+  const [hot, setHot] = useState(false)
+  const corner =
+    cell.shape === 'rounded-rect'
+      ? (cell.cornerRadius ?? radius)
+      : cell.shape === 'rect' || cell.shape == null
+        ? Math.max(4, radius)
+        : 0
+  return (
+    <Group clipFunc={getClipFunc(cell, rect, radius)}>
+      <Rect
+        x={rect.x}
+        y={rect.y}
+        width={rect.w}
+        height={rect.h}
+        fill={hot ? '#d5d9e0' : '#e5e7eb'}
+        cornerRadius={corner}
+        dash={[12, 8]}
+        stroke={hot ? '#6366f1' : '#9ca3af'}
+        strokeWidth={2}
+        listening={!!onPick}
+        onClick={onPick}
+        onTap={onPick}
+        onMouseEnter={() => setHot(true)}
+        onMouseLeave={() => setHot(false)}
+        onTouchStart={() => setHot(true)}
+        onTouchEnd={() => setHot(false)}
+      />
+      <Text
+        x={rect.x}
+        y={rect.y + rect.h / 2 - 24}
+        width={rect.w}
+        align="center"
+        text="＋"
+        fontSize={48}
+        fill={hot ? '#6366f1' : '#9ca3af'}
+        listening={false}
+      />
+    </Group>
+  )
+}
+
 export function GridView({
   layout,
   photos,
@@ -284,6 +359,7 @@ export function GridView({
   selectedId,
   onSelect,
   onUpdate,
+  onEmptyCell,
 }: {
   layout: GridLayout
   photos: PhotoElement[]
@@ -294,12 +370,14 @@ export function GridView({
   selectedId: string | null
   onSelect: (id: string) => void
   onUpdate: (id: string, patch: Partial<PhotoElement>) => void
+  onEmptyCell?: (index: number) => void
 }) {
+  const slots = assignSlots(layout.cells.length, photos)
   return (
     <>
       {layout.cells.map((cell, i) => {
         const rect = cellRect(cell, width, height, gap)
-        const photo = photos[i]
+        const photo = slots[i]
         const isSelected = photo && photo.id === selectedId
         return (
           <Group key={i}>
@@ -317,37 +395,12 @@ export function GridView({
                 }
               />
             ) : (
-              <>
-                <Group clipFunc={getClipFunc(cell, rect, radius)}>
-                  <Rect
-                    x={rect.x}
-                    y={rect.y}
-                    width={rect.w}
-                    height={rect.h}
-                    fill="#e5e7eb"
-                    cornerRadius={
-                      cell.shape === 'rounded-rect'
-                        ? (cell.cornerRadius ?? radius)
-                        : cell.shape === 'rect'
-                          ? Math.max(4, radius)
-                          : 0
-                    }
-                    dash={[12, 8]}
-                    stroke="#9ca3af"
-                    strokeWidth={2}
-                  />
-                  <Text
-                    x={rect.x}
-                    y={rect.y + rect.h / 2 - 24}
-                    width={rect.w}
-                    align="center"
-                    text="＋"
-                    fontSize={48}
-                    fill="#9ca3af"
-                    listening={false}
-                  />
-                </Group>
-              </>
+              <EmptyCell
+                cell={cell}
+                rect={rect}
+                radius={radius}
+                onPick={onEmptyCell ? () => onEmptyCell(i) : undefined}
+              />
             )}
             {isSelected && (
               <Group clipFunc={getClipFunc(cell, rect, radius)}>

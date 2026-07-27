@@ -103,7 +103,7 @@ body {
   overflow: hidden;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: Poppins, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 #root {

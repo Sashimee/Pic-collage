@@ -1,5 +1,4 @@
 import type { GridCell } from '../types'
-import type { DividerLine } from './customLayout'
 
 const STORAGE_KEY = 'pic-collage-custom-layouts-v1'
 const MAX_LAYOUTS = 50
@@ -9,7 +8,6 @@ export interface SavedCustomLayout {
   name: string
   createdAt: number
   cells: GridCell[]
-  lines: DividerLine[]
 }
 
 function readStore(): SavedCustomLayout[] {

@@ -68,9 +68,12 @@ export function usePanels(initial: string | null = 'photos') {
   const setWorkspaceActive = useWorkspace((s) => s.setActiveTab)
   const panelSizes = useWorkspace((s) => s.panelSizes)
 
-  // Hydrate from workspace store on mount
+  // Hydrate from the workspace store on mount — but only when the caller
+  // actually wants a panel open. Mobile passes `null` on purpose so the sheet
+  // doesn't cover the first-run layout gallery, and the store's default
+  // ('photos') used to override that and re-open it anyway.
   useEffect(() => {
-    if (workspaceActive !== undefined) {
+    if (initial !== null && workspaceActive !== undefined) {
       setActive(workspaceActive)
     }
   }, [])

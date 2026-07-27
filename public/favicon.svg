@@ -1,15 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Pic Collage Maker">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#6366f1" />
+      <stop offset=".55" stop-color="#a855f7" />
       <stop offset="1" stop-color="#ec4899" />
     </linearGradient>
+    <clipPath id="shot">
+      <rect x="187" y="173" width="198" height="198" rx="16" />
+    </clipPath>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#g)" />
-  <rect x="150" y="140" width="212" height="212" rx="24" fill="#ffffff" transform="rotate(-10 256 246)" />
-  <rect x="162" y="164" width="212" height="212" rx="24" fill="#ffffff" transform="rotate(8 268 270)" />
-  <g transform="rotate(8 268 270)">
-    <circle cx="222" cy="232" r="28" fill="#fbbf24" />
-    <path d="M172 372 L246 288 L300 338 L338 306 L372 372 Z" fill="#34d399" />
+
+  <rect width="512" height="512" rx="116" fill="url(#tile)" />
+
+  <!-- Card behind, tilted the other way: reads as a stack of photos. -->
+  <g transform="rotate(-12 222 246)">
+    <rect x="117" y="141" width="210" height="210" rx="26" fill="#ffffff" opacity=".5" />
+  </g>
+
+  <!-- Stacked translucent plates stand in for a soft drop shadow, so the PNG
+       rasteriser in scripts/generate-icons.mjs can reproduce the exact mark. -->
+  <g transform="rotate(9 286 272)" fill="#1e1b4b" opacity=".07">
+    <rect x="155" y="153" width="262" height="262" rx="38" />
+    <rect x="161" y="153" width="250" height="254" rx="34" />
+    <rect x="164" y="153" width="244" height="248" rx="32" />
+  </g>
+
+  <g transform="rotate(9 286 272)">
+    <rect x="167" y="153" width="238" height="238" rx="30" fill="#ffffff" />
+    <g clip-path="url(#shot)">
+      <rect x="187" y="173" width="198" height="198" fill="#eef2ff" />
+      <circle cx="240" cy="228" r="25" fill="#fbbf24" />
+      <path d="M187 371 V330 L245 262 L282 300 L312 258 L385 330 V371 Z" fill="#6ee7b7" />
+      <path d="M187 371 V352 L268 300 L385 352 V371 Z" fill="#10b981" />
+    </g>
   </g>
 </svg>

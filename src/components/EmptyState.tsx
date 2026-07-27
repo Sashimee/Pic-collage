@@ -1,9 +1,9 @@
 import { ImagePlus, Camera } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
 import { importFiles } from '../lib/importFiles'
-import { getGridById } from '../lib/grids'
+import { resolveLayoutById } from '../lib/grids'
 import { LayoutGallery } from './LayoutGallery'
 import { PhotoAssignmentSheet } from './PhotoAssignmentSheet'
 import { m, AnimatePresence } from './motion'
@@ -21,13 +21,26 @@ export function EmptyState() {
   const galleryDismissed = useEditor((s) => s.galleryDismissed)
   const setGalleryDismissed = useEditor((s) => s.setGalleryDismissed)
   const applyLayout = useEditor((s) => s.applyLayout)
-  const [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null)
+  // Set by the layout gallery *and* by the custom-layout editor's Apply, so
+  // both paths land on the same "fill your zones" sheet.
+  const assignLayoutId = useEditor((s) => s.assignLayoutId)
+  const setAssignLayoutId = useEditor((s) => s.setAssignLayoutId)
   const [showAssignment, setShowAssignment] = useState(false)
 
-  const selectedLayout = selectedLayoutId ? getGridById(selectedLayoutId) : null
+  // resolveLayoutById (not getGridById) so custom layouts saved to
+  // localStorage resolve too — their ids are uuids, not preset names.
+  const selectedLayout = assignLayoutId ? resolveLayoutById(assignLayoutId) : null
 
-  // Don't show gallery overlay when in custom-layout mode — let user draw on canvas
-  const showGallery = isEmpty && mode !== 'custom-layout' && !galleryDismissed
+  // Don't show the gallery overlay while drawing a custom layout, or while the
+  // photo-assignment sheet is up — it would sit on top of the sheet.
+  const showGallery =
+    isEmpty && mode !== 'custom-layout' && !galleryDismissed && !assignLayoutId
+
+  // The custom-layout editor's Apply sets `assignLayoutId` from outside this
+  // component; open the sheet whenever a layout asks to be filled.
+  useEffect(() => {
+    if (assignLayoutId) setShowAssignment(true)
+  }, [assignLayoutId])
 
   const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // Capture the input before awaiting: adding a photo unmounts this overlay,
@@ -57,12 +70,12 @@ export function EmptyState() {
 
   const handleSelectLayout = (layoutId: string) => {
     applyLayout(layoutId)
-    setSelectedLayoutId(layoutId)
+    setAssignLayoutId(layoutId)
     setShowAssignment(true)
   }
 
   const handleCustomLayout = () => {
-    setSelectedLayoutId(null)
+    setAssignLayoutId(null)
     setShowAssignment(false)
     // setCustomLayoutMode also resets the drawing to a single full-board zone.
     setCustomLayoutMode(true)
@@ -87,15 +100,13 @@ export function EmptyState() {
     // Sheet stays open so user can fill remaining slots
   }
 
-  const handleDoneAssignment = () => {
+  const closeAssignment = () => {
+    // A layout the user drew themselves shouldn't bounce them back to the
+    // gallery — they already built what they wanted.
+    if (selectedLayout?.isCustom) setGalleryDismissed(true)
     setShowAssignment(false)
-    // Unmount after exit animation completes (~300ms for spring)
-    setTimeout(() => setSelectedLayoutId(null), 350)
-  }
-
-  const handleSkipAssignment = () => {
-    setShowAssignment(false)
-    setTimeout(() => setSelectedLayoutId(null), 350)
+    // Unmount after the exit animation completes (~300ms for the spring).
+    setTimeout(() => setAssignLayoutId(null), 350)
   }
 
   return (
@@ -104,7 +115,7 @@ export function EmptyState() {
       <AnimatePresence>
         {showGallery && (
           <m.div
-            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4 bg-surface/80 backdrop-blur-sm"
+            className="absolute inset-0 z-20 flex overflow-y-auto overscroll-contain p-3 bg-surface/80 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
@@ -128,7 +139,7 @@ export function EmptyState() {
             />
 
             <m.div
-              className="pointer-events-auto flex w-full max-w-lg flex-col gap-4 max-h-[85vh] overflow-y-auto no-scrollbar"
+              className="m-auto flex w-full max-w-lg shrink-0 flex-col gap-4 py-1"
               initial={{ y: 16, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ type: 'spring', damping: 26, stiffness: 300 }}
@@ -168,10 +179,10 @@ export function EmptyState() {
           <PhotoAssignmentSheet
             layout={selectedLayout}
             open={showAssignment}
-            onClose={handleSkipAssignment}
+            onClose={closeAssignment}
             onAssign={handleAssign}
-            onSkip={handleSkipAssignment}
-            onDone={handleDoneAssignment}
+            onSkip={closeAssignment}
+            onDone={closeAssignment}
           />
         )}
       </AnimatePresence>

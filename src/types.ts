@@ -79,6 +79,12 @@ export interface PhotoElement extends BaseElement {
   shape?: PhotoShape // defaults to 'rect'
   crop?: CropRect // source-pixel crop; undefined = whole image
   // Per-cell framing in grid mode (ignored in free mode):
+  /**
+   * Grid slot this photo is pinned to. Unpinned photos fill the remaining
+   * slots in array order, so tapping an empty cell can place a photo exactly
+   * there instead of wherever the next free index happens to be.
+   */
+  cellIndex?: number
   cellZoom?: number // zoom within the cell, >= 1; default 1 = plain cover-fit
   cellPan?: { x: number; y: number } // normalised pan, each axis in [-1, 1]; default centred
 }

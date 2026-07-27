@@ -20,9 +20,11 @@ import { exportBoard, type ExportFormat } from '../lib/exportImage'
 import type { CanvasElement, PhotoElement } from '../types'
 import { computeSnap, type SnapLine } from '../lib/snap'
 import { useToasts } from './ToastContainer'
-import { CustomLayoutEditor } from './CustomLayoutEditor'
+import { CustomLayoutEditor, SNAP_STEP, type LayoutTool } from './CustomLayoutEditor'
 import { CustomLayoutToolbar } from './CustomLayoutToolbar'
+import { zonesToCells } from '../lib/customLayout'
 import { saveCustomLayout } from '../lib/customLayoutStorage'
+import { importFiles } from '../lib/importFiles'
 
 export interface EditorHandle {
   exportImage: (format: ExportFormat) => string | null
@@ -66,12 +68,19 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const brushSize = useEditor((s) => s.brushSize)
   const addDrawing = useEditor((s) => s.addDrawing)
 
-  const customLayoutCells = useEditor((s) => s.customLayoutCells)
+  const customLayoutZones = useEditor((s) => s.customLayoutZones)
   const customLayoutPast = useEditor((s) => s.customLayoutPast)
   const splitCustomLayout = useEditor((s) => s.splitCustomLayout)
+  const circleCustomLayout = useEditor((s) => s.circleCustomLayout)
   const mergeCustomLayoutCell = useEditor((s) => s.mergeCustomLayoutCell)
 
   const [customSnapEnabled, setCustomSnapEnabled] = useState(true)
+  const [layoutTool, setLayoutTool] = useState<LayoutTool>('cut')
+  const [circleOverlay, setCircleOverlay] = useState(false)
+
+  // Photo picker for empty grid cells.
+  const cellInputRef = useRef<HTMLInputElement>(null)
+  const pendingCell = useRef<number | null>(null)
 
   const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null)
   const pinchHintShown = useRef(false)
@@ -87,6 +96,48 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
       pinchHintShown.current = localStorage.getItem('piccollage-pinch-hint-shown') === '1'
     }
   }, [])
+
+  // A layout gesture either cuts or rounds, depending on the active tool.
+  // Both report back so a gesture that did nothing can say why — silence was
+  // the main reason the editor felt broken.
+  const handleLayoutStroke = (pts: { x: number; y: number }[]) => {
+    const ok =
+      layoutTool === 'circle'
+        ? circleCustomLayout(pts, circleOverlay)
+        : splitCustomLayout(pts, customSnapEnabled ? SNAP_STEP : undefined)
+    if (!ok) toast.info(t('customLayout.noSplit'))
+  }
+
+  // Tapping an empty grid cell picks photos straight into that cell.
+  const openCellPicker = (index: number) => {
+    pendingCell.current = index
+    cellInputRef.current?.click()
+  }
+
+  const handleCellFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target
+    const start = pendingCell.current
+    pendingCell.current = null
+    if (!input.files?.length) return
+    // Only the first picked photo claims the tapped cell; any extras fall into
+    // the remaining free slots in order.
+    let first = true
+    try {
+      await importFiles(input.files, (src, w, h, photoId, opts) => {
+        const store = useEditor.getState()
+        store.addPhoto(src, w, h, photoId, opts)
+        if (first && start != null) {
+          const els = useEditor.getState().elements
+          const added = els[els.length - 1]
+          if (added?.type === 'photo') store.updateElement(added.id, { cellIndex: start })
+        }
+        first = false
+      })
+    } catch {
+      toast.info(t('error.loadImage'))
+    }
+    input.value = ''
+  }
 
   const showPinchHint = () => {
     if (pinchHintShown.current) return
@@ -119,18 +170,30 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
     return () => ro.disconnect()
   }, [])
 
+  // Floating chrome sits *over* the stage, so the board has to be fitted into
+  // what's left rather than into the whole host box — otherwise the toolbar and
+  // the selection/zoom controls cover the top and bottom of the board.
+  const chromeInsets =
+    mode === 'custom-layout'
+      ? { top: 60, bottom: 96, left: 8, right: 8 } // tool bar / hint + padding row
+      : { top: 12, bottom: 60, left: 52, right: 8 } // snap/grid column + controls
+
   const fitToScreen = () => {
     if (!size.w || !size.h) return
-    const scale = Math.min(size.w / boardWidth, size.h / boardHeight) * 0.92
+    const availW = Math.max(1, size.w - chromeInsets.left - chromeInsets.right)
+    const availH = Math.max(1, size.h - chromeInsets.top - chromeInsets.bottom)
+    const scale = Math.min(availW / boardWidth, availH / boardHeight)
     setTf({
-      x: (size.w - boardWidth * scale) / 2,
-      y: (size.h - boardHeight * scale) / 2,
+      x: chromeInsets.left + (availW - boardWidth * scale) / 2,
+      y: chromeInsets.top + (availH - boardHeight * scale) / 2,
       scale,
     })
+    // Keep the store's zoom in step, or the first ZoomControls press jumps.
+    setCanvasZoom(scale)
   }
 
-  // Re-fit when the viewport or board dimensions change.
-  useEffect(fitToScreen, [size.w, size.h, boardWidth, boardHeight])
+  // Re-fit when the viewport, the board or the on-canvas chrome changes.
+  useEffect(fitToScreen, [size.w, size.h, boardWidth, boardHeight, mode])
 
   // --- transformer attachment --------------------------------------------
   useEffect(() => {
@@ -167,17 +230,26 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   const canvasZoom = useEditor((s) => s.canvasZoom)
   const setCanvasZoom = useEditor((s) => s.setCanvasZoom)
 
-  // Sync local zoom with store zoom (so ZoomControls works)
+  // Sync local zoom with store zoom (so ZoomControls works). Zoom about the
+  // centre of the viewport — rewriting `scale` alone leaves the pan offsets
+  // computed for the old scale and throws the board off-centre.
   useEffect(() => {
-    setTf((prev) => ({
-      ...prev,
-      scale: canvasZoom,
-    }))
-  }, [canvasZoom])
+    setTf((prev) => {
+      if (Math.abs(prev.scale - canvasZoom) < 1e-6) return prev
+      const cx = size.w / 2
+      const cy = size.h / 2
+      const pointTo = { x: (cx - prev.x) / prev.scale, y: (cy - prev.y) / prev.scale }
+      return {
+        scale: canvasZoom,
+        x: cx - pointTo.x * canvasZoom,
+        y: cy - pointTo.y * canvasZoom,
+      }
+    })
+  }, [canvasZoom, size.w, size.h])
 
   const zoomAtPoint = (px: number, py: number, factor: number) => {
     setTf((prev) => {
-      const newScale = clamp(prev.scale * factor, 0.2, 6)
+      const newScale = clamp(prev.scale * factor, 0.25, 4)
       const pointTo = { x: (px - prev.x) / prev.scale, y: (py - prev.y) / prev.scale }
       const next = {
         scale: newScale,
@@ -223,7 +295,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
         updateElement(sel.id, { cellZoom: newZoom })
       } else {
         setTf((t) => {
-          const newScale = clamp(t.scale * factor, 0.2, 6)
+          const newScale = clamp(t.scale * factor, 0.25, 4)
           const pointTo = { x: (cx - t.x) / t.scale, y: (cy - t.y) / t.scale }
           setCanvasZoom(newScale)
           return {
@@ -408,12 +480,24 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
 
   return (
     <div ref={hostRef} className="canvas-host relative h-full w-full">
+      <input
+        ref={cellInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="sr-only"
+        onChange={handleCellFiles}
+      />
       {mode === 'custom-layout' && (
         <CustomLayoutToolbar
           snapEnabled={customSnapEnabled}
           canUndo={customLayoutPast.length > 0}
-          zoneCount={customLayoutCells.length}
+          zoneCount={customLayoutZones.length}
           gap={gridGap}
+          tool={layoutTool}
+          circleOverlay={circleOverlay}
+          onToolChange={setLayoutTool}
+          onCircleOverlayToggle={() => setCircleOverlay((v) => !v)}
           onGapChange={setGridGap}
           onUndo={() => useEditor.getState().undoCustomLayout()}
           onClear={() => {
@@ -425,9 +509,9 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
           onApply={() => {
             // Persist the drawn zones as a reusable layout, then apply it.
             // resolveLayoutById (used by the canvas) reads custom layouts from
-            // storage, so applyLayout → grid mode renders it immediately.
+            // storage, so applyLayout -> grid mode renders it immediately.
             const state = useEditor.getState()
-            const cells = state.customLayoutCells
+            const cells = zonesToCells(state.customLayoutZones)
             if (cells.length < 2) {
               toast.info(t('customLayout.needMore'))
               return
@@ -441,19 +525,21 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
               name: `Custom ${new Date().toLocaleDateString()}`,
               createdAt: Date.now(),
               cells,
-              lines: [],
             })
             state.applyLayout(id)
-            // Don't bounce the user back to the layout gallery — they just
-            // built their own layout.
-            state.setGalleryDismissed(true)
+            // Go straight to filling the zones the user just drew.
+            state.setAssignLayoutId(id)
           }}
           onCancel={() => {
             useEditor.getState().setCustomLayoutMode(false)
           }}
         />
       )}
-      <div className="absolute left-2 top-2 z-10 flex flex-col gap-1.5">
+      <div
+        className={`absolute left-2 top-2 z-10 flex-col gap-1.5 ${
+          mode === 'custom-layout' ? 'hidden' : 'flex'
+        }`}
+      >
         <button
           onClick={() => setSnapEnabled((v) => !v)}
           aria-label={t('canvas.snapToGuides')}
@@ -597,19 +683,20 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
                     selectedId={selectedId}
                     onSelect={select}
                     onUpdate={updateElement}
+                    onEmptyCell={openCellPicker}
                   />
                 )}
                 {mode === 'custom-layout' && (
                   <CustomLayoutEditor
                     boardWidth={boardWidth}
                     boardHeight={boardHeight}
-                    cells={customLayoutCells}
+                    zones={customLayoutZones}
                     gap={gridGap}
-                    radius={gridRadius}
-                    onStroke={(pts) =>
-                      splitCustomLayout(pts, customSnapEnabled ? 0.05 : undefined)
-                    }
-                    onTapCell={(i) => mergeCustomLayoutCell(i)}
+                    tool={layoutTool}
+                    onStroke={handleLayoutStroke}
+                    onTapZone={(i) => {
+                      if (!mergeCustomLayoutCell(i)) toast.info(t('customLayout.noMerge'))
+                    }}
                     tf={tf}
                     snapEnabled={customSnapEnabled}
                   />
