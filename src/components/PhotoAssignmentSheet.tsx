@@ -3,17 +3,7 @@ import type { GridLayout } from '../types'
 import { useT } from '../i18n/useLang'
 import { m, AnimatePresence } from './motion'
 import { Plus, Images, SkipForward, Check, X } from 'lucide-react'
-
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false)
-  useEffect(() => {
-    const check = () => setIsDesktop(window.innerWidth >= 1024)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-  return isDesktop
-}
+import { useIsDesktop } from '../hooks/useMediaQuery'
 
 export function PhotoAssignmentSheet({
   layout,
@@ -122,18 +112,14 @@ export function PhotoAssignmentSheet({
             }`}
             initial={
               isDesktop
-                ? { x: '100%', opacity: 0.8 }
-                : { y: '100%', opacity: 0.8 }
+                ? { x: '100%', y: 0, opacity: 0.8 }
+                : { x: 0, y: '100%', opacity: 0.8 }
             }
-            animate={
-              isDesktop
-                ? { x: 0, opacity: 1 }
-                : { y: 0, opacity: 1 }
-            }
+            animate={{ x: 0, y: 0, opacity: 1 }}
             exit={
               isDesktop
-                ? { x: '100%', opacity: 0.8 }
-                : { y: '100%', opacity: 0.8 }
+                ? { x: '100%', y: 0, opacity: 0.8 }
+                : { x: 0, y: '100%', opacity: 0.8 }
             }
             transition={{ type: 'spring', damping: 32, stiffness: 320 }}
             drag={isDesktop ? undefined : 'y'}
