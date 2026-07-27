@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+
 import type { ReactNode } from 'react'
 
 interface ActionSheetProps {
@@ -68,6 +69,7 @@ export function ActionSheet({ open, onClose, title, children }: ActionSheetProps
               <div className="max-h-[80vh] overflow-y-auto px-2 pb-4 relative">
                 {children}
                 {/* Visual cue for scrollable content */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-surface-2 to-transparent" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-surface-2 to-transparent" />
               </div>
             </motion.div>

@@ -5,6 +5,7 @@ import {
   Share2, FileImage, Image as ImageIcon,
   RefreshCcw, Menu, FolderOpen, Save, Upload,
   ChevronDown, FileCode, Maximize, FileText, Package, Smartphone,
+  Plus,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -355,9 +356,9 @@ export function HeaderBar({
             <span>{t('header.refresh')}</span>
           </button>
           {/* New Canvas button (desktop) */}
-          <button onClick={handleNew} className="hidden sm:flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-2 text-sm font-medium text-text/80 transition hover:bg-surface-3 active:scale-95" aria-label={t('header.new')} title={t('header.new')}>
-            <Trash2 size={16} strokeWidth={2.5} />
-            <span>{t('header.new')}</span>
+          <button onClick={handleNew} className="hidden sm:flex items-center gap-1.5 rounded-lg bg-surface-2 px-3 py-2 text-sm font-medium text-text/80 transition hover:bg-surface-3 active:scale-95" aria-label={t('header.newCanvas')} title={t('header.newCanvas')}>
+            <Plus size={16} strokeWidth={2.5} />
+            <span>{t('header.newCanvas')}</span>
           </button>
         </div>
       </header>
