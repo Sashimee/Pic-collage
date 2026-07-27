@@ -96,7 +96,7 @@ const html = `
     ${MARK}
     <div class="wordmark">Pic Collage Maker<span>100% in your browser</span></div>
   </div>
-  <h1>Make a collage.<br /><em>Nothing leaves your phone.</em></h1>
+  <h1>Make a collage.<br /><em>Your photos stay on your phone.</em></h1>
   <p>Grids, freehand layouts, filters, text &amp; stickers — no account, no uploads, no app store.</p>
   <div class="pills">
     <div class="pill">Free &amp; offline</div>

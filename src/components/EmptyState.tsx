@@ -4,6 +4,7 @@ import { useEditor } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
 import { importFiles } from '../lib/importFiles'
 import { resolveLayoutById } from '../lib/grids'
+import { track } from '../lib/analytics'
 import { LayoutGallery } from './LayoutGallery'
 import { PhotoAssignmentSheet } from './PhotoAssignmentSheet'
 import { m, AnimatePresence } from './motion'
@@ -69,6 +70,7 @@ export function EmptyState() {
   }
 
   const handleSelectLayout = (layoutId: string) => {
+    track('layout-preset')
     applyLayout(layoutId)
     setAssignLayoutId(layoutId)
     setShowAssignment(true)

@@ -26,6 +26,7 @@ import {
 } from './lib/exportImage'
 import { exportSVG, downloadSVG } from './lib/exportSVG'
 import { fireConfetti } from './lib/confetti'
+import { track } from './lib/analytics'
 import { ToastContainer } from './components/ToastContainer'
 import { useDefaultShortcuts } from './hooks/useKeyboard'
 import { OnboardingOverlay } from './components/Onboarding'
@@ -194,6 +195,7 @@ export default function App() {
       return
     }
     if (kind === 'pdf') {
+      track('export-pdf')
       const { exportPDF, downloadPDF } = await import('./lib/exportPDF')
       const s = useEditor.getState()
       const url = editorRef.current?.exportImage('png')
@@ -207,6 +209,7 @@ export default function App() {
     const format: ExportFormat = kind === 'jpg' ? 'jpg' : 'png'
     let url = editorRef.current?.exportImage(format)
     if (url) {
+      track(kind === 'share' ? 'export-share' : `export-${format}`)
       fireConfetti()
       // Preserve EXIF for JPEG exports
       if (format === 'jpg') {
@@ -225,6 +228,7 @@ export default function App() {
   }
 
   const handleExportSVG = () => {
+    track('export-svg')
     select(null)
     const s = useEditor.getState()
     const svg = exportSVG(s.elements, s.boardWidth, s.boardHeight, s.background)

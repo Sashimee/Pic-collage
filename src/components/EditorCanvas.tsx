@@ -25,6 +25,7 @@ import { CustomLayoutToolbar } from './CustomLayoutToolbar'
 import { zonesToCells } from '../lib/customLayout'
 import { saveCustomLayout } from '../lib/customLayoutStorage'
 import { importFiles } from '../lib/importFiles'
+import { track } from '../lib/analytics'
 
 export interface EditorHandle {
   exportImage: (format: ExportFormat) => string | null
@@ -105,7 +106,8 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
       layoutTool === 'circle'
         ? circleCustomLayout(pts, circleOverlay)
         : splitCustomLayout(pts, customSnapEnabled ? SNAP_STEP : undefined)
-    if (!ok) toast.info(t('customLayout.noSplit'))
+    if (ok) track('layout-split')
+    else toast.info(t('customLayout.noSplit'))
   }
 
   // Tapping an empty grid cell picks photos straight into that cell.
@@ -526,6 +528,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
               createdAt: Date.now(),
               cells,
             })
+            track('layout-custom-applied')
             state.applyLayout(id)
             // Go straight to filling the zones the user just drew.
             state.setAssignLayoutId(id)

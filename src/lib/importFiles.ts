@@ -1,4 +1,5 @@
 import { loadPhotoMeta } from './importPhotos'
+import { track } from './analytics'
 
 // Decode picked image files, stash each source blob in IndexedDB (so the
 // collage survives a reload), and hand the object URL + intrinsic size to the
@@ -14,6 +15,9 @@ export async function importFiles(
   ) => void,
 ) {
   console.log('[importFiles] processing', files.length, 'files')
+  // Counted once per import action rather than per file, so the number reads as
+  // "people who added photos" instead of "photos added".
+  let added = 0
   for (const file of Array.from(files)) {
     // Mobile Safari often reports empty or 'application/octet-stream' for
     // Camera Roll photos. We try to load any file that is not a known non-image
@@ -30,10 +34,12 @@ export async function importFiles(
         previewSrc: meta.previewSrc,
         thumbSrc: meta.thumbSrc,
       })
+      added++
     } catch (err) {
       console.error('[importFiles] FAILED to process file:', file.name, err)
       // DO NOT swallow the error — let it propagate so the UI can show feedback
       throw err
     }
   }
+  if (added > 0) track('photo-added')
 }
