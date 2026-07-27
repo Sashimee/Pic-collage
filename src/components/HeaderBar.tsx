@@ -73,6 +73,8 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
   const canRedo = useEditor((s) => s.future.length > 0)
   const theme = useTheme((s) => s.theme)
   const toggleTheme = useTheme((s) => s.toggleTheme)
+  // Name the mode the button switches *to*, matching the icon it shows.
+  const themeLabel = t(theme === 'dark' ? 'header.dayMode' : 'header.nightMode')
   const activeProjectId = useProjects((s) => s.activeProjectId)
   const saveActiveProject = useProjects((s) => s.saveActiveProject)
   const toast = useToasts()
@@ -209,7 +211,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
             <Redo2 size={18} />
           </IconButton>
           <span className="mx-0.5 h-6 w-px bg-border" />
-          <IconButton onClick={toggleTheme} label={t('header.theme')}>
+          <IconButton onClick={toggleTheme} label={themeLabel}>
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </IconButton>
           <LangDropdown />
@@ -339,7 +341,7 @@ export function HeaderBar({ onExport, onExportSVG }: { onExport: (kind: ExportKi
         <ActionItem
           onClick={() => { setSheetOpen(false); toggleTheme() }}
           icon={theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          label={t('header.theme')}
+          label={themeLabel}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); document.documentElement.requestFullscreen().catch(() => {}) }}
