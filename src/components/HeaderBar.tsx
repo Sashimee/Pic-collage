@@ -176,9 +176,11 @@ export function HeaderBar({
   }
 
   const handleFacebookShare = () => {
-    // Client‑only app cannot upload the image to a public URL, so we fall back to a download.
-    // Users can then manually upload to Facebook.
-    alert(t('export.facebookNotSupported'))
+    // Export the collage as PNG (download) then open Facebook sharer with current page URL.
+    // Users can manually attach the downloaded image on Facebook.
+    handleExport('png')
+    const url = encodeURIComponent(window.location.href)
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank')
   }
 
   const handleRefresh = async () => {
@@ -282,12 +284,14 @@ export function HeaderBar({
                     role="menu"
                   >
                     {canShareImage() && (
-                      <MenuItem onClick={() => handleExport('share')} icon={<Share2 size={16} />}>
-                        {t('export.share')}
-                      </MenuItem>
-                      <MenuItem onClick={() => handleFacebookShare()} icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M22 12c0-5.522-4.477-10-10-10S2 6.478 2 12c0 5 3.657 9.128 8.438 9.88v-6.99h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.242 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.99C18.343 21.128 22 17 22 12z"/></svg>)}
-                      <span>{t('export.facebook')}</span>
-                      </MenuItem>
+                      <>
+                        <MenuItem onClick={() => handleExport('share')} icon={<Share2 size={16} />}>
+                          {t('export.share')}
+                        </MenuItem>
+                        <MenuItem onClick={handleFacebookShare} icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M22 12c0-5.522-4.477-10-10-10S2 6.478 2 12c0 5 3.657 9.128 8.438 9.88v-6.99h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.242 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.99C18.343 21.128 22 17 22 12z"/></svg>}>
+                          {t('export.facebook')}
+                        </MenuItem>
+                      </>
                     )}
                     <MenuItem onClick={() => handleExport('png')} icon={<ImageIcon size={16} />}>
                       {t('export.png')}
