@@ -1,5 +1,32 @@
 @import "tailwindcss";
 
+/* Poppins, self-hosted (latin subset, ~8 KiB per weight).
+   It used to come from a Google Fonts <link> in index.html, which put a
+   third-party origin — DNS, TLS, then the CSS, then the font files — on the
+   critical path before anything could paint. It was also a third outbound
+   request the README and CLAUDE.md both said did not exist. */
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/poppins-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./assets/fonts/poppins-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./assets/fonts/poppins-700.woff2') format('woff2');
+}
+
 /* ---- Design tokens ------------------------------------------------------
    Semantic CSS variables drive the whole UI. Dark is the default; the
    [data-theme='light'] block overrides them. They're exposed to Tailwind v4
