@@ -78,13 +78,17 @@ export function usePanels(initial: string | null = 'photos') {
     }
   }, [])
 
+  // React runs a setState updater during the render phase, so writing to other
+  // stores from inside one updates them mid-render — that was the source of
+  // "Cannot update a component while rendering a different component". It is
+  // also a correctness hazard: React may invoke an updater twice (StrictMode
+  // does in dev), which would double-fire both side effects. Derive `next`
+  // first, then call the setters, the way close() below already does.
   const select = (id: string) => {
-    setActive((a) => {
-      const next = a === id ? null : id
-      setTool(next === 'draw' ? 'draw' : 'select')
-      setWorkspaceActive(next)
-      return next
-    })
+    const next = active === id ? null : id
+    setActive(next)
+    setTool(next === 'draw' ? 'draw' : 'select')
+    setWorkspaceActive(next)
   }
 
   const close = () => {
