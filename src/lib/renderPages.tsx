@@ -63,13 +63,30 @@ async function waitForImages(stage: Konva.Stage, expected: number, timeoutMs = 1
   }
 }
 
-/** Object URLs minted for one page, so they can be released again. */
-function revokePageUrls(elements: LoadedDocument['elements']) {
+/** Every `blob:` URL currently on a page's photos. */
+function pageUrls(elements: LoadedDocument['elements']): Set<string> {
+  const urls = new Set<string>()
   for (const el of elements) {
     if (el.type !== 'photo') continue
     for (const url of [el.src, el.previewSrc, el.originalSrc, el.thumbSrc]) {
-      if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
+      if (url?.startsWith('blob:')) urls.add(url)
     }
+  }
+  return urls
+}
+
+/**
+ * Release the object URLs this render minted — and *only* those.
+ *
+ * `rehydratePhotos` passes an already-live photo straight through rather than
+ * re-minting it, so a document that is already hydrated comes back carrying the
+ * caller's own URLs. Revoking those blanks whoever owns them: feed this the
+ * live editor document (which the book does when there is no project to read
+ * pages from) and the board on screen loses its photos.
+ */
+function revokeMinted(elements: LoadedDocument['elements'], keep: Set<string>) {
+  for (const url of pageUrls(elements)) {
+    if (!keep.has(url)) URL.revokeObjectURL(url)
   }
 }
 
@@ -112,6 +129,8 @@ export async function renderPages(
     for (let i = 0; i < pages.length; i++) {
       if (signal?.cancelled) break
       const page = pages[i]
+      // What the caller already owned, so it survives the revoke below.
+      const owned = pageUrls(page.elements)
       const elements = await rehydratePhotos(page.elements)
       const doc: LoadedDocument = { ...page, elements }
 
@@ -148,7 +167,7 @@ export async function renderPages(
       )
 
       // Release this page before touching the next one.
-      revokePageUrls(elements)
+      revokeMinted(elements, owned)
       onProgress?.(i + 1, pages.length)
     }
   } finally {

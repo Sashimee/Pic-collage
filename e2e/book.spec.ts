@@ -132,6 +132,54 @@ test.describe('photo book', () => {
     expect(after.exporting).toBe(false)
   })
 
+  test('leaves the live document\'s own photo URLs alone', async ({ page }) => {
+    // `rehydratePhotos` hands an already-live photo straight back rather than
+    // re-minting it, so rendering the *live* document returns the editor's own
+    // object URLs. Revoking those blanks the board on screen — reachable
+    // whenever there is no page list to read (private mode) and the caller
+    // falls back to the live document.
+    await openApp(page)
+    await skipGallery(page)
+    await addPhoto(page, 'one.png')
+
+    const stillResolves = await page.evaluate(async () => {
+      const { renderPages } = await import('/Pic-collage/src/lib/renderPages.tsx')
+      const s = window.__editor!.getState() as unknown as Record<string, unknown>
+      const doc = {
+        boardWidth: s.boardWidth,
+        boardHeight: s.boardHeight,
+        background: s.background,
+        mode: s.mode,
+        gridId: s.gridId,
+        gridGap: s.gridGap,
+        gridRadius: s.gridRadius,
+        frame: s.frame,
+        elements: s.elements,
+      }
+      await (renderPages as (p: unknown[], o: unknown) => Promise<string[]>)([doc], {
+        width: 320,
+        height: 400,
+      })
+
+      // The board is still on screen; its sources must still be fetchable.
+      const srcs = window
+        .__editor!.getState()
+        .elements.filter((e) => e.type === 'photo')
+        .map((e) => (e as unknown as { src: string }).src)
+      const results = await Promise.all(
+        srcs.map((src) =>
+          fetch(src)
+            .then((r) => r.ok)
+            .catch(() => false),
+        ),
+      )
+      return { count: srcs.length, ok: results.every(Boolean) }
+    })
+
+    expect(stillResolves.count).toBeGreaterThan(0)
+    expect(stillResolves.ok).toBe(true)
+  })
+
   test('draws each page\'s own content, not the one on screen', async ({ page }) => {
     // The sharp end of the whole feature: a page the editor is not showing has
     // to render as itself. Backgrounds make that checkable in pixels — a byte
