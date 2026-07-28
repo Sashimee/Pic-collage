@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { saveProject, loadProject, deleteProject, listProjects, type Project } from '../services/cloudSync'
 import { useEditor, type LoadedDocument } from './editorStore'
+import { useVersionStore } from './versionStore'
 
 export interface ProjectMeta {
   id: string
@@ -28,6 +29,26 @@ const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2)
+
+/**
+ * Name for a project created implicitly (e.g. saving before a share), where
+ * prompting would put a dialog in the user's way. Follows the UI language via
+ * the browser's locale rather than hard-coding English.
+ */
+export function defaultProjectName(now = new Date()): string {
+  return `Collage ${now.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`
+}
+
+/**
+ * Record a version-history entry alongside the project save. `versionStore`
+ * has always had the machinery for this, but nothing ever called it — which is
+ * why the History panel was permanently empty. It de-duplicates and prunes
+ * internally, so callers can fire it on every save.
+ */
+async function recordVersion(projectId: string) {
+  const s = useEditor.getState()
+  await useVersionStore.getState().saveSnapshot(projectId, s.elements, s.background)
+}
 
 function getSnapshot(): LoadedDocument {
   const s = useEditor.getState()
@@ -86,6 +107,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
       data: snapshot,
     }
     await saveProject(project)
+    await recordVersion(id)
     set((state) => ({
       projects: [{ id, name: project.name, createdAt: now, updatedAt: now }, ...state.projects],
       activeProjectId: id,
@@ -157,6 +179,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
     project.data = getSnapshot()
     project.updatedAt = Date.now()
     await saveProject(project)
+    await recordVersion(activeProjectId)
     set((state) => ({
       projects: state.projects.map((p) =>
         p.id === activeProjectId ? { ...p, updatedAt: project.updatedAt } : p

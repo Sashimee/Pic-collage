@@ -16,7 +16,13 @@ export function ToastContainer() {
   const remove = useToast((s) => s.remove)
 
   return (
-    <div className="pointer-events-none fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[100] flex flex-col items-center gap-2 px-4">
+    // A live region: toasts announce results (and now carry actions), so screen
+    // readers need to hear them without the focus moving.
+    <div
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[100] flex flex-col items-center gap-2 px-4"
+    >
       <AnimatePresence>
         {toasts.map((toast) => (
           <motion.div

@@ -30,15 +30,6 @@ export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'batch'
  * header sizes (no soft-shadow plates, which vanish below ~32px anyway).
  * Keep it in step with favicon.svg and scripts/generate-icons.mjs.
  */
-/** Facebook's "f" mark. lucide dropped brand icons, so it lives here. */
-function FacebookGlyph() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M22 12c0-5.522-4.477-10-10-10S2 6.478 2 12c0 5 3.657 9.128 8.438 9.88v-6.99h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.242 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.99C18.343 21.128 22 17 22 12z" />
-    </svg>
-  )
-}
-
 export function BrandMark({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 512 512" className={className} aria-hidden="true">
@@ -185,21 +176,13 @@ export function HeaderBar({
     toast.success(t('toast.batchExportDone'))
   }
 
-  // Facebook drops files handed to it by the Web Share API, so the only way to
-  // get a post out of it is the sharer URL — which posts the *link* (our OG card
-  // renders it) and leaves the user to attach the picture themselves. Open the
-  // popup first, while we are still inside the click, or the blocker eats it;
-  // the download follows.
-  const handleFacebookShare = () => {
-    const url = encodeURIComponent(window.location.href)
-    window.open(
-      `https://www.facebook.com/sharer/sharer.php?u=${url}`,
-      '_blank',
-      'noopener,noreferrer',
-    )
-    void handleExport('jpg')
-    toast.info(t('share.facebookHint'))
-  }
+  /*
+   * There is deliberately no Facebook button. `sharer.php?u=` can only post a
+   * *link*, never an image, and on a phone it deep-links into the Facebook app
+   * — which usually just lands on the feed. A tester reported it as "opens
+   * Facebook and nothing more", which is exactly what it does. The system share
+   * sheet plus the Save fallback covers the real need honestly.
+   */
 
   const handleRefresh = async () => {
     if ('serviceWorker' in navigator) {
@@ -306,12 +289,6 @@ export function HeaderBar({
                         {t('export.share')}
                       </MenuItem>
                     )}
-                    {/* Not gated on canShareImage(): the sharer URL is a plain
-                        link and works everywhere — desktop most of all, which is
-                        exactly where Web Share is missing. */}
-                    <MenuItem onClick={handleFacebookShare} icon={<FacebookGlyph />}>
-                      {t('export.facebook')}
-                    </MenuItem>
                     <MenuItem onClick={() => handleExport('png')} icon={<ImageIcon size={16} />}>
                       {t('export.png')}
                     </MenuItem>
@@ -482,13 +459,7 @@ export function HeaderBar({
           danger
         />
         <ActionDivider />
-        {/* Share lives in the top bar on mobile now; keep a row here only when
-            Web Share is missing, so the Facebook route is still reachable. */}
-        <ActionItem
-          onClick={() => { setSheetOpen(false); handleFacebookShare() }}
-          icon={<FacebookGlyph />}
-          label={t('export.facebook')}
-        />
+        {/* Share lives in the top bar on mobile; no row for it here. */}
         <ActionItem
           onClick={() => { setSheetOpen(false); handleExport('png') }}
           icon={<ImageIcon size={18} />}

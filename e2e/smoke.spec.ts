@@ -46,14 +46,12 @@ test.describe('smoke', () => {
     await expect(page.getByRole('button', { name: 'Day mode' })).toBeVisible()
   })
 
-  test('the Facebook route is offered even without Web Share', async ({ page }) => {
-    // Desktop Chromium has no navigator.canShare, and the sharer URL is a plain
-    // link — gating it on Web Share hid it from the browsers it works best in.
+  test('no Facebook route is offered', async ({ page }) => {
+    // It could only ever post a link, never the collage, and on a phone it just
+    // opened the Facebook app. Removed rather than left to mislead.
     await openApp(page)
     await page.getByRole('button', { name: 'Export' }).click()
-    await expect(
-      page.getByRole('menuitem', { name: 'Share link on Facebook' }),
-    ).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: /Facebook/i })).toHaveCount(0)
   })
 
   test('no menu item is labelled with a raw translation key', async ({ page }) => {
