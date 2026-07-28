@@ -55,6 +55,8 @@ export default function LayerPanel() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [dragId, setDragId] = useState<string | null>(null)
+  /** Row index the dragged layer would land on, for the drop indicator. */
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
 
   const elements = useEditor((s) => s.elements)
   const selectedId = useEditor((s) => s.selectedId)
@@ -80,49 +82,82 @@ export default function LayerPanel() {
     }
   }, [])
 
-  const handleDragStart = useCallback(
-    (e: React.DragEvent, id: string) => {
-      setDragId(id)
-      e.dataTransfer.effectAllowed = 'move'
-      e.dataTransfer.setData('text/plain', id)
+  /**
+   * Reorder by pointer, not HTML5 drag-and-drop. `draggable` + dragstart/drop
+   * never fire from touch on iOS or Android, so on a phone — the primary
+   * platform here — the grip handle looked draggable and did nothing at all.
+   * Pointer events cover mouse, touch and pen through one path.
+   */
+  const moveTo = useCallback(
+    (id: string, toIndex: number) => {
+      const fromIndex = displayElements.findIndex((el) => el.id === id)
+      const clamped = Math.max(0, Math.min(displayElements.length - 1, toIndex))
+      if (fromIndex === -1 || fromIndex === clamped) return
+
+      // The list is rendered top-layer-first (displayElements is reversed), so
+      // moving *down* the list means moving *back* in z-order. The previous
+      // code had these the other way round, which sent layers the wrong way
+      // even on desktop where the drag itself worked.
+      const steps = Math.abs(clamped - fromIndex)
+      const action = clamped > fromIndex ? sendBackward : bringForward
+      for (let i = 0; i < steps; i++) action(id)
     },
-    [],
+    [displayElements, bringForward, sendBackward],
   )
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }, [])
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent, targetId: string) => {
+  const handleGripDown = useCallback(
+    (e: React.PointerEvent, id: string) => {
       e.preventDefault()
-      if (!dragId || dragId === targetId) {
-        setDragId(null)
-        return
+      e.stopPropagation()
+      const scroller = scrollRef.current
+      if (!scroller) return
+
+      const startIdx = displayElements.findIndex((el) => el.id === id)
+      if (startIdx === -1) return
+
+      setDragId(id)
+      const grip = e.currentTarget as HTMLElement
+      // Capture keeps the move/up stream on this element even when the finger
+      // leaves it. Safari throws if the pointer is already gone; the drag still
+      // works without capture, so don't let it take the handler down.
+      try {
+        grip.setPointerCapture(e.pointerId)
+      } catch {
+        /* no capture — still usable */
       }
 
-      const fromIndex = displayElements.findIndex((el) => el.id === dragId)
-      const toIndex = displayElements.findIndex((el) => el.id === targetId)
-      if (fromIndex === -1 || toIndex === -1) {
-        setDragId(null)
-        return
+      // Offset between the pointer and the top of the row it grabbed, so the
+      // row doesn't jump to centre itself under the finger.
+      const rect = scroller.getBoundingClientRect()
+      const grabOffset = e.clientY - rect.top + scroller.scrollTop - startIdx * ROW_HEIGHT
+
+      let target = startIdx
+
+      const onMove = (ev: PointerEvent) => {
+        const y = ev.clientY - rect.top + scroller.scrollTop - grabOffset
+        target = Math.max(
+          0,
+          Math.min(displayElements.length - 1, Math.round(y / ROW_HEIGHT)),
+        )
+        setDropIndex(target)
       }
 
-      const diff = toIndex - fromIndex
-      const action = diff > 0 ? bringForward : sendBackward
-      const count = Math.abs(diff)
-      for (let i = 0; i < count; i++) {
-        action(dragId)
+      const onUp = () => {
+        grip.releasePointerCapture?.(e.pointerId)
+        grip.removeEventListener('pointermove', onMove)
+        grip.removeEventListener('pointerup', onUp)
+        grip.removeEventListener('pointercancel', onUp)
+        moveTo(id, target)
+        setDragId(null)
+        setDropIndex(null)
       }
-      setDragId(null)
+
+      grip.addEventListener('pointermove', onMove)
+      grip.addEventListener('pointerup', onUp)
+      grip.addEventListener('pointercancel', onUp)
     },
-    [dragId, displayElements, bringForward, sendBackward],
+    [displayElements, moveTo],
   )
-
-  const handleDragEnd = useCallback(() => {
-    setDragId(null)
-  }, [])
 
   // Keep dragged element rendered even if it scrolls outside viewport
   const visibleIndices = useMemo(() => {
@@ -150,6 +185,13 @@ export default function LayerPanel() {
         className="relative flex-1 overflow-y-auto no-scrollbar"
       >
         <div style={{ height: totalHeight, position: 'relative' }}>
+          {dropIndex !== null && (
+            <div
+              className="pointer-events-none absolute left-0 right-0 z-10 h-0.5 rounded-full bg-accent"
+              style={{ top: dropIndex * ROW_HEIGHT - 1 }}
+              aria-hidden="true"
+            />
+          )}
           {visibleIndices.map((index) => {
             const el = displayElements[index]
             const top = index * ROW_HEIGHT
@@ -161,18 +203,6 @@ export default function LayerPanel() {
             return (
               <div
                 key={el.id}
-                draggable
-                onDragStart={(e) => {
-                  const target = e.target as HTMLElement
-                  if (!target.closest('[data-drag-handle]')) {
-                    e.preventDefault()
-                    return
-                  }
-                  handleDragStart(e, el.id)
-                }}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, el.id)}
-                onDragEnd={handleDragEnd}
                 onClick={() => select(el.id)}
                 className={`absolute left-0 right-0 flex items-center gap-2 rounded-lg border px-2 transition ${
                   isSelected
@@ -183,10 +213,27 @@ export default function LayerPanel() {
                 }`}
                 style={{ top, height: ROW_HEIGHT }}
               >
+                {/* touch-none: without it the browser claims the gesture for
+                    scrolling and the pointermove stream stops after a few px. */}
                 <div
                   data-drag-handle
+                  onPointerDown={(e) => handleGripDown(e, el.id)}
                   onClick={(e) => e.stopPropagation()}
-                  className="cursor-grab active:cursor-grabbing text-muted shrink-0"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t('layer.reorder')}
+                  onKeyDown={(e) => {
+                    // Keyboard equivalent, and the only route for anyone who
+                    // can't drag at all.
+                    if (e.key === 'ArrowUp') {
+                      e.preventDefault()
+                      moveTo(el.id, index - 1)
+                    } else if (e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      moveTo(el.id, index + 1)
+                    }
+                  }}
+                  className="flex h-9 w-7 shrink-0 cursor-grab touch-none items-center justify-center text-muted active:cursor-grabbing"
                 >
                   <GripVertical size={16} />
                 </div>
