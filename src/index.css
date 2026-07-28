@@ -57,7 +57,10 @@
   --surface-3: #e9ecfa;
   --border: #e0e3f2;
   --text: #14172b;
-  --muted: #6b7391;
+  /* #6b7391 only made 4.34:1 on --surface-2 and 3.98:1 on --surface-3, under
+     the 4.5:1 WCAG AA minimum for the small text it is used for. Same hue,
+     slightly darker: 5.44 / 5.04 / 4.62 across surface, surface-2, surface-3. */
+  --muted: #616984;
   --accent: #6d5cf5;
   --accent-2: #ec4899;
   --accent-fg: #ffffff;

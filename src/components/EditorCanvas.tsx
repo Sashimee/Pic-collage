@@ -541,12 +541,15 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
 
   return (
     <div ref={hostRef} className="canvas-host relative h-full w-full">
+      {/* Opened programmatically when an empty cell is tapped, so there is no
+          visible label to associate — aria-label is the only route. */}
       <input
         ref={cellInputRef}
         type="file"
         accept="image/*"
         multiple
         className="sr-only"
+        aria-label={t('header.addPhotos')}
         onChange={handleCellFiles}
       />
       {mode === 'custom-layout' && (
