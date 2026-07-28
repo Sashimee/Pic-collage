@@ -18,6 +18,37 @@ const photoSrcs = (page: import('@playwright/test').Page) =>
       .map((e) => (e as unknown as { src: string }).src),
   )
 
+/** Photos in the autosaved document as it actually sits in IndexedDB. */
+const persistedPhotoCount = (page: import('@playwright/test').Page) =>
+  page.evaluate(
+    () =>
+      new Promise<number>((resolve) => {
+        // Mirrors src/lib/persistence.ts — DB 'piccollage', store 'doc'.
+        const req = indexedDB.open('piccollage')
+        req.onsuccess = () => {
+          const db = req.result
+          if (!db.objectStoreNames.contains('doc')) {
+            db.close()
+            return resolve(0)
+          }
+          const t = db.transaction('doc', 'readonly')
+          const get = t.objectStore('doc').getAll()
+          get.onsuccess = () => {
+            const docs = get.result as { elements?: { type: string }[] }[]
+            resolve(
+              docs.reduce(
+                (n, d) => n + (d?.elements?.filter((e) => e.type === 'photo').length ?? 0),
+                0,
+              ),
+            )
+          }
+          get.onerror = () => resolve(0)
+          t.oncomplete = () => db.close()
+        }
+        req.onerror = () => resolve(0)
+      }),
+  )
+
 /** Do the sources actually resolve, or are they dead handles? */
 const srcsResolve = async (page: import('@playwright/test').Page) => {
   const srcs = await photoSrcs(page)
@@ -40,7 +71,10 @@ test.describe('photos survive a reload', () => {
     await openApp(page)
     await page.locator('#empty-gallery-input').setInputFiles(pngFile())
     await waitForElements(page, 'photo')
-    await page.waitForTimeout(900) // let the 500ms autosave debounce land
+    // Wait for the write itself, not a guess at how long the 500ms debounce
+    // plus an IndexedDB round-trip takes. A fixed sleep is fine on an idle
+    // machine and wrong exactly when the suite is busy.
+    await expect.poll(() => persistedPhotoCount(page), { timeout: 15_000 }).toBeGreaterThan(0)
 
     await page.reload()
     await page.waitForFunction(() => !!window.__editor)
@@ -64,6 +98,55 @@ test.describe('photos survive a reload', () => {
 
     await page.evaluate(async (id) => {
       // Clear the canvas first, so a pass cannot come from the autosaved doc.
+      window.__editor!.getState().clearAll()
+      await window.__projects!.getState().openProject(id)
+    }, projectId)
+
+    await waitForElements(page, 'photo')
+    expect(await srcsResolve(page)).toBe(true)
+  })
+
+  test('a project saved by the old single-page version still opens', async ({ page }) => {
+    // Projects stored before the page model hold a bare document in `data`.
+    // Rewrite a record into that shape to stand in for one already on a user's
+    // device — the migration exists precisely so these keep working.
+    await openApp(page)
+    await page.locator('#empty-gallery-input').setInputFiles(pngFile())
+    await waitForElements(page, 'photo')
+
+    const projectId = await page.evaluate(() =>
+      window.__projects!.getState().createProject('Legacy'),
+    )
+
+    const downgraded = await page.evaluate(
+      (id) =>
+        new Promise<boolean>((resolve) => {
+          const req = indexedDB.open('pic-collage-db')
+          req.onsuccess = () => {
+            const db = req.result
+            const t = db.transaction('projects', 'readwrite')
+            const store = t.objectStore('projects')
+            const get = store.get(id)
+            get.onsuccess = () => {
+              const rec = get.result
+              if (!rec?.data?.pages) return resolve(false)
+              rec.data = rec.data.pages[0] // strip the wrapper
+              store.put(rec)
+            }
+            t.oncomplete = () => {
+              db.close()
+              resolve(true)
+            }
+          }
+          req.onerror = () => resolve(false)
+        }),
+      projectId,
+    )
+    expect(downgraded).toBe(true)
+
+    await page.reload()
+    await page.waitForFunction(() => !!window.__editor)
+    await page.evaluate(async (id) => {
       window.__editor!.getState().clearAll()
       await window.__projects!.getState().openProject(id)
     }, projectId)

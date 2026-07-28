@@ -49,8 +49,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Deliberately no rule for konva/react-konva: they are reached only
+          // through lazily loaded components, so letting the bundler emit them
+          // as dynamic-only chunks keeps them off the critical path. Naming
+          // them a manual chunk made that chunk the home for shared runtime
+          // helpers, which pulled all ~317 kB of it into the initial load.
+          if (id.includes('node_modules/react-konva') || id.includes('node_modules/konva')) return
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/zustand')) return 'vendor'
-          if (id.includes('node_modules/konva') || id.includes('node_modules/react-konva')) return 'konva'
           if (id.includes('node_modules/lucide-react') || id.includes('node_modules/framer-motion')) return 'ui'
         },
       },
