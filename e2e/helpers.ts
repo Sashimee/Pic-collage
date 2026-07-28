@@ -107,15 +107,30 @@ export const assignmentSheet = (page: Page) =>
   page.getByRole('heading', { name: 'Add Photos' })
 
 /**
- * Open the app with onboarding and the pinch hint already dismissed, so tests
- * start on the layout gallery rather than an overlay.
+ * Open the app with every first-use tip already dismissed, so tests start on
+ * the layout gallery rather than under an overlay.
+ *
+ * All of them live in one record (`src/lib/firstUse.ts`) precisely so this is a
+ * single line: a per-tip key would mean the first one anybody forgot broke the
+ * specs that drive the very tools being taught.
+ *
+ * Pass `tips: true` to leave them armed, for the specs that test the tips.
  */
-export async function openApp(page: Page, opts: { lang?: string } = {}) {
-  await page.addInitScript((lang) => {
-    localStorage.setItem('pic-collage-onboarded-v2', '1')
-    localStorage.setItem('piccollage-pinch-hint-shown', '1')
-    if (lang) localStorage.setItem('lang', lang)
-  }, opts.lang ?? '')
+export async function openApp(page: Page, opts: { lang?: string; tips?: boolean } = {}) {
+  await page.addInitScript(
+    ({ lang, tips }) => {
+      if (!tips) {
+        // A timestamp of 1 reads as "seen"; the value is never displayed.
+        const seen = ['welcome', 'pinch', 'draw', 'layout', 'layers', 'cellZoom']
+        localStorage.setItem(
+          'pic-collage-tips-v1',
+          JSON.stringify(Object.fromEntries(seen.map((id) => [id, 1]))),
+        )
+      }
+      if (lang) localStorage.setItem('lang', lang)
+    },
+    { lang: opts.lang ?? '', tips: !!opts.tips },
+  )
   await page.goto('/')
   await page.waitForFunction(() => !!window.__editor, undefined, { timeout: 10_000 })
 }

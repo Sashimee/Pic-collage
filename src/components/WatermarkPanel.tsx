@@ -4,6 +4,9 @@ import { Slider, ColorField, Section, Chip } from './ui'
 import { m } from './motion'
 import type { WatermarkPosition } from '../types'
 import { WorkspacePresets } from './WorkspacePresets'
+import { RefreshCcw } from 'lucide-react'
+import { resetTips } from '../lib/firstUse'
+import { useToasts } from './ToastContainer'
 
 const POSITIONS: { label: string; value: WatermarkPosition }[] = [
   { label: 'Top Left', value: 'top-left' },
@@ -175,12 +178,38 @@ export function PrintPanel() {
   )
 }
 
+/**
+ * Replay the first-use tips.
+ *
+ * A once-only hint is otherwise gone forever — including for the person who
+ * dismissed it by accident, and for anyone showing the app to someone else.
+ */
+function TipsPanel() {
+  const t = useT()
+  const toast = useToasts()
+  return (
+    <Section title={t('tips.title')}>
+      <p className="text-[0.7rem] leading-relaxed text-muted">{t('tips.hint')}</p>
+      <button
+        onClick={() => {
+          resetTips()
+          toast.success(t('tips.reset'))
+        }}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-sm font-medium text-text transition hover:bg-surface-3 active:scale-[0.99]"
+      >
+        <RefreshCcw size={14} /> {t('tips.replay')}
+      </button>
+    </Section>
+  )
+}
+
 export function SettingsPanel() {
   return (
     <div className="flex flex-col gap-6">
       <WorkspacePresets />
       <WatermarkPanel />
       <PrintPanel />
+      <TipsPanel />
     </div>
   )
 }

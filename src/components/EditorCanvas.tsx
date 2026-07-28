@@ -23,6 +23,7 @@ import { zonesToCells } from '../lib/customLayout'
 import { saveCustomLayout } from '../lib/customLayoutStorage'
 import { importFiles } from '../lib/importFiles'
 import { track } from '../lib/analytics'
+import { hasSeen, markSeen } from '../lib/firstUse'
 
 export interface EditorHandle {
   /** Async: the export has to wait a frame for the full-resolution photo
@@ -105,11 +106,9 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
   const ptsRef = useRef<number[]>([])
   const [, setTick] = useState(0)
 
-  // Pinch-to-zoom hint (one-time)
+  // Pinch-to-zoom hint (one-time), now on the shared first-use registry.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      pinchHintShown.current = localStorage.getItem('piccollage-pinch-hint-shown') === '1'
-    }
+    pinchHintShown.current = hasSeen('pinch')
   }, [])
 
   // A layout gesture either cuts or rounds, depending on the active tool.
@@ -158,7 +157,7 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
   const showPinchHint = () => {
     if (pinchHintShown.current) return
     pinchHintShown.current = true
-    localStorage.setItem('piccollage-pinch-hint-shown', '1')
+    markSeen('pinch')
     toast.info(t('canvas.pinchZoom'))
   }
 
