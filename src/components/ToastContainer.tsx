@@ -66,6 +66,8 @@ export function useToasts() {
     success: (msg: string) => addToast(msg, 'success', 3000),
     error: (msg: string) => addToast(msg, 'error', 4000),
     info: (msg: string) => addToast(msg, 'info', 3000),
+    /** A toast whose message is markup — used by the gesture tips. */
+    rich: (node: ReactNode, duration = 6000) => addToast(node, 'info', duration),
     warn: (msg: string) => addToast(msg, 'error', 5000),
     /** A toast that offers a way out — e.g. "save the file the share ate". */
     action: (msg: string, action: ToastAction, duration = 8000) =>

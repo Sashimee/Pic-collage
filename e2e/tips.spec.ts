@@ -74,4 +74,24 @@ test.describe('first-use tips', () => {
     const seen = await page.evaluate(() => localStorage.getItem('pic-collage-tips-v1'))
     expect(seen).toBeNull()
   })
+
+  test('the layers panel demonstrates dragging to reorder, once', async ({ page }) => {
+    await openApp(page, { tips: true })
+    await page.locator('button.w-full', { hasText: 'Skip' }).click()
+
+    await page.getByRole('button', { name: 'Layers', exact: true }).click()
+    await expect(page.locator('[data-gesture-demo="layers"]')).toBeVisible()
+
+    // Closing and reopening must not teach it again.
+    await page.getByRole('button', { name: 'Layers', exact: true }).click()
+    await page.getByRole('button', { name: 'Layers', exact: true }).click()
+    await expect(page.locator('[data-gesture-demo="layers"]')).toHaveCount(0)
+  })
+
+  test('tips are suppressed by default, so every other spec is unaffected', async ({ page }) => {
+    await openApp(page)
+    await page.locator('button.w-full', { hasText: 'Skip' }).click()
+    await page.getByRole('button', { name: 'Layers', exact: true }).click()
+    await expect(page.locator('[data-gesture-demo]')).toHaveCount(0)
+  })
 })

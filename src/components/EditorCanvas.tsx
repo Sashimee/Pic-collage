@@ -24,6 +24,7 @@ import { saveCustomLayout } from '../lib/customLayoutStorage'
 import { importFiles } from '../lib/importFiles'
 import { track } from '../lib/analytics'
 import { hasSeen, markSeen } from '../lib/firstUse'
+import { PinchDemo } from './GestureDemo'
 
 export interface EditorHandle {
   /** Async: the export has to wait a frame for the full-resolution photo
@@ -167,7 +168,14 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
     if (pinchHintShown.current) return
     pinchHintShown.current = true
     markSeen('pinch')
-    toast.info(t('canvas.pinchZoom'))
+    toast.rich(
+      <span className="flex items-center gap-2.5">
+        <span className="h-9 w-9 shrink-0 text-text/70" data-gesture-demo="pinch">
+          <PinchDemo />
+        </span>
+        <span>{t('canvas.pinchZoom')}</span>
+      </span>,
+    )
   }
 
   // Inline text editor overlay (replaces window.prompt on double-tap).
