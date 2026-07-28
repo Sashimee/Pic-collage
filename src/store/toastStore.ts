@@ -19,12 +19,15 @@ export interface Toast {
 
 interface ToastState {
   toasts: Toast[]
+  /** Returns the toast's id, so a long-running one can be updated or removed. */
   add: (
     message: ReactNode,
     type?: ToastType,
     duration?: number,
     action?: ToastAction,
-  ) => void
+  ) => string
+  /** Replace the message of a toast still on screen. No-op once it is gone. */
+  update: (id: string, message: ReactNode) => void
   remove: (id: string) => void
 }
 
@@ -40,6 +43,12 @@ export const useToast = create<ToastState>((set) => ({
         set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
       }, duration)
     }
+    return id
+  },
+  update(id, message) {
+    set((s) => ({
+      toasts: s.toasts.map((t) => (t.id === id ? { ...t, message } : t)),
+    }))
   },
   remove(id) {
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))

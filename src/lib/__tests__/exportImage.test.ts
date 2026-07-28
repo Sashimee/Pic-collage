@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type Konva from 'konva'
-import { downloadDataURL, shareDataURL, canShareImage, exportBoard } from '../exportImage'
+import {
+  downloadDataURL,
+  shareDataURL,
+  shareImages,
+  shareFileName,
+  canShareImage,
+  exportBoard,
+} from '../exportImage'
 
 /**
  * A stand-in Konva board. `toCanvas` hands back a fake canvas whose 2D context
@@ -230,5 +237,89 @@ describe('shareDataURL', () => {
     const result = await shareDataURL('data:image/png;base64,iVBORw0KGgo=', 'png')
     expect(result).toBe('unsupported')
     vi.unstubAllGlobals()
+  })
+})
+
+describe('shareImages', () => {
+  // Base64 has to be valid — atob throws otherwise, and the pages only need
+  // to be distinguishable by position here, not by content.
+  const jpg = (n: number) =>
+    Array.from({ length: n }, () => 'data:image/jpeg;base64,/9j/4AAQ')
+
+  it('hands the target every page, numbered', async () => {
+    // The reported bug: a project with several pages shared only the one on
+    // screen. Facebook and Instagram take a multi-image post; the app simply
+    // never passed more than one file.
+    let shared: { files?: File[] } | undefined
+    vi.stubGlobal('navigator', {
+      canShare: () => true,
+      share: async (data: { files?: File[] }) => {
+        shared = data
+      },
+    })
+    const result = await shareImages(jpg(3), 'jpg')
+    expect(result).toBe('shared')
+    expect(shared?.files).toHaveLength(3)
+    expect(shared?.files?.map((f) => f.name)).toEqual([
+      'collage-1.jpg',
+      'collage-2.jpg',
+      'collage-3.jpg',
+    ])
+    vi.unstubAllGlobals()
+  })
+
+  it('leaves a single page named exactly as it always was', async () => {
+    let shared: { files?: File[] } | undefined
+    vi.stubGlobal('navigator', {
+      canShare: () => true,
+      share: async (data: { files?: File[] }) => {
+        shared = data
+      },
+    })
+    await shareImages(jpg(1), 'jpg')
+    expect(shared?.files?.[0].name).toBe('collage.jpg')
+    vi.unstubAllGlobals()
+  })
+
+  it('probes canShare with the whole set, not just the first file', async () => {
+    // Targets do accept one file and reject several. Probing with one would
+    // pass here and then throw at share() time.
+    let probed = 0
+    vi.stubGlobal('navigator', {
+      canShare: (data: { files?: File[] }) => {
+        probed = data.files?.length ?? 0
+        return true
+      },
+      share: async () => {},
+    })
+    await shareImages(jpg(4), 'jpg')
+    expect(probed).toBe(4)
+    vi.unstubAllGlobals()
+  })
+
+  it('reports unsupported when the target refuses the set, so every page is saved instead', async () => {
+    vi.stubGlobal('navigator', {
+      canShare: (data: { files?: File[] }) => (data.files?.length ?? 0) < 2,
+      share: async () => {},
+    })
+    expect(await shareImages(jpg(3), 'jpg')).toBe('unsupported')
+    // The single-page case still goes through.
+    expect(await shareImages(jpg(1), 'jpg')).toBe('shared')
+    vi.unstubAllGlobals()
+  })
+
+  it('is unsupported with nothing to share rather than opening an empty sheet', async () => {
+    vi.stubGlobal('navigator', { canShare: () => true, share: async () => {} })
+    expect(await shareImages([], 'jpg')).toBe('unsupported')
+    vi.unstubAllGlobals()
+  })
+})
+
+describe('shareFileName', () => {
+  it('numbers only when there is more than one page', () => {
+    expect(shareFileName('jpg')).toBe('collage.jpg')
+    expect(shareFileName('png', 0, 1)).toBe('collage.png')
+    expect(shareFileName('jpg', 0, 2)).toBe('collage-1.jpg')
+    expect(shareFileName('jpg', 1, 2)).toBe('collage-2.jpg')
   })
 })
