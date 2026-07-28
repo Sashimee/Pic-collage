@@ -5,22 +5,7 @@ import type { GridCell, GridCellShape, GridLayout, PhotoElement } from '../types
 import { useImage } from '../hooks/useImage'
 import { computeFilterConfig } from '../lib/filters'
 import { CELL_SHAPE_PRESETS } from '../lib/cellShapes'
-
-interface Rect2 {
-  x: number
-  y: number
-  w: number
-  h: number
-}
-
-function cellRect(cell: GridCell, W: number, H: number, gap: number): Rect2 {
-  return {
-    x: cell.x * W + gap / 2,
-    y: cell.y * H + gap / 2,
-    w: cell.width * W - gap,
-    h: cell.height * H - gap,
-  }
-}
+import { assignSlots, cellRect, type CellRect as Rect2 } from '../lib/grids'
 
 function placePhoto(
   rect: Rect2,
@@ -272,28 +257,6 @@ function CellPhoto({
       )}
     </Group>
   )
-}
-
-/**
- * Lay photos out over the cells. A photo pinned with `cellIndex` claims that
- * slot; everything else fills the gaps in array order. Without the pin, a photo
- * added for a specific empty cell would land in the first free one instead.
- */
-function assignSlots(count: number, photos: PhotoElement[]): (PhotoElement | undefined)[] {
-  const slots: (PhotoElement | undefined)[] = new Array(count).fill(undefined)
-  const rest: PhotoElement[] = []
-  for (const p of photos) {
-    const i = p.cellIndex
-    if (i != null && i >= 0 && i < count && !slots[i]) slots[i] = p
-    else rest.push(p)
-  }
-  let next = 0
-  for (const p of rest) {
-    while (next < count && slots[next]) next++
-    if (next >= count) break
-    slots[next] = p
-  }
-  return slots
 }
 
 /** Dashed "＋" drop target. Tapping it opens the photo picker for this cell. */

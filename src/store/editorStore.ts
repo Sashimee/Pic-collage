@@ -185,6 +185,15 @@ interface EditorState {
   applyShapeToAll: (shape: string) => void
   setCanvasZoom: (zoom: number) => void
   canvasZoom: number
+  /**
+   * Floor for `canvasZoom`. Normally 0.25, so the zoom-out button can't shrink
+   * the board to a speck — but a fit can legitimately need less than that (a
+   * small phone with a panel open, or a big board), and when it does, a fixed
+   * floor overrides the fit and the board spills out from under the chrome.
+   * `fitToScreen` lowers it to whatever the fit actually needs.
+   */
+  minCanvasZoom: number
+  setMinCanvasZoom: (v: number) => void
   exporting: boolean
   setExporting: (v: boolean) => void
 
@@ -277,6 +286,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   brushColor: '#ef4444',
   brushSize: 8,
   canvasZoom: 1,
+  minCanvasZoom: 0.25,
   exporting: false,
 
   past: [],
@@ -662,7 +672,9 @@ export const useEditor = create<EditorState>((set, get) => ({
       ...record(s, 'shapeAll'),
     })),
 
-  setCanvasZoom: (zoom) => set({ canvasZoom: Math.max(0.25, Math.min(4, zoom)) }),
+  setCanvasZoom: (zoom) =>
+    set((s) => ({ canvasZoom: Math.max(s.minCanvasZoom, Math.min(4, zoom)) })),
+  setMinCanvasZoom: (v) => set({ minCanvasZoom: Math.min(0.25, Math.max(0.02, v)) }),
   setExporting: (v) => set({ exporting: v }),
 
   setWatermark: (patch) =>

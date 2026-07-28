@@ -28,6 +28,7 @@ import { useShortcuts } from './hooks/useShortcuts'
 import { UpdateBanner } from './components/UpdateBanner'
 import { ZoomControls } from './components/ZoomControls'
 import { StatusBar } from './components/StatusBar'
+import { PageStrip } from './components/PageStrip'
 import { useEditor } from './store/editorStore'
 import { useT } from './i18n/useLang'
 import { useProjects, defaultProjectName } from './store/projectsStore'
@@ -322,6 +323,7 @@ export default function App() {
               </div>
               <SidePanel panels={panels} width={sidePanelWidth} />
             </div>
+            <PageStrip />
             <StatusBar />
           </div>
         ) : (
@@ -349,6 +351,7 @@ export default function App() {
               <Suspense fallback={null}><CropOverlay /></Suspense>
               <ZoomControls />
             </div>
+            <PageStrip />
             <MobileTabBar panels={panels} />
           </>
         )}
