@@ -3,7 +3,7 @@ import { Layer, Stage } from 'react-konva'
 import type Konva from 'konva'
 import { BoardScene } from '../components/BoardScene'
 import { useEditor, type LoadedDocument } from '../store/editorStore'
-import { rehydratePhotos } from './photoRehydrate'
+import { rehydrateBackground, rehydratePhotos } from './photoRehydrate'
 import { assignSlots, resolveLayoutById } from './grids'
 import { containRect } from './photoBook'
 import { applyPostProcess } from './exportImage'
@@ -158,7 +158,10 @@ export async function renderPages(
       // What the caller already owned, so it survives the revoke below.
       const owned = pageUrls(page.elements)
       const elements = await rehydratePhotos(page.elements)
-      const doc: LoadedDocument = { ...page, elements }
+      // A photo background is stored the same way and needs the same rebuild,
+      // or an exported page comes out on a flat colour.
+      const background = await rehydrateBackground(page.background)
+      const doc: LoadedDocument = { ...page, elements, background }
 
       // Either a fixed sheet with the board fitted into it (a book), or the
       // board at its own size times a ratio (a share or a download).

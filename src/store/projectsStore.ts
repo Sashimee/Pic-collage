@@ -2,7 +2,12 @@ import { create } from 'zustand'
 import { saveProject, loadProject, deleteProject, listProjects, type Project } from '../services/cloudSync'
 import { useEditor, type LoadedDocument } from './editorStore'
 import { useVersionStore } from './versionStore'
-import { rehydratePhotos, stripPhotoUrls } from '../lib/photoRehydrate'
+import {
+  rehydrateBackground,
+  rehydratePhotos,
+  stripBackgroundUrl,
+  stripPhotoUrls,
+} from '../lib/photoRehydrate'
 import {
   PROJECT_SCHEMA,
   activeDocument,
@@ -79,7 +84,7 @@ function getSnapshot(): LoadedDocument {
   return {
     boardWidth: s.boardWidth,
     boardHeight: s.boardHeight,
-    background: s.background,
+    background: stripBackgroundUrl(s.background),
     mode: s.mode,
     gridId: s.gridId,
     gridGap: s.gridGap,
@@ -205,7 +210,8 @@ export const useProjects = create<ProjectsState>((set, get) => ({
     if (!doc) return
     const page = activeDocument(doc)
     const elements = await rehydratePhotos(page.elements)
-    useEditor.getState().loadDocument({ ...page, elements })
+    const background = await rehydrateBackground(page.background)
+    useEditor.getState().loadDocument({ ...page, elements, background })
     set({ activeProjectId: id, pages: doc.pages, activePage: doc.activePage })
   },
 
@@ -353,10 +359,11 @@ export const useProjects = create<ProjectsState>((set, get) => ({
 
     const page = pages[target]
     const elements = await rehydratePhotos(page.elements)
+    const background = await rehydrateBackground(page.background)
     // loadDocument clears past/future, so undo is per page — a Snapshot is a
     // whole document and an undo stack spanning pages would restore the wrong
     // board.
-    useEditor.getState().loadDocument({ ...page, elements })
+    useEditor.getState().loadDocument({ ...page, elements, background })
   },
 }))
 

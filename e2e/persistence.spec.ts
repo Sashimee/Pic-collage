@@ -49,6 +49,31 @@ const persistedPhotoCount = (page: import('@playwright/test').Page) =>
       }),
   )
 
+/** The background's photoId as it actually sits in the autosaved document. */
+const persistedBackgroundId = (page: import('@playwright/test').Page) =>
+  page.evaluate(
+    () =>
+      new Promise<string | null>((resolve) => {
+        const req = indexedDB.open('piccollage')
+        req.onsuccess = () => {
+          const db = req.result
+          if (!db.objectStoreNames.contains('doc')) {
+            db.close()
+            return resolve(null)
+          }
+          const t = db.transaction('doc', 'readonly')
+          const get = t.objectStore('doc').getAll()
+          get.onsuccess = () => {
+            const docs = get.result as { background?: { photoId?: string } }[]
+            resolve(docs.map((d) => d?.background?.photoId).find(Boolean) ?? null)
+          }
+          get.onerror = () => resolve(null)
+          t.oncomplete = () => db.close()
+        }
+        req.onerror = () => resolve(null)
+      }),
+  )
+
 /** Do the sources actually resolve, or are they dead handles? */
 const srcsResolve = async (page: import('@playwright/test').Page) => {
   const srcs = await photoSrcs(page)
@@ -232,6 +257,61 @@ test.describe('photos survive a reload', () => {
       (s) => fetch(s).then((r) => r.ok).catch(() => false),
       restored.srcs[0],
     )
+    expect(ok).toBe(true)
+  })
+
+  test('a photo background survives a reload', async ({ page }) => {
+    // The background is not a CanvasElement, so the strip/rehydrate pair never
+    // touched it: its blob: URL was persisted verbatim and dead on reload —
+    // and the picker never stored the bytes at all, so there was nothing left
+    // to rebuild it from either.
+    await openApp(page)
+    await page.locator('#empty-gallery-input').setInputFiles(pngFile())
+    await waitForElements(page, 'photo')
+
+    await page.getByRole('button', { name: 'Background', exact: true }).click()
+    await page.getByRole('button', { name: 'Photo', exact: true }).click()
+    await page.locator('#bg-photo-input').setInputFiles(pngFile('bg.png'))
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window.__editor!.getState() as unknown as { background: { photoSrc?: string } })
+              .background.photoSrc ?? null,
+        ),
+      )
+      .toMatch(/^blob:/)
+
+    // Wait for the *background* to reach IndexedDB, not for the photo count —
+    // that was already non-zero before the background was picked, so polling it
+    // would let the reload beat the autosave debounce.
+    await expect.poll(() => persistedBackgroundId(page), { timeout: 15_000 }).toBeTruthy()
+    await page.reload()
+    await page.waitForFunction(() => !!window.__editor)
+    await waitForElements(page, 'photo')
+
+    const src = await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              (window.__editor!.getState() as unknown as { background: { photoSrc?: string } })
+                .background.photoSrc ?? null,
+          ),
+        { timeout: 15_000 },
+      )
+      .toMatch(/^blob:/)
+    void src
+
+    // And it resolves — a rebuilt URL that 404s is no better than a dead one.
+    const ok = await page.evaluate(async () => {
+      const s = (window.__editor!.getState() as unknown as {
+        background: { photoSrc?: string }
+      }).background.photoSrc
+      if (!s) return false
+      return fetch(s).then((r) => r.ok).catch(() => false)
+    })
     expect(ok).toBe(true)
   })
 })

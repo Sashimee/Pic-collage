@@ -54,7 +54,12 @@ import { OnboardingOverlay } from './components/Onboarding'
 import { restoreCustomFonts } from './lib/fonts'
 import { extractFirstExif, injectExifIntoJpeg } from './lib/exifHelpers'
 import { loadDoc, saveDoc, type StoredDoc } from './lib/persistence'
-import { rehydratePhotos, stripPhotoUrls } from './lib/photoRehydrate'
+import {
+  rehydrateBackground,
+  rehydratePhotos,
+  stripBackgroundUrl,
+  stripPhotoUrls,
+} from './lib/photoRehydrate'
 
 const INSTALL_NUDGE_KEY = 'pic-collage-install-nudged'
 
@@ -83,7 +88,7 @@ function toStoredDoc(): StoredDoc {
   return {
     boardWidth: s.boardWidth,
     boardHeight: s.boardHeight,
-    background: s.background,
+    background: stripBackgroundUrl(s.background),
     mode: s.mode,
     gridId: s.gridId,
     gridGap: s.gridGap,
@@ -132,7 +137,8 @@ export default function App() {
       const stored = await loadDoc()
       if (stored && !cancelled && stored.elements.length) {
         const elements = await rehydratePhotos(stored.elements)
-        if (!cancelled) loadDocument({ ...stored, elements })
+        const background = await rehydrateBackground(stored.background)
+        if (!cancelled) loadDocument({ ...stored, elements, background })
       }
       if (!cancelled) setHydrated(true)
     })()
