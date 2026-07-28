@@ -44,8 +44,10 @@ export function UpdateBanner() {
   }
 
   if (offlineReady) {
+    // emerald-700, not -600: white on -600 is only 3.65:1, under the 4.5:1 AA
+    // minimum for this 14px text. -700 gives 5.48:1.
     return (
-      <div className="flex items-center gap-2 bg-emerald-600 px-4 py-2 text-sm text-white">
+      <div className="flex items-center gap-2 bg-emerald-700 px-4 py-2 text-sm text-white">
         <span>{t('update.offline')}</span>
       </div>
     )

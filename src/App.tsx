@@ -1,5 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
-import { EditorCanvas, type EditorHandle } from './components/EditorCanvas'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
+import type { EditorHandle } from './components/EditorCanvas'
+
+/*
+ * The canvas is deferred, not because it is optional but because it is
+ * expensive: react-konva pulls in Konva, the single largest chunk, and the
+ * first thing a user sees is the layout gallery — plain DOM that needs none of
+ * it. Loading it eagerly put ~2s of script evaluation on the critical path and
+ * was the main contributor to Lighthouse's 1.1s total blocking time.
+ */
+const EditorCanvas = lazy(() =>
+  import('./components/EditorCanvas').then((m) => ({ default: m.EditorCanvas })),
+)
+// Also react-konva, and only on screen while cropping.
+const CropOverlay = lazy(() =>
+  import('./components/CropOverlay').then((m) => ({ default: m.CropOverlay })),
+)
 import { HeaderBar, type ExportKind } from './components/HeaderBar'
 import { SelectionBar } from './components/SelectionBar'
 import { MobileSheet, MobileTabBar, ToolRail, SidePanel } from './components/Docks'
@@ -10,7 +25,6 @@ import { useIsDesktop } from './hooks/useMediaQuery'
 import { useVersionCheck } from './hooks/useVersionCheck'
 import { useMemoryPressure } from './hooks/useMemoryPressure'
 import { useShortcuts } from './hooks/useShortcuts'
-import { CropOverlay } from './components/CropOverlay'
 import { UpdateBanner } from './components/UpdateBanner'
 import { ZoomControls } from './components/ZoomControls'
 import { StatusBar } from './components/StatusBar'
@@ -298,10 +312,12 @@ export default function App() {
                     backgroundSize: '24px 24px',
                   }}
                 />
-                <EditorCanvas ref={editorRef} />
+                <Suspense fallback={null}>
+                  <EditorCanvas ref={editorRef} />
+                </Suspense>
                 <SelectionBar />
                 <EmptyState />
-                <CropOverlay />
+                <Suspense fallback={null}><CropOverlay /></Suspense>
                 <ZoomControls />
               </div>
               <SidePanel panels={panels} width={sidePanelWidth} />
@@ -324,11 +340,13 @@ export default function App() {
                   collapsed snap point) with no scrim, so tell the canvas to fit
                   the board above it. Dragging it up to 86% is left alone — that
                   is a deliberate "show me more panel" gesture. */}
-              <EditorCanvas ref={editorRef} bottomInset={panels.current ? 0.46 : 0} />
+              <Suspense fallback={null}>
+                <EditorCanvas ref={editorRef} bottomInset={panels.current ? 0.46 : 0} />
+              </Suspense>
               <SelectionBar />
               <EmptyState />
               <MobileSheet panels={panels} />
-              <CropOverlay />
+              <Suspense fallback={null}><CropOverlay /></Suspense>
               <ZoomControls />
             </div>
             <MobileTabBar panels={panels} />
