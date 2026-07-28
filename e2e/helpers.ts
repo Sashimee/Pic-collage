@@ -216,7 +216,7 @@ async function boardBox(page: Page) {
  * these gesture specs failed in a different combination on every contended run.
  * Waiting on a real frame is the condition we actually need.
  */
-const afterFrame = (page: Page) =>
+export const afterFrame = (page: Page) =>
   page.evaluate(
     () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))),
   )

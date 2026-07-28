@@ -1,5 +1,49 @@
-import type { GridLayout } from '../types'
+import type { GridCell, GridLayout, PhotoElement } from '../types'
 import { getCustomLayoutById } from './customLayoutStorage'
+
+export interface CellRect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/** A normalised cell scaled onto a board of `W`×`H`, inset by the gutter. */
+export function cellRect(cell: GridCell, W: number, H: number, gap: number): CellRect {
+  return {
+    x: cell.x * W + gap / 2,
+    y: cell.y * H + gap / 2,
+    w: cell.width * W - gap,
+    h: cell.height * H - gap,
+  }
+}
+
+/**
+ * Which photo goes in which cell: a photo pinned with `cellIndex` claims that
+ * cell, the rest fill the gaps in order, extras are dropped.
+ *
+ * Lives here rather than in GridView so the page thumbnails can lay a grid page
+ * out the same way the canvas does without importing react-konva.
+ */
+export function assignSlots(
+  count: number,
+  photos: PhotoElement[],
+): (PhotoElement | undefined)[] {
+  const slots: (PhotoElement | undefined)[] = new Array(count).fill(undefined)
+  const rest: PhotoElement[] = []
+  for (const p of photos) {
+    const i = p.cellIndex
+    if (i != null && i >= 0 && i < count && !slots[i]) slots[i] = p
+    else rest.push(p)
+  }
+  let next = 0
+  for (const p of rest) {
+    while (next < count && slots[next]) next++
+    if (next >= count) break
+    slots[next] = p
+  }
+  return slots
+}
 
 // Normalised (0..1) collage layouts. A small gutter is applied at render time,
 // so cells here tile the full unit square edge-to-edge. Rendered as visual
