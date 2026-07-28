@@ -67,6 +67,49 @@ const uid = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2)
 
+/** Retained versions per project. Snapshots inline their photos, so this is a
+ *  storage bound as much as a UI one. */
+export const MAX_SNAPSHOTS = 20
+
+/**
+ * Strictly increasing timestamps. Two saves inside the same millisecond would
+ * otherwise tie, and both the "is this newer than the last snapshot" dedupe and
+ * the newest-first ordering would then depend on IndexedDB's arbitrary key
+ * order. Stays a plain epoch number, so existing records and the UI's date
+ * formatting are unaffected.
+ */
+let lastTimestamp = 0
+function nextTimestamp() {
+  lastTimestamp = Math.max(Date.now(), lastTimestamp + 1)
+  return lastTimestamp
+}
+
+function allFor(projectId: string): Promise<SnapshotRecord[]> {
+  return openDB().then(
+    (db) =>
+      new Promise<SnapshotRecord[]>((resolve, reject) => {
+        const t = db.transaction(STORE_NAME, 'readonly')
+        const req = t.objectStore(STORE_NAME).index('projectId').getAll(projectId)
+        req.onsuccess = () => resolve(req.result as SnapshotRecord[])
+        req.onerror = () => reject(req.error)
+        t.oncomplete = () => db.close()
+      }),
+  )
+}
+
+/** Cheap structural comparison — enough to tell "nothing changed" from a real
+ *  edit without deep-diffing every element. */
+function sameDocument(
+  record: SnapshotRecord,
+  elements: CanvasElement[],
+  background: Background,
+): boolean {
+  return (
+    JSON.stringify(record.elements) === JSON.stringify(elements) &&
+    JSON.stringify(record.background) === JSON.stringify(background)
+  )
+}
+
 export const useVersionStore = create<VersionState>((set, get) => ({
   autoSaveTimer: null,
 
@@ -114,15 +157,38 @@ export const useVersionStore = create<VersionState>((set, get) => ({
 
   async saveSnapshot(projectId, elements, background) {
     if (typeof indexedDB === 'undefined') return
-    const id = uid()
-    const record: SnapshotRecord = {
-      id,
-      projectId,
-      timestamp: Date.now(),
-      elements,
-      background,
+    try {
+      const existing = await allFor(projectId)
+
+      // The autosave fires on a 1.5s debounce during ordinary editing. Without
+      // this guard every pause would mint a near-identical history entry and
+      // bury the ones that mean something.
+      const newest = existing.reduce<SnapshotRecord | null>(
+        (best, r) => (!best || r.timestamp > best.timestamp ? r : best),
+        null,
+      )
+      if (newest && sameDocument(newest, elements, background)) return
+
+      const record: SnapshotRecord = {
+        id: uid(),
+        projectId,
+        timestamp: nextTimestamp(),
+        elements,
+        background,
+      }
+      await tx(STORE_NAME, 'readwrite', (s) => s.put(record))
+
+      // Photos are inlined in `elements`, so unbounded history would grow
+      // IndexedDB without limit. Keep the most recent MAX_SNAPSHOTS.
+      const stale = [...existing, record]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(MAX_SNAPSHOTS)
+      for (const r of stale) {
+        await tx(STORE_NAME, 'readwrite', (s) => s.delete(r.id))
+      }
+    } catch {
+      // History is a convenience; never let it break a save.
     }
-    await tx(STORE_NAME, 'readwrite', (s) => s.put(record))
   },
 
   async restoreSnapshot(id) {

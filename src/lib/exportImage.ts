@@ -59,56 +59,54 @@ export function exportBoard(
   }
   board.setAttrs({ x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0 })
 
-  const mimeType =
-    format === 'png'
-      ? 'image/png'
-      : format === 'webp'
-        ? 'image/webp'
-        : 'image/jpeg'
+  const mimeType = mimeFor(format)
 
   // If preset has explicit dimensions, export at that size (cropping/centering)
   const exportW = dims.width > 0 ? dims.width : boardWidth
   const exportH = dims.height > 0 ? dims.height : boardHeight
 
-  const url = board.toDataURL({
-    x: 0,
-    y: 0,
-    width: exportW,
-    height: exportH,
-    pixelRatio,
-    mimeType,
-    quality,
-  })
+  const rect = { x: 0, y: 0, width: exportW, height: exportH, pixelRatio }
+  const needsPost = options.watermark?.enabled || options.print?.enabled
+
+  // Watermark and print marks are painted on top of the rendered board. Take a
+  // *canvas* for that, not a data URL: a data URL has to go back through an
+  // `Image` to be drawable, and image decoding is asynchronous even for a
+  // same-origin data URL — `drawImage` on a not-yet-complete image silently
+  // draws nothing, which is how every watermarked export came out blank with
+  // only the watermark on it. `toCanvas()` hands back drawable pixels directly.
+  const url = needsPost
+    ? applyPostProcess(
+        board.toCanvas(rect),
+        options.watermark,
+        options.print,
+        format,
+        quality,
+      )
+    : board.toDataURL({ ...rect, mimeType, quality })
 
   board.setAttrs(prev)
+  return url
+}
 
-  // Post-process watermark + print mode
-  const processed = applyPostProcess(url, exportW * pixelRatio, exportH * pixelRatio, options.watermark, options.print, format, quality)
-  return processed
+function mimeFor(format: ExportFormat) {
+  return format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg'
 }
 
 function applyPostProcess(
-  dataUrl: string,
-  width: number,
-  height: number,
+  canvas: HTMLCanvasElement,
   watermark?: WatermarkSettings,
   print?: PrintSettings,
   format: ExportFormat = 'png',
   quality = 0.92,
 ): string {
-  const needsPost = watermark?.enabled || print?.enabled
-  if (!needsPost) return dataUrl
-
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.round(width)
-  canvas.height = Math.round(height)
   const ctx = canvas.getContext('2d')
-  if (!ctx) return dataUrl
+  if (!ctx) return canvas.toDataURL(mimeFor(format), quality)
 
-  const img = new Image()
-  img.src = dataUrl
-  // Synchronous draw — the image is already a data URL from the same origin
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+  // Konva leaves a scale(pixelRatio) transform on the context it rendered
+  // through (Canvas.setWidth/setHeight), but the overlays below are written in
+  // device pixels against canvas.width/height. Drop back to identity so they
+  // land where they should instead of pixelRatio× too far out.
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
 
   if (print?.enabled) {
     applyPrintEffects(ctx, canvas.width, canvas.height, print)
@@ -118,14 +116,7 @@ function applyPostProcess(
     drawWatermark(ctx, canvas.width, canvas.height, watermark)
   }
 
-  const mimeType =
-    format === 'png'
-      ? 'image/png'
-      : format === 'webp'
-        ? 'image/webp'
-        : 'image/jpeg'
-
-  return canvas.toDataURL(mimeType, quality)
+  return canvas.toDataURL(mimeFor(format), quality)
 }
 
 function applyPrintEffects(
@@ -289,25 +280,36 @@ export function canShareImage(): boolean {
   )
 }
 
-// Share via the Web Share API; returns false if unsupported or cancelled so the
-// caller can fall back to a plain download.
+/**
+ * `'cancelled'` has to be its own outcome. Folding it into a plain `false`
+ * makes "the user tapped cancel" look identical to "this browser cannot
+ * share" — and the caller's fallback then downloads the file anyway, which is
+ * the opposite of what cancelling means.
+ */
+export type ShareOutcome = 'shared' | 'cancelled' | 'unsupported'
+
+// Share via the Web Share API. See ShareOutcome: only 'unsupported' should send
+// the caller to a plain download.
 export async function shareDataURL(
   dataURL: string,
   format: ExportFormat,
   title = 'My Collage',
-): Promise<boolean> {
-  if (!canShareImage()) return false
+): Promise<ShareOutcome> {
+  if (!canShareImage()) return 'unsupported'
   const blob = dataURLToBlob(dataURL)
   const file = new File(
     [blob],
     `collage.${format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpg'}`,
     { type: blob.type },
   )
-  if (!navigator.canShare({ files: [file] })) return false
+  if (!navigator.canShare({ files: [file] })) return 'unsupported'
   try {
     await navigator.share({ files: [file], title })
-    return true
-  } catch {
-    return false
+    return 'shared'
+  } catch (err) {
+    // Every browser reports a dismissed share sheet as AbortError.
+    return err instanceof DOMException && err.name === 'AbortError'
+      ? 'cancelled'
+      : 'unsupported'
   }
 }

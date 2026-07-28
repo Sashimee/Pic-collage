@@ -31,9 +31,15 @@ export default function VersionHistoryPanel() {
     setLoading(false)
   }
 
+  // Reload when the project changes *and* when it is saved — a save is what
+  // writes a new version, and the panel is usually already open when it lands.
+  const savedAt = useProjects(
+    (s) => s.projects.find((p) => p.id === s.activeProjectId)?.updatedAt,
+  )
+
   useEffect(() => {
     loadSnapshots()
-  }, [activeProjectId])
+  }, [activeProjectId, savedAt])
 
   const handleRestore = async (id: string) => {
     const data = await useVersionStore.getState().restoreSnapshot(id)

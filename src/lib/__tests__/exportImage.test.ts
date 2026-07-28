@@ -1,5 +1,108 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { downloadDataURL, shareDataURL, canShareImage } from '../exportImage'
+import type Konva from 'konva'
+import { downloadDataURL, shareDataURL, canShareImage, exportBoard } from '../exportImage'
+
+/**
+ * A stand-in Konva board. `toCanvas` hands back a fake canvas whose 2D context
+ * records what was drawn — jsdom has no real canvas, so the invariant we can
+ * check here is *which API the export goes through*, not the pixels. The pixels
+ * are covered end-to-end in e2e/export-watermark.spec.ts.
+ */
+function mockBoard() {
+  const ctx = {
+    setTransform: vi.fn(),
+    drawImage: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    fillRect: vi.fn(),
+    strokeRect: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    fillText: vi.fn(),
+    measureText: vi.fn().mockReturnValue({ width: 40 }),
+    createLinearGradient: vi.fn().mockReturnValue({ addColorStop: vi.fn() }),
+  }
+  const canvas = {
+    width: 200,
+    height: 250,
+    getContext: vi.fn().mockReturnValue(ctx),
+    toDataURL: vi.fn().mockReturnValue('data:image/png;base64,POSTPROCESSED'),
+  }
+  const board = {
+    x: vi.fn().mockReturnValue(3),
+    y: vi.fn().mockReturnValue(4),
+    scaleX: vi.fn().mockReturnValue(2),
+    scaleY: vi.fn().mockReturnValue(2),
+    rotation: vi.fn().mockReturnValue(0),
+    setAttrs: vi.fn(),
+    toCanvas: vi.fn().mockReturnValue(canvas),
+    toDataURL: vi.fn().mockReturnValue('data:image/png;base64,FASTPATH'),
+  }
+  return { board: board as unknown as Konva.Group, raw: board, canvas, ctx }
+}
+
+const WATERMARK = {
+  enabled: true,
+  text: 'Pic Collage',
+  position: 'bottom-right' as const,
+  opacity: 0.5,
+  fontSize: 24,
+  color: '#ffffff',
+}
+
+describe('exportBoard with overlays', () => {
+  it('renders through a canvas, never through an undecoded Image', () => {
+    // The bug this guards: the watermark pass used to do `img.src = dataUrl;
+    // ctx.drawImage(img, …)`. Image decoding is asynchronous even for a data
+    // URL, so drawImage drew nothing and every watermarked export came out
+    // blank with only the watermark on it.
+    const { board, raw, canvas, ctx } = mockBoard()
+
+    const out = exportBoard(board, 100, 125, 'png', { pixelRatio: 2, watermark: WATERMARK })
+
+    expect(raw.toCanvas).toHaveBeenCalledOnce()
+    expect(raw.toDataURL).not.toHaveBeenCalled()
+    expect(ctx.drawImage).not.toHaveBeenCalled()
+    expect(canvas.toDataURL).toHaveBeenCalledWith('image/png', 0.92)
+    expect(out).toBe('data:image/png;base64,POSTPROCESSED')
+  })
+
+  it('drops Konva\'s pixelRatio transform before drawing the overlay', () => {
+    // toCanvas() leaves scale(pixelRatio) on the context, but the overlay maths
+    // is in device pixels — without the reset the watermark lands off-canvas.
+    const { board, ctx } = mockBoard()
+    exportBoard(board, 100, 125, 'png', { pixelRatio: 2, watermark: WATERMARK })
+    expect(ctx.setTransform).toHaveBeenCalledWith(1, 0, 0, 1, 0, 0)
+    expect(ctx.fillText).toHaveBeenCalled()
+  })
+
+  it('takes the plain fast path when no overlay is enabled', () => {
+    const { board, raw } = mockBoard()
+    const out = exportBoard(board, 100, 125, 'jpg', { pixelRatio: 2 })
+
+    expect(raw.toDataURL).toHaveBeenCalledWith(
+      expect.objectContaining({ width: 100, height: 125, pixelRatio: 2, mimeType: 'image/jpeg' }),
+    )
+    expect(raw.toCanvas).not.toHaveBeenCalled()
+    expect(out).toBe('data:image/png;base64,FASTPATH')
+  })
+
+  it('restores the board transform on both paths', () => {
+    for (const opts of [{ watermark: WATERMARK }, {}]) {
+      const { board, raw } = mockBoard()
+      exportBoard(board, 100, 125, 'png', opts)
+      // Reset to identity for the snapshot, then put the view back as it was.
+      expect(raw.setAttrs).toHaveBeenNthCalledWith(1, {
+        x: 0, y: 0, scaleX: 1, scaleY: 1, rotation: 0,
+      })
+      expect(raw.setAttrs).toHaveBeenNthCalledWith(2, {
+        x: 3, y: 4, scaleX: 2, scaleY: 2, rotation: 0,
+      })
+    }
+  })
+})
 
 describe('downloadDataURL', () => {
   let clickSpy: ReturnType<typeof vi.spyOn>
@@ -59,30 +162,45 @@ describe('canShareImage', () => {
 })
 
 describe('shareDataURL', () => {
-  it('returns false when sharing is unsupported', async () => {
+  it('reports unsupported when sharing is missing entirely', async () => {
     vi.stubGlobal('navigator', { canShare: undefined, share: undefined })
     const result = await shareDataURL('data:image/png;base64,abc', 'png')
-    expect(result).toBe(false)
+    expect(result).toBe('unsupported')
     vi.unstubAllGlobals()
   })
 
-  it('returns false when canShare returns false for files', async () => {
+  it('reports unsupported when canShare rejects files', async () => {
     vi.stubGlobal('navigator', {
       canShare: () => false,
       share: async () => {},
     })
     const result = await shareDataURL('data:image/png;base64,abc', 'png')
-    expect(result).toBe(false)
+    expect(result).toBe('unsupported')
     vi.unstubAllGlobals()
   })
 
-  it('returns true on successful share', async () => {
+  it('reports shared on success', async () => {
     vi.stubGlobal('navigator', {
       canShare: () => true,
       share: async () => {},
     })
     const result = await shareDataURL('data:image/png;base64,iVBORw0KGgo=', 'png')
-    expect(result).toBe(true)
+    expect(result).toBe('shared')
+    vi.unstubAllGlobals()
+  })
+
+  it('reports cancelled — not failure — when the user dismisses the sheet', async () => {
+    // The distinction is the whole point: a cancel used to look like a failure,
+    // so the caller "helpfully" downloaded the file the user had just declined
+    // to share, which on iOS pops an "open in Preview" sheet.
+    vi.stubGlobal('navigator', {
+      canShare: () => true,
+      share: async () => {
+        throw new DOMException('Share canceled', 'AbortError')
+      },
+    })
+    const result = await shareDataURL('data:image/png;base64,iVBORw0KGgo=', 'png')
+    expect(result).toBe('cancelled')
     vi.unstubAllGlobals()
   })
 
@@ -102,15 +220,15 @@ describe('shareDataURL', () => {
     vi.unstubAllGlobals()
   })
 
-  it('returns false when share throws', async () => {
+  it('treats a non-Abort failure as unsupported, so the download fallback runs', async () => {
     vi.stubGlobal('navigator', {
       canShare: () => true,
       share: async () => {
-        throw new Error('cancelled')
+        throw new Error('transport exploded')
       },
     })
     const result = await shareDataURL('data:image/png;base64,iVBORw0KGgo=', 'png')
-    expect(result).toBe(false)
+    expect(result).toBe('unsupported')
     vi.unstubAllGlobals()
   })
 })

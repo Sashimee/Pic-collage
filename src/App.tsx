@@ -16,7 +16,7 @@ import { ZoomControls } from './components/ZoomControls'
 import { StatusBar } from './components/StatusBar'
 import { useEditor } from './store/editorStore'
 import { useT } from './i18n/useLang'
-import { useProjects } from './store/projectsStore'
+import { useProjects, defaultProjectName } from './store/projectsStore'
 import { useWorkspace } from './store/workspaceStore'
 import type { CanvasElement } from './types'
 import {
@@ -200,6 +200,22 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', cleanup)
   }, [])
 
+  /**
+   * Persist the current work before an action that hands the user off to
+   * another app. The existing debounced autosave only runs once a project
+   * exists, so with no active project there is nothing to save into — create
+   * one, silently, rather than leaving the work unprotected.
+   */
+  const ensureProjectSaved = async () => {
+    const projects = useProjects.getState()
+    try {
+      if (projects.activeProjectId) await projects.saveActiveProject()
+      else await projects.createProject(defaultProjectName())
+    } catch {
+      // Saving is a courtesy here; never let it block the share.
+    }
+  }
+
   const handleExport = async (kind: ExportKind) => {
     // Drop the selection so transform handles / grid highlight aren't captured,
     // then wait a frame for the canvas to redraw before snapshotting.
@@ -229,10 +245,12 @@ export default function App() {
     // Share as JPEG: it is a fraction of the size and Android share targets
     // accept it far more reliably — several reject a large PNG outright.
     const format: ExportFormat = kind === 'jpg' || kind === 'share' ? 'jpg' : 'png'
+    // Sharing takes the user out of the app, so get their work on disk first.
+    if (kind === 'share') await ensureProjectSaved()
+
     let url = editorRef.current?.exportImage(format)
     if (url) {
       track(kind === 'share' ? 'export-share' : `export-${format}`)
-      fireConfetti()
       // Preserve EXIF for JPEG exports
       if (format === 'jpg') {
         const exif = await extractFirstExif(useEditor.getState().elements)
@@ -241,8 +259,15 @@ export default function App() {
         }
       }
       if (kind === 'share') {
-        const shared = await shareDataURL(url, format, t('share.title'))
-        if (!shared) {
+        const outcome = await shareDataURL(url, format, t('share.title'))
+        // Cancelling is a decision, not a failure: no file, no confetti, no
+        // toast. Downloading anyway is what put an unwanted "open in Preview"
+        // sheet in front of testers who had changed their mind.
+        if (outcome === 'cancelled') {
+          track('share-cancelled')
+          return
+        }
+        if (outcome === 'unsupported') {
           downloadDataURL(url, format)
         } else {
           // `navigator.share()` resolving only means the target *accepted* the
@@ -258,6 +283,8 @@ export default function App() {
       } else {
         downloadDataURL(url, format)
       }
+      // Celebrate the outcome, not the button press.
+      fireConfetti()
       maybeNudgeInstall()
     }
   }
