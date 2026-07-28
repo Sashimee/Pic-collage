@@ -77,6 +77,7 @@ Pic-Collage-Maker/
     ├── i18n/
     │   ├── translations.ts     # Lang type, LANGS (flags), 6-language string maps
     │   └── useLang.ts          # lang store (detect+persist) + useT() translator hook
+    ├── assets/fonts/           # self-hosted Poppins (latin subset) — see gotchas
     ├── hooks/
     │   ├── useImage.ts         # URL → decoded HTMLImageElement
     │   ├── useMediaQuery.ts    # useIsDesktop() and friends
@@ -235,6 +236,15 @@ untranslated.
 - Emoji flags render as flags on iOS/Android; some desktop/Windows fonts show
   letters — cosmetic only.
 - React **StrictMode** is on (dev double-invoke) — keep effects idempotent.
+- **Nothing on the critical path may be a third-party request.** Poppins is
+  self-hosted (`src/assets/fonts/`, latin subset, ~8 KiB per weight). It used to
+  come from a Google Fonts `<link>` in `index.html`, which put a third origin —
+  DNS, TLS, its CSS, then the font files — ahead of first paint, and quietly made
+  the "no outbound traffic" claim above untrue.
+- **`index.html` paints an app shell before React runs.** Without it, first and
+  largest contentful paint were both gated on parsing and evaluating the bundle.
+  Keep its styles inline: moving them to a stylesheet puts the shell back behind
+  the network. Keep its colours in step with `--bg`/`--muted` in `index.css`.
 - **Never let a `blob:` URL reach persistence.** Photo elements hold their pixels
   as object URLs, which are handles into the *current document* and die on
   reload; the bytes live in IndexedDB under `photoId`. Anything that saves a

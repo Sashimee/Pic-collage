@@ -13,12 +13,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
     <title>Pic Collage Maker — Photo Collage Editor</title>
     <meta
       name="description"
@@ -56,7 +50,51 @@
     <meta name="twitter:image" content="https://sashimee.github.io/Pic-collage/og-image.png" />
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      App shell. Nothing on the first screen exists until React has parsed,
+      evaluated and rendered, so first contentful paint and largest contentful
+      paint were both gated on that — 3.5s and 4.0s on a throttled CI runner.
+      Painting the brand and title straight from the HTML lets both fire on the
+      document itself. React clears #root on mount (createRoot, not hydrateRoot,
+      so there is no hydration to mismatch).
+
+      Deliberately styled inline: a stylesheet request would put the shell back
+      behind the network. Colours mirror --bg / --text / --muted in index.css,
+      including the dark default, so there is no flash of the wrong theme.
+    -->
+    <div id="root">
+      <div class="boot" aria-hidden="true">
+        <svg viewBox="0 0 512 512" width="72" height="72">
+          <defs>
+            <linearGradient id="boot-g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#6366f1" />
+              <stop offset=".55" stop-color="#a855f7" />
+              <stop offset="1" stop-color="#ec4899" />
+            </linearGradient>
+          </defs>
+          <rect width="512" height="512" rx="116" fill="url(#boot-g)" />
+          <rect x="117" y="141" width="210" height="210" rx="26" fill="#fff" opacity=".5"
+                transform="rotate(-12 222 246)" />
+          <rect x="167" y="153" width="238" height="238" rx="30" fill="#fff"
+                transform="rotate(9 286 272)" />
+        </svg>
+        <p class="boot-title">Pic Collage Maker</p>
+      </div>
+    </div>
+    <style>
+      #root:has(.boot) { background: #080b18; }
+      .boot {
+        position: fixed; inset: 0;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 1rem;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      .boot-title { margin: 0; font-size: 1.05rem; font-weight: 600; color: #93a0c0; }
+      @media (prefers-color-scheme: light) {
+        #root:has(.boot) { background: #eef0fb; }
+        .boot-title { color: #616984; }
+      }
+    </style>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
