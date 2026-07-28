@@ -14,15 +14,23 @@ async function stubShare(
   behaviour: 'resolve' | 'abort',
 ) {
   await page.addInitScript((mode) => {
-    const w = window as unknown as { __shareCalls: number; __downloads: number }
+    const w = window as unknown as {
+      __shareCalls: number
+      __downloads: number
+      __sharedNames: string[]
+    }
     w.__shareCalls = 0
     w.__downloads = 0
+    // The stub used to ignore `data.files` entirely, which is why nothing
+    // noticed that a multi-page project shared exactly one image.
+    w.__sharedNames = []
 
     Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true })
     Object.defineProperty(navigator, 'share', {
       configurable: true,
-      value: () => {
+      value: (data?: { files?: File[] }) => {
         w.__shareCalls++
+        w.__sharedNames = (data?.files ?? []).map((f) => f.name)
         return mode === 'abort'
           ? Promise.reject(new DOMException('Share canceled', 'AbortError'))
           : Promise.resolve()
@@ -45,8 +53,12 @@ async function stubShare(
 
 const counters = (page: import('@playwright/test').Page) =>
   page.evaluate(() => {
-    const w = window as unknown as { __shareCalls: number; __downloads: number }
-    return { shares: w.__shareCalls, downloads: w.__downloads }
+    const w = window as unknown as {
+      __shareCalls: number
+      __downloads: number
+      __sharedNames: string[]
+    }
+    return { shares: w.__shareCalls, downloads: w.__downloads, names: w.__sharedNames }
   })
 
 /** The action button inside a toast, scoped away from the header's own Save. */
@@ -111,5 +123,83 @@ test.describe('sharing', () => {
     await expect
       .poll(() => page.evaluate(() => indexedDB.databases().then((d) => d.map((x) => x.name))))
       .toContain('pic-collage-db')
+  })
+
+  test('a multi-page project shares every page, not just the active one', async ({ page }) => {
+    // The reported bug: with several pages, sharing to Facebook sent only the
+    // page on screen. `ensureProjectSaved()` already refreshed the page list
+    // right before the share; nothing read it.
+    await stubShare(page, 'resolve')
+    await openApp(page)
+    await page.locator('#empty-gallery-input').setInputFiles(pngFile())
+    await waitForElements(page, 'photo')
+
+    await page.getByRole('button', { name: 'Add page' }).click()
+    await expect(page.locator('[data-page-tile]')).toHaveCount(2)
+    await page.getByRole('button', { name: 'Photos', exact: true }).click()
+    await page.locator('#panel-gallery-input').setInputFiles(pngFile('second.png'))
+    await waitForElements(page, 'photo')
+    await page.getByRole('button', { name: 'Photos', exact: true }).click()
+
+    await shareFromMenu(page)
+
+    await expect.poll(async () => (await counters(page)).shares, { timeout: 60_000 }).toBe(1)
+    const { names, downloads } = await counters(page)
+    expect(names).toEqual(['collage-1.jpg', 'collage-2.jpg'])
+    expect(downloads).toBe(0)
+  })
+
+  test('"share this page" still sends exactly one', async ({ page }) => {
+    await stubShare(page, 'resolve')
+    await openApp(page)
+    await page.locator('#empty-gallery-input').setInputFiles(pngFile())
+    await waitForElements(page, 'photo')
+    await page.getByRole('button', { name: 'Add page' }).click()
+    await expect(page.locator('[data-page-tile]')).toHaveCount(2)
+
+    await page.getByRole('button', { name: 'Export' }).click()
+    await page.getByRole('menuitem', { name: 'Share this page only' }).click()
+
+    await expect.poll(async () => (await counters(page)).shares, { timeout: 30_000 }).toBe(1)
+    // One page keeps the name it has always had.
+    expect((await counters(page)).names).toEqual(['collage.jpg'])
+  })
+
+  test('the single-page share is unchanged', async ({ page }) => {
+    await stubShare(page, 'resolve')
+    await openApp(page)
+    await page.locator('#empty-gallery-input').setInputFiles(pngFile())
+    await waitForElements(page, 'photo')
+
+    await shareFromMenu(page)
+
+    await expect.poll(async () => (await counters(page)).shares, { timeout: 30_000 }).toBe(1)
+    expect((await counters(page)).names).toEqual(['collage.jpg'])
+  })
+
+  test('the board keeps its photos after a multi-page share', async ({ page }) => {
+    // The off-screen renderer hydrates each page and releases what it minted.
+    // Releasing the editor's own URLs instead would blank the board.
+    await stubShare(page, 'resolve')
+    await openApp(page)
+    await page.locator('#empty-gallery-input').setInputFiles(pngFile())
+    await waitForElements(page, 'photo')
+    await page.getByRole('button', { name: 'Add page' }).click()
+    await expect(page.locator('[data-page-tile]')).toHaveCount(2)
+
+    await shareFromMenu(page)
+    await expect.poll(async () => (await counters(page)).shares, { timeout: 60_000 }).toBe(1)
+
+    const ok = await page.evaluate(async () => {
+      const srcs = window
+        .__editor!.getState()
+        .elements.filter((e) => e.type === 'photo')
+        .map((e) => (e as unknown as { src: string }).src)
+      const results = await Promise.all(
+        srcs.map((s) => fetch(s).then((r) => r.ok).catch(() => false)),
+      )
+      return results.every(Boolean)
+    })
+    expect(ok).toBe(true)
   })
 })

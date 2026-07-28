@@ -60,6 +60,8 @@ export function ToastContainer() {
 /** Convenience hook for firing toasts from components. */
 export function useToasts() {
   const addToast = useToast((s) => s.add)
+  const updateToast = useToast((s) => s.update)
+  const removeToast = useToast((s) => s.remove)
   return {
     success: (msg: string) => addToast(msg, 'success', 3000),
     error: (msg: string) => addToast(msg, 'error', 4000),
@@ -68,5 +70,16 @@ export function useToasts() {
     /** A toast that offers a way out — e.g. "save the file the share ate". */
     action: (msg: string, action: ToastAction, duration = 8000) =>
       addToast(msg, 'info', duration, action),
+    /**
+     * A toast that stays until the work finishes. Rendering several pages is
+     * seconds of silence otherwise, which reads as the app having hung.
+     */
+    progress: (msg: string) => {
+      const id = addToast(msg, 'info', 0)
+      return {
+        update: (next: string) => updateToast(id, next),
+        done: () => removeToast(id),
+      }
+    },
   }
 }

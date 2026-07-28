@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import type { EditorHandle } from './components/EditorCanvas'
+import type { CanvasElement } from './types'
 
 /*
  * The canvas is deferred, not because it is optional but because it is
@@ -38,7 +39,8 @@ import { useProjects, defaultProjectName } from './store/projectsStore'
 import { useWorkspace } from './store/workspaceStore'
 import {
   downloadDataURL,
-  shareDataURL,
+  shareFileName,
+  shareImages,
   type ExportFormat,
 } from './lib/exportImage'
 import { exportSVG, downloadSVG } from './lib/exportSVG'
@@ -260,22 +262,23 @@ export default function App() {
     }
     // Share as JPEG: it is a fraction of the size and Android share targets
     // accept it far more reliably — several reject a large PNG outright.
-    const format: ExportFormat = kind === 'jpg' || kind === 'share' ? 'jpg' : 'png'
+    const format: ExportFormat =
+      kind === 'jpg' || kind === 'share' || kind === 'share-page' ? 'jpg' : 'png'
+    const sharing = kind === 'share' || kind === 'share-page'
+    const wholeProject = kind === 'share' || kind === 'png' || kind === 'jpg'
     // Sharing takes the user out of the app, so get their work on disk first.
-    if (kind === 'share') await ensureProjectSaved()
+    // It also folds the live page into the page list, which is what makes the
+    // other pages readable below.
+    if (sharing) await ensureProjectSaved()
 
-    let url = await editorRef.current?.exportImage(format)
-    if (url) {
-      track(kind === 'share' ? 'export-share' : `export-${format}`)
-      // Preserve EXIF for JPEG exports
-      if (format === 'jpg') {
-        const exif = await extractFirstExif(useEditor.getState().elements)
-        if (exif) {
-          url = injectExifIntoJpeg(url, exif)
-        }
-      }
-      if (kind === 'share') {
-        const outcome = await shareDataURL(url, format, t('share.title'))
+    const urls = wholeProject
+      ? await renderAllPages(format)
+      : await oneUrl(await editorRef.current?.exportImage(format), format)
+
+    if (urls.length) {
+      track(sharing ? 'export-share' : `export-${format}`)
+      if (sharing) {
+        const outcome = await shareImages(urls, format, t('share.title'))
         // Cancelling is a decision, not a failure: no file, no confetti, no
         // toast. Downloading anyway is what put an unwanted "open in Preview"
         // sheet in front of testers who had changed their mind.
@@ -284,25 +287,90 @@ export default function App() {
           return
         }
         if (outcome === 'unsupported') {
-          downloadDataURL(url, format)
+          // Including "this target will not take five files at once" — save
+          // them all rather than quietly sharing one.
+          saveAll(urls, format)
         } else {
           // `navigator.share()` resolving only means the target *accepted* the
           // intent. Facebook accepts it and then opens its composer without the
           // file, so a resolved share is no guarantee the picture went
           // anywhere. Leave the user a one-tap way to keep it.
-          const saved = url
+          const saved = urls
           toast.action(t('share.maybeFailed'), {
             label: t('share.saveInstead'),
-            onClick: () => downloadDataURL(saved, format),
+            onClick: () => saveAll(saved, format),
           })
         }
       } else {
-        downloadDataURL(url, format)
+        saveAll(urls, format)
       }
       // Celebrate the outcome, not the button press.
       fireConfetti()
       maybeNudgeInstall()
     }
+  }
+
+  /** EXIF is only meaningful on JPEG, and only from that page's own photos. */
+  const withExif = async (url: string, format: ExportFormat, elements: CanvasElement[]) => {
+    if (format !== 'jpg') return url
+    const exif = await extractFirstExif(elements)
+    return exif ? injectExifIntoJpeg(url, exif) : url
+  }
+
+  const oneUrl = async (url: string | null | undefined, format: ExportFormat) =>
+    url ? [await withExif(url, format, useEditor.getState().elements)] : []
+
+  /**
+   * Every page of the project as a bitmap.
+   *
+   * The single live Konva stage can only ever draw the page you are looking at,
+   * which is why sharing a multi-page project used to send one image. The
+   * off-screen renderer draws the rest without disturbing the editor.
+   */
+  const renderAllPages = async (format: ExportFormat): Promise<string[]> => {
+    const pages = pagesForExport()
+    // One page is the overwhelmingly common case, and the live stage is already
+    // rendered — no reason to spin up a second one for it.
+    if (pages.length <= 1) return oneUrl(await editorRef.current?.exportImage(format), format)
+
+    const progress = toast.progress(`${t('export.rendering')} 1/${pages.length}`)
+    try {
+      const { renderPages } = await import('./lib/renderPages')
+      const editor = useEditor.getState()
+      const urls = await renderPages(pages, {
+        // The same resolution the single-page export produces.
+        pixelRatio: 2,
+        format: format === 'png' ? 'png' : 'jpeg',
+        watermark: editor.watermark,
+        print: editor.print,
+        onProgress: (done, total) =>
+          progress.update(`${t('export.rendering')} ${Math.min(done + 1, total)}/${total}`),
+      })
+      return Promise.all(urls.map((url, i) => withExif(url, format, pages[i].elements)))
+    } finally {
+      progress.done()
+    }
+  }
+
+  /** Save one file per page, numbered when there is more than one. */
+  const saveAll = (urls: string[], format: ExportFormat) => {
+    urls.forEach((url, i) => {
+      const name = shareFileName(format, i, urls.length)
+      // Browsers throttle (and prompt about) a burst of downloads; give each
+      // one its own tick so they are not treated as one runaway page.
+      if (i === 0) downloadDataURL(url, format, name)
+      else setTimeout(() => downloadDataURL(url, format, name), i * 350)
+    })
+  }
+
+  /**
+   * The pages to export. `ensureProjectSaved()` has folded the live document
+   * into the list by this point; with no list at all — private mode, where the
+   * project cannot be written — the board on screen is still one good page.
+   */
+  const pagesForExport = (): LoadedDocument[] => {
+    const stored = useProjects.getState().pages
+    return stored.length ? stored : [liveDocument()]
   }
 
   // Let the confetti and the download land before asking for anything.

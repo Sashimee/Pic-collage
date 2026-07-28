@@ -7,7 +7,7 @@ import {
   buildPhotoBook,
   type BookOptions,
 } from '../lib/photoBook'
-import type { LoadedDocument } from '../store/editorStore'
+import { useEditor, type LoadedDocument } from '../store/editorStore'
 
 /**
  * Options for the photo book, and the progress of building it.
@@ -47,9 +47,14 @@ export function PhotoBookSheet({
     signal.current = { cancelled: false }
     setProgress({ done: 0, total: pages.length })
     try {
+      const editor = useEditor.getState()
       const pdf = await buildPhotoBook(pages, options, {
         onProgress: (done, total) => setProgress({ done, total }),
         signal: signal.current,
+        // A book that silently dropped the user's watermark would only be
+        // noticed once it was printed.
+        watermark: editor.watermark,
+        print: editor.print,
       })
       if (pdf) onDone(pdf)
     } finally {

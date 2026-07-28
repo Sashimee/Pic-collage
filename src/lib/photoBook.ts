@@ -118,6 +118,9 @@ export async function buildPhotoBook(
   hooks: {
     onProgress?: (done: number, total: number) => void
     signal?: { cancelled: boolean }
+    /** The user's watermark / print marks, so a printed book carries them. */
+    watermark?: import('../types').WatermarkSettings
+    print?: import('../types').PrintSettings
   } = {},
 ): Promise<Uint8Array | null> {
   if (!pages.length) return null
@@ -131,6 +134,8 @@ export async function buildPhotoBook(
   const bitmaps = await renderPages(pages, {
     ...pageSizePx(size),
     format: 'jpeg',
+    watermark: hooks.watermark,
+    print: hooks.print,
     onProgress: hooks.onProgress,
     signal: hooks.signal,
   })

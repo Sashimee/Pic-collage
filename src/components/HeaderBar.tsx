@@ -23,7 +23,21 @@ import { useToasts } from './ToastContainer'
 import { FullScreenButton } from './FullScreen'
 import { useInstall } from '../lib/pwaInstall'
 
-export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'book' | 'batch'
+/**
+ * `share` / `png` / `jpg` cover the whole project — every page. The `-page`
+ * variants are the deliberate "just the one I am looking at" escape hatch, and
+ * only appear in the menu when there is more than one page.
+ */
+export type ExportKind =
+  | 'png'
+  | 'jpg'
+  | 'share'
+  | 'share-page'
+  | 'png-page'
+  | 'svg'
+  | 'pdf'
+  | 'book'
+  | 'batch'
 
 /**
  * The app mark — the same photo-stack as public/favicon.svg, simplified for
@@ -86,6 +100,9 @@ export function HeaderBar({
   // Name the mode the button switches *to*, matching the icon it shows.
   const themeLabel = t(theme === 'dark' ? 'header.dayMode' : 'header.nightMode')
   const activeProjectId = useProjects((s) => s.activeProjectId)
+  // The plain Share / Download entries cover the whole project, so the
+  // single-page ones only earn their space when there is more than one page.
+  const multiPage = useProjects((s) => s.pages.length) > 1
   const saveActiveProject = useProjects((s) => s.saveActiveProject)
   const toast = useToasts()
   // Hidden once installed, and on browsers with no install route at all
@@ -304,6 +321,25 @@ export function HeaderBar({
                     <MenuItem onClick={() => handleExport('book')} icon={<BookOpen size={16} />}>
                       {t('export.book')}
                     </MenuItem>
+                    {multiPage && (
+                      <>
+                        <div className="mx-3 my-1 h-px bg-border" />
+                        {canShareImage() && (
+                          <MenuItem
+                            onClick={() => handleExport('share-page')}
+                            icon={<Share2 size={16} />}
+                          >
+                            {t('export.sharePage')}
+                          </MenuItem>
+                        )}
+                        <MenuItem
+                          onClick={() => handleExport('png-page')}
+                          icon={<ImageIcon size={16} />}
+                        >
+                          {t('export.pngPage')}
+                        </MenuItem>
+                      </>
+                    )}
                     <MenuItem onClick={() => { setExportOpen(false); handleBatchExport() }} icon={<Package size={16} />}>
                       {t('export.batch')}
                     </MenuItem>
@@ -488,6 +524,13 @@ export function HeaderBar({
           icon={<BookOpen size={18} />}
           label={t('export.book')}
         />
+        {multiPage && (
+          <ActionItem
+            onClick={() => { setSheetOpen(false); handleExport('share-page') }}
+            icon={<Share2 size={18} />}
+            label={t('export.sharePage')}
+          />
+        )}
         <ActionItem
           onClick={() => { setSheetOpen(false); handleBatchExport() }}
           icon={<Package size={18} />}

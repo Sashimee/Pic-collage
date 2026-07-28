@@ -92,7 +92,16 @@ function mimeFor(format: ExportFormat) {
   return format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg'
 }
 
-function applyPostProcess(
+/**
+ * Paint the watermark and print marks over a rendered board and encode it.
+ *
+ * Exported so the off-screen page renderer can use the same one: a second
+ * implementation would drift, and a book or a shared page that quietly dropped
+ * the user's watermark is exactly the kind of silent difference nobody notices
+ * until it is published. Takes a *canvas* rather than a data URL for the reason
+ * given at the call site in `exportBoard`.
+ */
+export function applyPostProcess(
   canvas: HTMLCanvasElement,
   watermark?: WatermarkSettings,
   print?: PrintSettings,
@@ -288,23 +297,44 @@ export function canShareImage(): boolean {
  */
 export type ShareOutcome = 'shared' | 'cancelled' | 'unsupported'
 
-// Share via the Web Share API. See ShareOutcome: only 'unsupported' should send
-// the caller to a plain download.
-export async function shareDataURL(
-  dataURL: string,
+/** The extension a format is saved and shared under. */
+export const extFor = (format: ExportFormat) =>
+  format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpg'
+
+/**
+ * Name the file for page `index` of `total`.
+ *
+ * One page stays `collage.jpg` — the name it has always had. Several are
+ * numbered, because a share target showing three files called `collage.jpg`
+ * tells the user nothing about which is which.
+ */
+export const shareFileName = (format: ExportFormat, index = 0, total = 1) =>
+  total > 1 ? `collage-${index + 1}.${extFor(format)}` : `collage.${extFor(format)}`
+
+/**
+ * Share one or more images through the Web Share API.
+ *
+ * The `canShare` probe uses the **whole** array: a target can accept one file
+ * and reject several, and probing with one would sail past that and then throw
+ * at `share()` time. Rejection is reported as `'unsupported'` so the caller
+ * falls back to saving *every* page — sharing just the first would be the
+ * multi-page bug all over again, only quieter.
+ *
+ * See ShareOutcome: only 'unsupported' should send the caller to a download.
+ */
+export async function shareImages(
+  dataURLs: string[],
   format: ExportFormat,
   title = 'My Collage',
 ): Promise<ShareOutcome> {
-  if (!canShareImage()) return 'unsupported'
-  const blob = dataURLToBlob(dataURL)
-  const file = new File(
-    [blob],
-    `collage.${format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpg'}`,
-    { type: blob.type },
-  )
-  if (!navigator.canShare({ files: [file] })) return 'unsupported'
+  if (!canShareImage() || !dataURLs.length) return 'unsupported'
+  const files = dataURLs.map((dataURL, i) => {
+    const blob = dataURLToBlob(dataURL)
+    return new File([blob], shareFileName(format, i, dataURLs.length), { type: blob.type })
+  })
+  if (!navigator.canShare({ files })) return 'unsupported'
   try {
-    await navigator.share({ files: [file], title })
+    await navigator.share({ files, title })
     return 'shared'
   } catch (err) {
     // Every browser reports a dismissed share sheet as AbortError.
@@ -312,4 +342,13 @@ export async function shareDataURL(
       ? 'cancelled'
       : 'unsupported'
   }
+}
+
+/** Share a single image. Kept as the one-item case of `shareImages`. */
+export async function shareDataURL(
+  dataURL: string,
+  format: ExportFormat,
+  title = 'My Collage',
+): Promise<ShareOutcome> {
+  return shareImages([dataURL], format, title)
 }

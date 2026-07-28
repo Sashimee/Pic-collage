@@ -6,7 +6,8 @@ import { useEditor, type LoadedDocument } from '../store/editorStore'
 import { rehydratePhotos } from './photoRehydrate'
 import { assignSlots, resolveLayoutById } from './grids'
 import { containRect } from './photoBook'
-import type { PhotoElement } from '../types'
+import { applyPostProcess } from './exportImage'
+import type { PhotoElement, PrintSettings, WatermarkSettings } from '../types'
 
 /**
  * Render pages that are not the one being edited.
@@ -63,22 +64,56 @@ async function waitForImages(stage: Konva.Stage, expected: number, timeoutMs = 1
   }
 }
 
-/** Object URLs minted for one page, so they can be released again. */
-function revokePageUrls(elements: LoadedDocument['elements']) {
+/** Every `blob:` URL currently on a page's photos. */
+function pageUrls(elements: LoadedDocument['elements']): Set<string> {
+  const urls = new Set<string>()
   for (const el of elements) {
     if (el.type !== 'photo') continue
     for (const url of [el.src, el.previewSrc, el.originalSrc, el.thumbSrc]) {
-      if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
+      if (url?.startsWith('blob:')) urls.add(url)
     }
+  }
+  return urls
+}
+
+/**
+ * Release the object URLs this render minted — and *only* those.
+ *
+ * `rehydratePhotos` passes an already-live photo straight through rather than
+ * re-minting it, so a document that is already hydrated comes back carrying the
+ * caller's own URLs. Revoking those blanks whoever owns them: feed this the
+ * live editor document (which the book does when there is no project to read
+ * pages from) and the board on screen loses its photos.
+ */
+function revokeMinted(elements: LoadedDocument['elements'], keep: Set<string>) {
+  for (const url of pageUrls(elements)) {
+    if (!keep.has(url)) URL.revokeObjectURL(url)
   }
 }
 
 export interface RenderPagesOptions {
-  /** Output bitmap size, in pixels — the sheet at print resolution. */
-  width: number
-  height: number
+  /**
+   * Fixed output size in pixels — the sheet, for a book. Every page is fitted
+   * into it, so a page whose board has a different aspect gets margins.
+   */
+  width?: number
+  height?: number
+  /**
+   * Render each page at its **own** board size times this ratio instead of a
+   * fixed sheet. Pages need not share a board size, and for sharing or
+   * downloading nobody wants a portrait page letterboxed onto a landscape one.
+   * 2 matches what the single-page export already produces.
+   */
+  pixelRatio?: number
   format?: 'jpeg' | 'png'
   quality?: number
+  /**
+   * Watermark and print marks to paint over each page. Omit and they are left
+   * off — but a share or a book that drops the user's watermark is a silent
+   * difference, so callers exporting on the user's behalf should pass them.
+   */
+  watermark?: WatermarkSettings
+  print?: PrintSettings
   onProgress?: (done: number, total: number) => void
   /** Set `cancelled` to stop after the page in flight. */
   signal?: { cancelled: boolean }
@@ -88,7 +123,15 @@ export async function renderPages(
   pages: LoadedDocument[],
   options: RenderPagesOptions,
 ): Promise<string[]> {
-  const { width, height, format = 'jpeg', quality = 0.92, onProgress, signal } = options
+  const {
+    pixelRatio,
+    format = 'jpeg',
+    quality = 0.92,
+    watermark,
+    print,
+    onProgress,
+    signal,
+  } = options
   if (!pages.length) return []
 
   const host = document.createElement('div')
@@ -112,11 +155,19 @@ export async function renderPages(
     for (let i = 0; i < pages.length; i++) {
       if (signal?.cancelled) break
       const page = pages[i]
+      // What the caller already owned, so it survives the revoke below.
+      const owned = pageUrls(page.elements)
       const elements = await rehydratePhotos(page.elements)
       const doc: LoadedDocument = { ...page, elements }
 
+      // Either a fixed sheet with the board fitted into it (a book), or the
+      // board at its own size times a ratio (a share or a download).
+      const ratio = pixelRatio ?? 1
+      const width = options.width ?? Math.round(doc.boardWidth * ratio)
+      const height = options.height ?? Math.round(doc.boardHeight * ratio)
       // Fit the board onto the sheet the same way the PDF will, so what is
-      // rendered is what gets printed rather than something stretched.
+      // rendered is what gets printed rather than something stretched. With a
+      // board-sized output this resolves to the whole canvas at `ratio`.
       const box = containRect(doc.boardWidth, doc.boardHeight, width, height)
       const scale = box.width / doc.boardWidth
 
@@ -139,16 +190,28 @@ export async function renderPages(
       await waitForImages(stage, expectedImageCount(doc))
       await nextFrame()
 
+      // Overlays go through the same post-process the live export uses, on a
+      // canvas rather than a data URL — an undecoded Image draws nothing, which
+      // is how watermarked exports once came out blank.
+      const overlaid = watermark?.enabled || print?.enabled
       out.push(
-        stage.toDataURL({
-          mimeType: format === 'png' ? 'image/png' : 'image/jpeg',
-          quality,
-          pixelRatio: 1,
-        }),
+        overlaid
+          ? applyPostProcess(
+              stage.toCanvas({ pixelRatio: 1 }),
+              watermark,
+              print,
+              format === 'png' ? 'png' : 'jpg',
+              quality,
+            )
+          : stage.toDataURL({
+              mimeType: format === 'png' ? 'image/png' : 'image/jpeg',
+              quality,
+              pixelRatio: 1,
+            }),
       )
 
       // Release this page before touching the next one.
-      revokePageUrls(elements)
+      revokeMinted(elements, owned)
       onProgress?.(i + 1, pages.length)
     }
   } finally {
