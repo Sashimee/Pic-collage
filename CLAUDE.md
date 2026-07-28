@@ -86,6 +86,8 @@ Pic-Collage-Maker/
     │   └── useScrollOverflow.ts# scroll-position → fade/arrow affordances (Docks, ActionSheet)
     ├── lib/
     │   ├── grids.ts            # grid presets (GRID_LAYOUTS) + cellRect/assignSlots
+    │   ├── photoBook.ts        # mm/pt/px page sizes at 300 DPI + buildPhotoBook()
+    │   ├── renderPages.tsx     # off-screen Konva stage: any page → a bitmap
     │   ├── projectSchema.ts    # ProjectDocument (schema 2): pages + activePage, w/ migration
     │   ├── pagePreview.ts      # page → CSS background + photo rects, for the page strip
     │   ├── customLayout.ts     # draw-your-own layouts: polygon zones, stroke → split/circle
@@ -102,6 +104,8 @@ Pic-Collage-Maker/
         ├── GridView.tsx        # grid-mode: clipped cover-fit photo cells + placeholders
         ├── PageStrip.tsx       # rail of pages under the canvas: add/switch/reorder/delete
         ├── PageThumb.tsx       # one page as plain DOM (background + positioned photos)
+        ├── BoardScene.tsx      # the exportable board: background + photos + frame
+        ├── PhotoBookSheet.tsx  # photo book options + progress
         ├── Background.tsx      # solid / linear-gradient board background rect
         ├── Toolbar.tsx         # bottom tab bar + active panel sheet
         ├── Panels.tsx          # Photos / Layout / Text / Stickers / Background / Filters panels
@@ -274,6 +278,15 @@ untranslated.
   pointer events silently does nothing, with no error anywhere. This is what
   made the page strip's reorder a no-op; `PageThumb` sets it, and any future
   draggable thing containing an image must too.
+- **Only one Konva stage renders the live board.** Anything that has to draw a
+  document the editor is *not* showing (the photo book) mounts its own stage
+  off-screen and renders `BoardScene`, which takes a document as a prop. Do not
+  add a second renderer, and do not drive `setActivePage` in a loop to export
+  pages — that persists, clears undo and flickers through the user's work.
+- **Wait for bitmaps to be on the nodes, not for a fixed number of frames.**
+  `useImage` decodes asynchronously and `GridView`'s cells render no node at all
+  until their image is ready, so a snapshot taken too early is a valid file full
+  of blank pages. `renderPages.waitForImages` polls the nodes.
 - **Pages live in `projectsStore`, not `editorStore`.** The editor holds exactly
   one live document — the page you are looking at — which is the assumption
   baked into `Snapshot`, `record()` and `loadDocument`. The store's
@@ -327,10 +340,10 @@ zoom + aspect presets, installable PWA + Pages CI/CD, **6-language UI**,
 **multiple montages per project** (page model + migration, page actions, and the
 page strip under the canvas).
 
-Next up: the **photo book**. `exportPDF` already takes an array of pages, so the
-output side is close; the work is real page geometry — it currently sizes each
-PDF page to the bitmap at 72 DPI, where a printed book wants a fixed physical
-size at 300 — plus page-size presets, an optional cover and page numbers.
+**photo book** (pages rendered off-screen at 300 DPI, fitted onto a chosen
+sheet, with an optional cover and page numbers).
+
+Next up: nothing is committed. Candidates below.
 
 Other ideas: richer touch gestures (two-finger rotate) · more grid layouts +
 adjustable gutter/corner radius · crop tool polish · a real animation/export-video
