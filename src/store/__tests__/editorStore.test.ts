@@ -137,4 +137,30 @@ describe('editorStore', () => {
       expect(state.selectedId).toBe(text.id)
     })
   })
+
+  describe('canvas zoom floor', () => {
+    it('clamps the zoom to 0.25 by default', () => {
+      useEditor.getState().setCanvasZoom(0.05)
+      expect(useEditor.getState().canvasZoom).toBe(0.25)
+    })
+
+    it('lets the floor down when the fit needs less than 0.25', () => {
+      // fitToScreen calls this. Without it the floor overrides the fit and the
+      // board renders larger than the space it was fitted into — on a phone
+      // with a panel open, spilling out under the sheet.
+      useEditor.getState().setMinCanvasZoom(0.18)
+      useEditor.getState().setCanvasZoom(0.18)
+      expect(useEditor.getState().canvasZoom).toBeCloseTo(0.18)
+    })
+
+    it('never raises the floor above 0.25, whatever the fit is', () => {
+      useEditor.getState().setMinCanvasZoom(3)
+      expect(useEditor.getState().minCanvasZoom).toBe(0.25)
+    })
+
+    it('still caps zoom at 4', () => {
+      useEditor.getState().setCanvasZoom(99)
+      expect(useEditor.getState().canvasZoom).toBe(4)
+    })
+  })
 })

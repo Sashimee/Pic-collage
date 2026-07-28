@@ -218,6 +218,11 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
       y: chromeInsets.top + (availH - boardHeight * scale) / 2,
       scale,
     })
+    // Let the zoom floor down to the fit when the fit needs it. Otherwise
+    // setCanvasZoom clamps at 0.25, the sync effect writes that back over the
+    // scale just computed, and the board spills out from under the chrome —
+    // which is what a phone with a panel open does once the strip is there.
+    useEditor.getState().setMinCanvasZoom(scale)
     // Keep the store's zoom in step, or the first ZoomControls press jumps.
     setCanvasZoom(scale)
   }
@@ -310,7 +315,7 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
 
   const zoomAtPoint = (px: number, py: number, factor: number) => {
     setTf((prev) => {
-      const newScale = clamp(prev.scale * factor, 0.25, 4)
+      const newScale = clamp(prev.scale * factor, useEditor.getState().minCanvasZoom, 4)
       const pointTo = { x: (px - prev.x) / prev.scale, y: (py - prev.y) / prev.scale }
       const next = {
         scale: newScale,
@@ -356,7 +361,7 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
         updateElement(sel.id, { cellZoom: newZoom })
       } else {
         setTf((t) => {
-          const newScale = clamp(t.scale * factor, 0.25, 4)
+          const newScale = clamp(t.scale * factor, useEditor.getState().minCanvasZoom, 4)
           const pointTo = { x: (cx - t.x) / t.scale, y: (cy - t.y) / t.scale }
           setCanvasZoom(newScale)
           return {
