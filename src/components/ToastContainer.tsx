@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { m, AnimatePresence } from './motion'
 import { CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { useToast, type ToastAction } from '../store/toastStore'
 import type { ReactNode } from 'react'
@@ -25,7 +25,7 @@ export function ToastContainer() {
     >
       <AnimatePresence>
         {toasts.map((toast) => (
-          <motion.div
+          <m.div
             key={toast.id}
             initial={{ opacity: 0, y: -12, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -50,7 +50,7 @@ export function ToastContainer() {
             >
               ✕
             </button>
-          </motion.div>
+          </m.div>
         ))}
       </AnimatePresence>
     </div>
@@ -66,6 +66,8 @@ export function useToasts() {
     success: (msg: string) => addToast(msg, 'success', 3000),
     error: (msg: string) => addToast(msg, 'error', 4000),
     info: (msg: string) => addToast(msg, 'info', 3000),
+    /** A toast whose message is markup — used by the gesture tips. */
+    rich: (node: ReactNode, duration = 6000) => addToast(node, 'info', duration),
     warn: (msg: string) => addToast(msg, 'error', 5000),
     /** A toast that offers a way out — e.g. "save the file the share ate". */
     action: (msg: string, action: ToastAction, duration = 8000) =>

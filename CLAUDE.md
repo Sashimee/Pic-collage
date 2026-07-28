@@ -94,6 +94,7 @@ Pic-Collage-Maker/
     │   ├── filters.ts          # FILTER_PRESETS + computeFilterConfig() → Konva filter stack
     │   ├── importPhotos.ts     # File → orig/preview(1080px)/thumb blobs + object URLs
     │   ├── photoRehydrate.ts   # strip blob: URLs before persisting, rebuild them on load
+    │   ├── firstUse.ts         # one record of which hints have been seen
     │   ├── pwaInstall.ts       # beforeinstallprompt store + platform detection
     │   ├── analytics.ts        # cookieless GoatCounter beacon (honours DNT/GPC)
     │   ├── exportPDF.ts        # pdf-lib; takes an *array* of pages
@@ -105,6 +106,8 @@ Pic-Collage-Maker/
         ├── PageStrip.tsx       # rail of pages under the canvas: add/switch/reorder/delete
         ├── PageThumb.tsx       # one page as plain DOM (background + positioned photos)
         ├── BoardScene.tsx      # the exportable board: background + photos + frame
+        ├── GestureDemo.tsx     # animated inline-SVG demos of the four gestures
+        ├── TipToast.tsx        # first-use gesture tips, on the toast host
         ├── PhotoBookSheet.tsx  # photo book options + progress
         ├── Background.tsx      # solid / linear-gradient board background rect
         ├── Toolbar.tsx         # bottom tab bar + active panel sheet
@@ -272,6 +275,23 @@ untranslated.
   the normal build sets `base=/Pic-collage/` for Pages. Building the usual way
   makes the bundle 404 and Lighthouse fails with `NO_FCP` without ever scoring
   anything.
+- **`prefers-reduced-motion` does not reach framer-motion by itself.** The CSS
+  rule in `index.css` only zeroes CSS `animation`/`transition` durations;
+  framer-motion writes inline transforms from a rAF loop. `MotionProvider` sets
+  `MotionConfig reducedMotion="user"` — keep it, and give any new animation a
+  still final frame via `useReducedMotion()`.
+- **Import `m` from `./motion`, never `motion` from `framer-motion`.** The app
+  wraps everything in `LazyMotion … strict`; mixing the two defeats the
+  tree-shaking that wrapper exists for. Converting five stragglers took the
+  eager `ui` chunk from 150.9 kB to 104.7 kB.
+- **First-use hints go in `src/lib/firstUse.ts`, not a new localStorage key.**
+  One record, claimed on read (StrictMode invokes effects twice, so a check that
+  writes later shows the hint twice), and `e2e/helpers.ts`'s `openApp`
+  suppresses the lot in one line — `openApp(page, { tips: true })` arms them.
+- **The background is not a `CanvasElement`.** `stripPhotoUrls`/`rehydratePhotos`
+  walk elements only, which is why a photo background silently died on reload
+  until `stripBackgroundUrl`/`rehydrateBackground` were added. Anything new that
+  holds pixels needs both halves wired at every save and load site.
 - **An `<img>` inside a pointer-drag needs `draggable={false}`.** Pressing on an
   image starts the browser's own image drag, which fires `pointercancel` and
   kills the pointer stream after roughly one move — so a drag gesture built on
@@ -342,6 +362,9 @@ page strip under the canvas).
 
 **photo book** (pages rendered off-screen at 300 DPI, fitted onto a chosen
 sheet, with an optional cover and page numbers).
+
+**first-use gesture tips** (animated inline-SVG demos of the four gestures
+nothing on screen can hint at, on one first-use registry).
 
 Next up: nothing is committed. Candidates below.
 

@@ -1,31 +1,36 @@
 import { useEffect, useState } from 'react'
 import { useT } from '../i18n/useLang'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ImagePlus, Type, Download, X, ChevronRight } from 'lucide-react'
+import { m, AnimatePresence } from './motion'
+import { ImagePlus, Download, X, ChevronRight } from 'lucide-react'
+import { hasSeen, markSeen } from '../lib/firstUse'
 
-const ONBOARDING_KEY = 'pic-collage-onboarded-v2'
-
+/*
+ * The welcome carousel orients someone who has just arrived. It deliberately
+ * no longer covers text: that is taught by a tip at the moment the tool is
+ * opened, and being taught the same thing twice is worse than not at all.
+ *
+ * `Step.target` used to hold a `[data-tab="…"]` selector for a coach mark that
+ * was never built — nothing read it, and no element in the app ever carried a
+ * `data-tab` attribute. The per-tool tips are the spotlight now, so it is gone
+ * rather than left looking implemented.
+ */
 interface Step {
   id: string
   title: string
   body: string
   icon: React.ReactNode
-  target?: string // CSS selector for coach mark
 }
 
 export function useOnboarding() {
   const [show, setShow] = useState(false)
 
   useEffect(() => {
-    try {
-      const done = localStorage.getItem(ONBOARDING_KEY)
-      if (!done) setShow(true)
-    } catch { /* storage blocked */ }
+    if (!hasSeen('welcome')) setShow(true)
   }, [])
 
   const dismiss = () => {
     setShow(false)
-    try { localStorage.setItem(ONBOARDING_KEY, '1') } catch { }
+    markSeen('welcome')
   }
 
   return { show, dismiss }
@@ -48,14 +53,6 @@ export function OnboardingOverlay() {
       title: t('onboard.photosTitle'),
       body: t('onboard.photosBody'),
       icon: <ImagePlus size={40} className="text-accent" />,
-      target: '[data-tab="photos"]',
-    },
-    {
-      id: 'text',
-      title: t('onboard.textTitle'),
-      body: t('onboard.textBody'),
-      icon: <Type size={40} className="text-accent" />,
-      target: '[data-tab="text"]',
     },
     {
       id: 'export',
@@ -73,7 +70,7 @@ export function OnboardingOverlay() {
       {show && current && (
         <>
           {/* Backdrop */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -82,7 +79,7 @@ export function OnboardingOverlay() {
           />
 
           {/* Card */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
@@ -129,7 +126,7 @@ export function OnboardingOverlay() {
                 <ChevronRight size={16} />
               </button>
             </div>
-          </motion.div>
+          </m.div>
         </>
       )}
     </AnimatePresence>

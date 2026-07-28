@@ -16,6 +16,7 @@ import {
 import type { LucideProps } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useWorkspace } from '../store/workspaceStore'
+import { usePanelTips } from './TipToast'
 
 // Lazy-load panels to reduce initial bundle
 const PhotosPanel = lazy(() => import('./Panels').then((m) => ({ default: m.PhotosPanel })))
@@ -96,6 +97,11 @@ export function usePanels(initial: string | null = 'photos') {
     setTool('select')
     setWorkspaceActive(null)
   }
+
+  // Gesture demos for the two panels whose real interaction is a drag, fired
+  // from the one place a panel becomes active. `select` toggles, so this keys
+  // on the resulting `active` rather than on every call.
+  usePanelTips(active)
 
   const current = PANEL_TABS.find((tab) => tab.id === active) ?? null
 

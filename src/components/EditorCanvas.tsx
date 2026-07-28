@@ -23,6 +23,8 @@ import { zonesToCells } from '../lib/customLayout'
 import { saveCustomLayout } from '../lib/customLayoutStorage'
 import { importFiles } from '../lib/importFiles'
 import { track } from '../lib/analytics'
+import { hasSeen, markSeen } from '../lib/firstUse'
+import { PinchDemo } from './GestureDemo'
 
 export interface EditorHandle {
   /** Async: the export has to wait a frame for the full-resolution photo
@@ -89,6 +91,8 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
   const circleCustomLayout = useEditor((s) => s.circleCustomLayout)
   const mergeCustomLayoutCell = useEditor((s) => s.mergeCustomLayoutCell)
 
+  // Bumped to replay the layout gesture demo from the failure toast.
+  const [demoNonce, setDemoNonce] = useState(0)
   const [customSnapEnabled, setCustomSnapEnabled] = useState(true)
   const [layoutTool, setLayoutTool] = useState<LayoutTool>('cut')
   const [circleOverlay, setCircleOverlay] = useState(false)
@@ -105,11 +109,9 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
   const ptsRef = useRef<number[]>([])
   const [, setTick] = useState(0)
 
-  // Pinch-to-zoom hint (one-time)
+  // Pinch-to-zoom hint (one-time), now on the shared first-use registry.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      pinchHintShown.current = localStorage.getItem('piccollage-pinch-hint-shown') === '1'
-    }
+    pinchHintShown.current = hasSeen('pinch')
   }, [])
 
   // A layout gesture either cuts or rounds, depending on the active tool.
@@ -121,7 +123,14 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
         ? circleCustomLayout(pts, circleOverlay)
         : splitCustomLayout(pts, customSnapEnabled ? SNAP_STEP : undefined)
     if (ok) track('layout-split')
-    else toast.info(t('customLayout.noSplit'))
+    else {
+      // A stroke that did nothing is exactly when the demo is wanted, so offer
+      // it rather than only saying what went wrong.
+      toast.action(t('customLayout.noSplit'), {
+        label: t('tips.showMe'),
+        onClick: () => setDemoNonce((n) => n + 1),
+      })
+    }
   }
 
   // Tapping an empty grid cell picks photos straight into that cell.
@@ -158,8 +167,15 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
   const showPinchHint = () => {
     if (pinchHintShown.current) return
     pinchHintShown.current = true
-    localStorage.setItem('piccollage-pinch-hint-shown', '1')
-    toast.info(t('canvas.pinchZoom'))
+    markSeen('pinch')
+    toast.rich(
+      <span className="flex items-center gap-2.5">
+        <span className="h-9 w-9 shrink-0 text-text/70" data-gesture-demo="pinch">
+          <PinchDemo />
+        </span>
+        <span>{t('canvas.pinchZoom')}</span>
+      </span>,
+    )
   }
 
   // Inline text editor overlay (replaces window.prompt on double-tap).
@@ -191,7 +207,7 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
   // the selection/zoom controls cover the top and bottom of the board.
   const base =
     mode === 'custom-layout'
-      ? { top: 60, bottom: 96, left: 8, right: 8 } // tool bar / hint + padding row
+      ? { top: 60, bottom: 120, left: 8, right: 8 } // tool bar / hint + demo + padding row
       : { top: 12, bottom: 60, left: 52, right: 8 } // snap/grid column + controls
   // An open panel sheet overlays the stage without a scrim, so it eats into the
   // same space the floating chrome does. Cap it so a tall sheet can't squeeze
@@ -565,6 +581,7 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
       />
       {mode === 'custom-layout' && (
         <CustomLayoutToolbar
+          demoNonce={demoNonce}
           snapEnabled={customSnapEnabled}
           canUndo={customLayoutPast.length > 0}
           zoneCount={customLayoutZones.length}

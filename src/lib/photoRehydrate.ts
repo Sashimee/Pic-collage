@@ -1,5 +1,5 @@
 import { getPhoto } from './persistence'
-import type { CanvasElement } from '../types'
+import type { Background, CanvasElement } from '../types'
 
 /*
  * Photo elements carry their pixels as `blob:` object URLs, which are handles
@@ -62,4 +62,34 @@ export async function rehydratePhotos(elements: CanvasElement[]): Promise<Canvas
     })
   }
   return out
+}
+
+/*
+ * The board *background* can be a photo too, and it was missed. It is not a
+ * CanvasElement, so neither helper above ever touched it: its `blob:` URL was
+ * persisted verbatim and dead on the next load, which is exactly the failure
+ * these functions exist to prevent.
+ */
+
+/** IndexedDB key for a background photo's bytes. */
+export const backgroundKey = (photoId: string) => `${photoId}:bg`
+
+/** Drop the transient URL, keeping `photoId` so the bytes can be found again. */
+export function stripBackgroundUrl(bg: Background): Background {
+  return bg.photoSrc ? { ...bg, photoSrc: undefined } : bg
+}
+
+/**
+ * Rebuild the background's object URL from its stored blob.
+ *
+ * A background whose blob is gone falls back to the flat colour rather than
+ * leaving a broken image — the same choice `rehydratePhotos` makes for photos.
+ */
+export async function rehydrateBackground(bg: Background): Promise<Background> {
+  if (bg.type !== 'photo' || !bg.photoId) return bg
+  // Already live (same-session restore): nothing to rebuild.
+  if (bg.photoSrc?.startsWith('blob:')) return bg
+  const blob = await getPhoto(backgroundKey(bg.photoId)).catch(() => undefined)
+  if (!blob) return { ...bg, photoSrc: undefined }
+  return { ...bg, photoSrc: URL.createObjectURL(blob) }
 }

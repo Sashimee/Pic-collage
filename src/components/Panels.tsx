@@ -14,6 +14,8 @@ import { useT } from '../i18n/useLang'
 import { EMOJI_CATEGORIES } from '../lib/emojis'
 import { PHOTO_SHAPES } from '../lib/shapes'
 import { EXPORT_PRESETS } from '../lib/exportPresets'
+import { putPhoto } from '../lib/persistence'
+import { backgroundKey } from '../lib/photoRehydrate'
 
 // ---- Photos --------------------------------------------------------------
 
@@ -1055,15 +1057,28 @@ export function BackgroundPanel() {
                   accept="image/*"
                   className="sr-only"
                   onChange={async (e) => {
-                    if (!e.target.files?.[0]) return
-                    const file = e.target.files[0]
+                    // Hold the element: after the first await React has already
+                    // pooled the event and `currentTarget` is null.
+                    const input = e.currentTarget
+                    const file = input.files?.[0]
+                    if (!file) return
                     const src = URL.createObjectURL(file)
+                    // Keep the bytes, not just the URL. This used to set
+                    // `photoId: undefined` and store the object URL alone, so a
+                    // photo background was gone on the next load with nothing
+                    // left to rebuild it from.
+                    const photoId = crypto.randomUUID()
+                    try {
+                      await putPhoto(backgroundKey(photoId), file)
+                    } catch {
+                      /* no storage — the background still works this session */
+                    }
                     const img = new Image()
                     img.onload = () => {
-                      setBg({ photoSrc: src, photoId: undefined })
+                      setBg({ photoSrc: src, photoId })
                     }
                     img.src = src
-                    e.currentTarget.value = ''
+                    input.value = ''
                   }}
                 />
                 <label

@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState } from 'react'
 import { Undo, Trash2, Magnet, Check, X, Scissors, Circle, Layers } from 'lucide-react'
 import { useT } from '../i18n/useLang'
 import type { LayoutTool } from './CustomLayoutEditor'
+import { claimFirstUse } from '../lib/firstUse'
+import { SplitDemo } from './GestureDemo'
 
 interface Props {
   snapEnabled: boolean
@@ -17,6 +20,11 @@ interface Props {
   onSnapToggle: () => void
   onApply: () => void
   onCancel: () => void
+  /**
+   * Bumped to replay the gesture demo — the "show me" on the toast that fires
+   * when a stroke did not cross a zone, which is the moment it is wanted.
+   */
+  demoNonce?: number
 }
 
 const iconBtn =
@@ -37,8 +45,27 @@ export function CustomLayoutToolbar({
   onSnapToggle,
   onApply,
   onCancel,
+  demoNonce = 0,
 }: Props) {
   const t = useT()
+
+  /*
+   * "Drag a line across the board" is not a gesture anything on screen can
+   * suggest, so the first time someone opens this editor the hint draws itself
+   * once. It sits in the hint row rather than over the board: the canvas has to
+   * stay usable so the gesture can be copied while it plays.
+   */
+  const [showDemo, setShowDemo] = useState(() => claimFirstUse('layout'))
+  const firstNonce = useRef(demoNonce)
+  useEffect(() => {
+    if (demoNonce === firstNonce.current) return
+    setShowDemo(true)
+  }, [demoNonce])
+  useEffect(() => {
+    if (!showDemo) return
+    const id = setTimeout(() => setShowDemo(false), 12_000)
+    return () => clearTimeout(id)
+  }, [showDemo])
   return (
     <>
       <div className="pointer-events-none absolute inset-x-0 top-2 z-30 flex justify-center px-3">
@@ -142,9 +169,16 @@ export function CustomLayoutToolbar({
       {/* Secondary controls + hint live below the board, so the top row always
           has room for Apply/Cancel even on a narrow phone. */}
       <div className="pointer-events-none absolute inset-x-0 bottom-2 z-30 flex flex-col items-center gap-1.5 px-3">
-        <p className="max-w-sm rounded-xl bg-surface/85 px-3 py-1.5 text-center text-[0.7rem] font-medium text-muted shadow backdrop-blur">
-          {tool === 'circle' ? t('customLayout.hintCircle') : t('customLayout.hint')}
-        </p>
+        <div className="flex max-w-sm items-center gap-2.5 rounded-xl bg-surface/85 px-3 py-1.5 shadow backdrop-blur">
+          {showDemo && (
+            <span className="h-10 w-10 shrink-0 text-text/70" data-gesture-demo="layout">
+              <SplitDemo />
+            </span>
+          )}
+          <p className="text-center text-[0.7rem] font-medium text-muted">
+            {tool === 'circle' ? t('customLayout.hintCircle') : t('customLayout.hint')}
+          </p>
+        </div>
         <div className="pointer-events-auto flex items-center gap-2 rounded-2xl bg-surface/95 px-3 py-1.5 shadow-lg backdrop-blur">
           <span className="rounded-lg bg-surface-2 px-2 py-1 text-xs font-semibold text-text">
             {zoneCount}

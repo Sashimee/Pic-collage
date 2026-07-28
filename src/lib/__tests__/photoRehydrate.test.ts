@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { stripPhotoUrls, rehydratePhotos } from '../photoRehydrate'
+import {
+  stripPhotoUrls,
+  rehydratePhotos,
+  stripBackgroundUrl,
+  rehydrateBackground,
+  backgroundKey,
+} from '../photoRehydrate'
 import { putPhoto } from '../persistence'
-import type { CanvasElement, PhotoElement } from '../../types'
+import type { Background, CanvasElement, PhotoElement } from '../../types'
 
 /*
  * Photo elements hold their pixels as blob: object URLs, which are handles into
@@ -135,5 +141,66 @@ describe('rehydratePhotos', () => {
     expect(el.x).toBe(42)
     expect(el.width).toBe(300)
     expect(el.id).toBe(original.id)
+  })
+})
+
+/*
+ * The board background can be a photo too. It is not a CanvasElement, so
+ * neither helper above ever touched it — its blob: URL was persisted verbatim
+ * and dead on the next load, the very failure this module exists to prevent.
+ */
+const bg = (over: Partial<Background> = {}): Background => ({
+  type: 'photo',
+  color: '#ffffff',
+  gradientFrom: '#6366f1',
+  gradientTo: '#ec4899',
+  gradientAngle: 0,
+  patternId: 'dots',
+  patternColor: '#000000',
+  photoSrc: 'blob:http://localhost/live-bg',
+  photoId: 'bg-1',
+  ...over,
+})
+
+describe('stripBackgroundUrl', () => {
+  it('drops the object URL and keeps the id', () => {
+    const stored = stripBackgroundUrl(bg())
+    expect(stored.photoSrc).toBeUndefined()
+    expect(stored.photoId).toBe('bg-1')
+  })
+
+  it('leaves a background with no photo alone', () => {
+    const solid = bg({ type: 'solid', photoSrc: undefined, photoId: undefined })
+    expect(stripBackgroundUrl(solid)).toEqual(solid)
+  })
+
+  it('survives a JSON round trip with no blob: URL in it', () => {
+    expect(JSON.stringify(stripBackgroundUrl(bg()))).not.toContain('blob:')
+  })
+})
+
+describe('rehydrateBackground', () => {
+  it('rebuilds the URL from the stored blob', async () => {
+    await putPhoto(backgroundKey('bg-1'), new Blob(['x'], { type: 'image/jpeg' }))
+    const out = await rehydrateBackground(stripBackgroundUrl(bg()))
+    expect(out.photoSrc).toMatch(/^blob:/)
+    expect(out.photoSrc).not.toBe('blob:http://localhost/live-bg')
+  })
+
+  it('falls back to the flat colour when the blob is gone', async () => {
+    const out = await rehydrateBackground(stripBackgroundUrl(bg({ photoId: 'vanished' })))
+    // A missing background must not leave a broken image behind.
+    expect(out.photoSrc).toBeUndefined()
+    expect(out.color).toBe('#ffffff')
+  })
+
+  it('leaves an already-live background alone', async () => {
+    const live = bg()
+    expect((await rehydrateBackground(live)).photoSrc).toBe('blob:http://localhost/live-bg')
+  })
+
+  it('ignores a background that is not a photo', async () => {
+    const solid = bg({ type: 'gradient' })
+    expect(await rehydrateBackground(solid)).toEqual(solid)
   })
 })
