@@ -201,7 +201,7 @@ export default function App() {
       track('export-pdf')
       const { exportPDF, downloadPDF } = await import('./lib/exportPDF')
       const s = useEditor.getState()
-      const url = editorRef.current?.exportImage('png')
+      const url = await editorRef.current?.exportImage('png')
       if (url) {
         const pdf = await exportPDF([{ dataUrl: url, width: s.boardWidth, height: s.boardHeight }])
         downloadPDF(pdf, `collage-${Date.now()}.pdf`)
@@ -216,7 +216,7 @@ export default function App() {
     // Sharing takes the user out of the app, so get their work on disk first.
     if (kind === 'share') await ensureProjectSaved()
 
-    let url = editorRef.current?.exportImage(format)
+    let url = await editorRef.current?.exportImage(format)
     if (url) {
       track(kind === 'share' ? 'export-share' : `export-${format}`)
       // Preserve EXIF for JPEG exports
