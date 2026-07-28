@@ -194,6 +194,12 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
   const panelInset = clamp(bottomInset, 0, 0.6) * size.h
   const chromeInsets = { ...base, bottom: Math.max(base.bottom, panelInset) }
 
+  /** Centre of the area the board is actually fitted into, in stage pixels. */
+  const viewportCentre = () => ({
+    x: chromeInsets.left + (size.w - chromeInsets.left - chromeInsets.right) / 2,
+    y: chromeInsets.top + (size.h - chromeInsets.top - chromeInsets.bottom) / 2,
+  })
+
   const fitToScreen = () => {
     if (!size.w || !size.h) return
     const availW = Math.max(1, size.w - chromeInsets.left - chromeInsets.right)
@@ -262,14 +268,17 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
   const canvasZoom = useEditor((s) => s.canvasZoom)
   const setCanvasZoom = useEditor((s) => s.setCanvasZoom)
 
-  // Sync local zoom with store zoom (so ZoomControls works). Zoom about the
-  // centre of the viewport — rewriting `scale` alone leaves the pan offsets
-  // computed for the old scale and throws the board off-centre.
+  // Sync local zoom with store zoom (so ZoomControls works). Rewriting `scale`
+  // alone would leave the pan offsets computed for the old scale, so zoom about
+  // a fixed point — and that point has to be the centre of the *usable* area,
+  // the same box fitToScreen centres the board in. Using the raw viewport
+  // centre anchors the zoom somewhere the board isn't centred on, so every
+  // press of +/− walked the board further off-centre. The offset is small in
+  // free mode and nearly half the height with a panel open.
   useEffect(() => {
     setTf((prev) => {
       if (Math.abs(prev.scale - canvasZoom) < 1e-6) return prev
-      const cx = size.w / 2
-      const cy = size.h / 2
+      const { x: cx, y: cy } = viewportCentre()
       const pointTo = { x: (cx - prev.x) / prev.scale, y: (cy - prev.y) / prev.scale }
       return {
         scale: canvasZoom,
@@ -277,7 +286,8 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
         y: cy - pointTo.y * canvasZoom,
       }
     })
-  }, [canvasZoom, size.w, size.h])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasZoom, size.w, size.h, chromeInsets.top, chromeInsets.bottom, chromeInsets.left, chromeInsets.right])
 
   const zoomAtPoint = (px: number, py: number, factor: number) => {
     setTf((prev) => {
