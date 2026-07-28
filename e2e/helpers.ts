@@ -21,6 +21,22 @@ interface EditorState {
   gridId: string | null
   assignLayoutId: string | null
   canvasZoom: number
+  clearAll: () => void
+}
+
+/** Only the members the suite drives; the real stores have far more. */
+interface ProjectsState {
+  activeProjectId: string | null
+  createProject: (name: string) => Promise<string>
+  openProject: (id: string) => Promise<void>
+  saveActiveProject: () => Promise<void>
+}
+
+interface VersionState {
+  getSnapshots: (projectId: string) => Promise<{ id: string; timestamp: number }[]>
+  restoreSnapshot: (
+    id: string,
+  ) => Promise<{ elements: { type: string }[] } | null>
 }
 
 declare global {
@@ -28,6 +44,9 @@ declare global {
     __editor?: { getState: () => EditorState }
     /** Dev-only: the board's on-screen rect (see EditorCanvas). */
     __boardRect?: () => { x: number; y: number; width: number; height: number }
+    /** Dev-only store seams, for flows that have to survive a page reload. */
+    __projects?: { getState: () => ProjectsState }
+    __versions?: { getState: () => VersionState }
   }
 }
 

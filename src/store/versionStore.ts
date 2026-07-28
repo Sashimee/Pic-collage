@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { useEditor } from './editorStore'
+import { rehydratePhotos, stripPhotoUrls } from '../lib/photoRehydrate'
 import type { CanvasElement, Background } from '../types'
 
 const DB_NAME = 'piccollage-snapshots'
@@ -160,6 +161,11 @@ export const useVersionStore = create<VersionState>((set, get) => ({
     try {
       const existing = await allFor(projectId)
 
+      // Compare in *stored* form. Records hold stripped elements, so comparing
+      // them against live ones — which still carry blob: URLs — would differ
+      // every time and defeat the de-duplication below.
+      const stored = stripPhotoUrls(elements)
+
       // The autosave fires on a 1.5s debounce during ordinary editing. Without
       // this guard every pause would mint a near-identical history entry and
       // bury the ones that mean something.
@@ -167,13 +173,15 @@ export const useVersionStore = create<VersionState>((set, get) => ({
         (best, r) => (!best || r.timestamp > best.timestamp ? r : best),
         null,
       )
-      if (newest && sameDocument(newest, elements, background)) return
+      if (newest && sameDocument(newest, stored, background)) return
 
       const record: SnapshotRecord = {
         id: uid(),
         projectId,
         timestamp: nextTimestamp(),
-        elements,
+        // Object URLs die with the document; store photoIds and rebuild on
+        // restore, or a version restored after a reload has no photos.
+        elements: stored,
         background,
       }
       await tx(STORE_NAME, 'readwrite', (s) => s.put(record))
@@ -196,7 +204,10 @@ export const useVersionStore = create<VersionState>((set, get) => ({
     try {
       const record = await tx<SnapshotRecord | undefined>(STORE_NAME, 'readonly', (s) => s.get(id))
       if (!record) return null
-      return { elements: record.elements, background: record.background }
+      return {
+        elements: await rehydratePhotos(record.elements),
+        background: record.background,
+      }
     } catch {
       return null
     }
@@ -207,3 +218,8 @@ export const useVersionStore = create<VersionState>((set, get) => ({
     await tx(STORE_NAME, 'readwrite', (s) => s.delete(id))
   },
 }))
+
+// Dev-only test seam; see the note in projectsStore.
+if (import.meta.env.DEV) {
+  ;(window as unknown as { __versions?: typeof useVersionStore }).__versions = useVersionStore
+}
