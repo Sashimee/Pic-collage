@@ -92,7 +92,16 @@ function mimeFor(format: ExportFormat) {
   return format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg'
 }
 
-function applyPostProcess(
+/**
+ * Paint the watermark and print marks over a rendered board and encode it.
+ *
+ * Exported so the off-screen page renderer can use the same one: a second
+ * implementation would drift, and a book or a shared page that quietly dropped
+ * the user's watermark is exactly the kind of silent difference nobody notices
+ * until it is published. Takes a *canvas* rather than a data URL for the reason
+ * given at the call site in `exportBoard`.
+ */
+export function applyPostProcess(
   canvas: HTMLCanvasElement,
   watermark?: WatermarkSettings,
   print?: PrintSettings,
