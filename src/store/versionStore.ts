@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { useEditor } from './editorStore'
 import { rehydratePhotos, stripPhotoUrls } from '../lib/photoRehydrate'
 import type { CanvasElement, Background } from '../types'
 
@@ -22,9 +21,6 @@ export interface SnapshotMeta {
 }
 
 interface VersionState {
-  autoSaveTimer: number | null
-  startAutoSave: (projectId: string) => void
-  stopAutoSave: () => void
   getSnapshots: (projectId: string) => Promise<SnapshotMeta[]>
   saveSnapshot: (projectId: string, elements: CanvasElement[], background: Background) => Promise<void>
   restoreSnapshot: (id: string) => Promise<{ elements: CanvasElement[]; background: Background } | null>
@@ -98,39 +94,21 @@ function allFor(projectId: string): Promise<SnapshotRecord[]> {
   )
 }
 
-/** Cheap structural comparison — enough to tell "nothing changed" from a real
+/** Cheap structural fingerprint — enough to tell "nothing changed" from a real
  *  edit without deep-diffing every element. */
-function sameDocument(
-  record: SnapshotRecord,
-  elements: CanvasElement[],
-  background: Background,
-): boolean {
-  return (
-    JSON.stringify(record.elements) === JSON.stringify(elements) &&
-    JSON.stringify(record.background) === JSON.stringify(background)
-  )
+function fingerprint(elements: CanvasElement[], background: Background): string {
+  return JSON.stringify(elements) + '|' + JSON.stringify(background)
 }
 
-export const useVersionStore = create<VersionState>((set, get) => ({
-  autoSaveTimer: null,
+/**
+ * Fingerprint of the newest snapshot per project. The autosave fires on a 1.5s
+ * debounce, so without this every idle pause during editing would read back the
+ * project's entire snapshot index just to conclude nothing had changed.
+ * Memory-only: a cold start simply falls through to the IndexedDB check once.
+ */
+const lastFingerprint = new Map<string, string>()
 
-  startAutoSave(projectId) {
-    get().stopAutoSave()
-    const timer = window.setInterval(() => {
-      const s = useEditor.getState()
-      get().saveSnapshot(projectId, s.elements, s.background)
-    }, 5 * 60 * 1000)
-    set({ autoSaveTimer: timer })
-  },
-
-  stopAutoSave() {
-    const { autoSaveTimer } = get()
-    if (autoSaveTimer) {
-      clearInterval(autoSaveTimer)
-      set({ autoSaveTimer: null })
-    }
-  },
-
+export const useVersionStore = create<VersionState>(() => ({
   async getSnapshots(projectId) {
     if (typeof indexedDB === 'undefined') return []
     try {
@@ -159,12 +137,17 @@ export const useVersionStore = create<VersionState>((set, get) => ({
   async saveSnapshot(projectId, elements, background) {
     if (typeof indexedDB === 'undefined') return
     try {
-      const existing = await allFor(projectId)
-
       // Compare in *stored* form. Records hold stripped elements, so comparing
       // them against live ones — which still carry blob: URLs — would differ
       // every time and defeat the de-duplication below.
       const stored = stripPhotoUrls(elements)
+      const print = fingerprint(stored, background)
+
+      // Fast path: we already know this document is the newest snapshot, so
+      // there is nothing to write and no need to touch IndexedDB at all.
+      if (lastFingerprint.get(projectId) === print) return
+
+      const existing = await allFor(projectId)
 
       // The autosave fires on a 1.5s debounce during ordinary editing. Without
       // this guard every pause would mint a near-identical history entry and
@@ -173,7 +156,10 @@ export const useVersionStore = create<VersionState>((set, get) => ({
         (best, r) => (!best || r.timestamp > best.timestamp ? r : best),
         null,
       )
-      if (newest && sameDocument(newest, stored, background)) return
+      if (newest && fingerprint(newest.elements, newest.background) === print) {
+        lastFingerprint.set(projectId, print)
+        return
+      }
 
       const record: SnapshotRecord = {
         id: uid(),
@@ -185,6 +171,7 @@ export const useVersionStore = create<VersionState>((set, get) => ({
         background,
       }
       await tx(STORE_NAME, 'readwrite', (s) => s.put(record))
+      lastFingerprint.set(projectId, print)
 
       // Photos are inlined in `elements`, so unbounded history would grow
       // IndexedDB without limit. Keep the most recent MAX_SNAPSHOTS.
@@ -216,6 +203,9 @@ export const useVersionStore = create<VersionState>((set, get) => ({
   async deleteSnapshot(id) {
     if (typeof indexedDB === 'undefined') return
     await tx(STORE_NAME, 'readwrite', (s) => s.delete(id))
+    // The deleted record may have been the newest one the cache is standing in
+    // for; keeping it would silently skip the save that should replace it.
+    lastFingerprint.clear()
   },
 }))
 
