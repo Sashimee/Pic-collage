@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { saveProject, loadProject, deleteProject, listProjects, type Project } from '../services/cloudSync'
 import { useEditor, type LoadedDocument } from './editorStore'
 import { useVersionStore } from './versionStore'
+import { rehydratePhotos, stripPhotoUrls } from '../lib/photoRehydrate'
 
 export interface ProjectMeta {
   id: string
@@ -61,7 +62,9 @@ function getSnapshot(): LoadedDocument {
     gridGap: s.gridGap,
     gridRadius: s.gridRadius,
     frame: s.frame,
-    elements: s.elements,
+    // Photos' object URLs are per-document and die on reload; keep only the
+    // photoId so openProject can rebuild them from IndexedDB.
+    elements: stripPhotoUrls(s.elements),
   }
 }
 
@@ -119,7 +122,8 @@ export const useProjects = create<ProjectsState>((set, get) => ({
     if (typeof indexedDB === 'undefined') return
     const project = await loadProject(id)
     if (!project || !project.data) return
-    useEditor.getState().loadDocument(project.data)
+    const elements = await rehydratePhotos(project.data.elements)
+    useEditor.getState().loadDocument({ ...project.data, elements })
     set({ activeProjectId: id })
   },
 
@@ -200,3 +204,10 @@ useEditor.subscribe(() => {
     useProjects.getState().saveActiveProject().catch(() => {})
   }, 1500)
 })
+
+// Dev-only test seam, alongside `window.__editor` in editorStore. Lets the e2e
+// suite drive project save/open across a page reload, which is the only way to
+// exercise photo rehydration — within a session the stale URLs still resolve.
+if (import.meta.env.DEV) {
+  ;(window as unknown as { __projects?: typeof useProjects }).__projects = useProjects
+}

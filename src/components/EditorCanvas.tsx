@@ -28,8 +28,16 @@ import { importFiles } from '../lib/importFiles'
 import { track } from '../lib/analytics'
 
 export interface EditorHandle {
-  exportImage: (format: ExportFormat) => string | null
+  /** Async: the export has to wait a frame for the full-resolution photo
+   *  sources to be swapped in before the canvas is snapshotted. */
+  exportImage: (format: ExportFormat) => Promise<string | null>
 }
+
+/** Two rAFs: one for React to commit, one for Konva to redraw. */
+const nextFrame = () =>
+  new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  )
 
 const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v))
@@ -249,18 +257,29 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
   }, [tf, boardWidth, boardHeight])
 
   useImperativeHandle(ref, () => ({
-    exportImage: (format) => {
+    exportImage: async (format) => {
       const board = boardRef.current
       if (!board) return null
-      // Force original resolution photos during export
+
+      // `exporting` swaps PhotoNode over to the full-resolution source
+      // (CanvasNodes.tsx). It is consumed through a React selector, so setting
+      // it and snapshotting in the same tick did nothing at all — React never
+      // got to re-render, and every export silently used the 1080px preview
+      // while rendering a 2160px canvas. Give React a frame to apply it, and a
+      // second for Konva to redraw with the decoded originals.
       useEditor.getState().setExporting(true)
-      const state = useEditor.getState()
-      const result = exportBoard(board, boardWidth, boardHeight, format, {
-        watermark: state.watermark,
-        print: state.print,
-      })
-      useEditor.getState().setExporting(false)
-      return result
+      try {
+        await nextFrame()
+        const state = useEditor.getState()
+        return exportBoard(board, boardWidth, boardHeight, format, {
+          watermark: state.watermark,
+          print: state.print,
+        })
+      } finally {
+        // Never leave the canvas pinned to originals — that is the memory-heavy
+        // state, and a throw here would strand it.
+        useEditor.getState().setExporting(false)
+      }
     },
   }))
 
@@ -522,12 +541,15 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
 
   return (
     <div ref={hostRef} className="canvas-host relative h-full w-full">
+      {/* Opened programmatically when an empty cell is tapped, so there is no
+          visible label to associate — aria-label is the only route. */}
       <input
         ref={cellInputRef}
         type="file"
         accept="image/*"
         multiple
         className="sr-only"
+        aria-label={t('header.addPhotos')}
         onChange={handleCellFiles}
       />
       {mode === 'custom-layout' && (

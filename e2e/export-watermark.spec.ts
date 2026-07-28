@@ -103,6 +103,42 @@ test.describe('watermarked export', () => {
     expect(shot.type).toBe('image/png')
   })
 
+  test('renders the full-resolution photo, not the 1080px preview', async ({ page }) => {
+    // `exporting` swaps PhotoNode to `originalSrc`, but it used to be set and
+    // cleared inside one synchronous tick — React never re-rendered, so every
+    // export quietly snapshotted the preview. Imports cap previews at 1080px
+    // while the board renders at 2160px, so half the detail was thrown away.
+    // Watch for the flag actually reaching a rendered frame: sample it from a
+    // rAF loop, which only sees states React has committed. The old code
+    // flipped it on and off between two statements, so no frame ever saw it.
+    await page.evaluate(() => {
+      const w = window as unknown as { __sawExporting: boolean }
+      w.__sawExporting = false
+      const tick = () => {
+        if ((window.__editor!.getState() as unknown as { exporting: boolean }).exporting) {
+          w.__sawExporting = true
+        }
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
+
+    await page.getByRole('button', { name: 'Export' }).click()
+    await page.getByRole('menuitem', { name: 'Download PNG' }).click()
+    await expect.poll(() => analyseExport(page)).not.toBeNull()
+
+    const seen = await page.evaluate(
+      () => (window as unknown as { __sawExporting: boolean }).__sawExporting,
+    )
+    expect(seen).toBe(true)
+
+    // ...and it must not stay pinned to originals, which is the heavy state.
+    const settled = await page.evaluate(
+      () => (window.__editor!.getState() as unknown as { exporting: boolean }).exporting,
+    )
+    expect(settled).toBe(false)
+  })
+
   test('print marks also keep the collage', async ({ page }) => {
     await page.evaluate(() => {
       const st = window.__editor!.getState() as unknown as {

@@ -18,7 +18,6 @@ import { useEditor } from './store/editorStore'
 import { useT } from './i18n/useLang'
 import { useProjects, defaultProjectName } from './store/projectsStore'
 import { useWorkspace } from './store/workspaceStore'
-import type { CanvasElement } from './types'
 import {
   downloadDataURL,
   shareDataURL,
@@ -34,12 +33,8 @@ import { useDefaultShortcuts } from './hooks/useKeyboard'
 import { OnboardingOverlay } from './components/Onboarding'
 import { restoreCustomFonts } from './lib/fonts'
 import { extractFirstExif, injectExifIntoJpeg } from './lib/exifHelpers'
-import {
-  getPhoto,
-  loadDoc,
-  saveDoc,
-  type StoredDoc,
-} from './lib/persistence'
+import { loadDoc, saveDoc, type StoredDoc } from './lib/persistence'
+import { rehydratePhotos, stripPhotoUrls } from './lib/photoRehydrate'
 
 const INSTALL_NUDGE_KEY = 'pic-collage-install-nudged'
 
@@ -76,11 +71,7 @@ function toStoredDoc(): StoredDoc {
     frame: s.frame,
     watermark: s.watermark,
     print: s.print,
-    elements: s.elements.map((el) =>
-      el.type === 'photo'
-        ? { ...el, src: '', previewSrc: undefined, originalSrc: undefined, thumbSrc: undefined }
-        : el,
-    ),
+    elements: stripPhotoUrls(s.elements),
   }
 }
 
@@ -118,30 +109,7 @@ export default function App() {
     ;(async () => {
       const stored = await loadDoc()
       if (stored && !cancelled && stored.elements.length) {
-        const elements: CanvasElement[] = []
-        for (const el of stored.elements) {
-          if (el.type === 'photo') {
-            if (!el.photoId) continue
-            const [origBlob, prevBlob, thumbBlob] = await Promise.all([
-              getPhoto(`${el.photoId}:orig`).catch(() => undefined),
-              getPhoto(`${el.photoId}:prev`).catch(() => undefined),
-              getPhoto(`${el.photoId}:thumb`).catch(() => undefined),
-            ])
-            if (!prevBlob) continue
-            const originalSrc = origBlob ? URL.createObjectURL(origBlob) : undefined
-            const previewSrc = URL.createObjectURL(prevBlob)
-            const thumbSrc = thumbBlob ? URL.createObjectURL(thumbBlob) : undefined
-            elements.push({
-              ...el,
-              src: previewSrc,
-              previewSrc,
-              originalSrc,
-              thumbSrc,
-            })
-          } else {
-            elements.push(el)
-          }
-        }
+        const elements = await rehydratePhotos(stored.elements)
         if (!cancelled) loadDocument({ ...stored, elements })
       }
       if (!cancelled) setHydrated(true)
@@ -233,7 +201,7 @@ export default function App() {
       track('export-pdf')
       const { exportPDF, downloadPDF } = await import('./lib/exportPDF')
       const s = useEditor.getState()
-      const url = editorRef.current?.exportImage('png')
+      const url = await editorRef.current?.exportImage('png')
       if (url) {
         const pdf = await exportPDF([{ dataUrl: url, width: s.boardWidth, height: s.boardHeight }])
         downloadPDF(pdf, `collage-${Date.now()}.pdf`)
@@ -248,7 +216,7 @@ export default function App() {
     // Sharing takes the user out of the app, so get their work on disk first.
     if (kind === 'share') await ensureProjectSaved()
 
-    let url = editorRef.current?.exportImage(format)
+    let url = await editorRef.current?.exportImage(format)
     if (url) {
       track(kind === 'share' ? 'export-share' : `export-${format}`)
       // Preserve EXIF for JPEG exports

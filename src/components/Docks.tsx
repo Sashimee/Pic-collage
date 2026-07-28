@@ -56,6 +56,9 @@ export function MobileTabBar({ panels }: { panels: PanelsApi }) {
         animate={{ opacity: canScrollLeft ? 1 : 0 }}
         className={`absolute left-1 top-1/2 z-30 -translate-y-1/2 rounded-full bg-surface-2 p-1 shadow-md ${canScrollLeft ? 'pointer-events-auto' : 'pointer-events-none'}`}
         onClick={() => scroll('left')}
+        aria-label={t('aria.scrollLeft')}
+        aria-hidden={!canScrollLeft}
+        tabIndex={canScrollLeft ? 0 : -1}
       >
         <ChevronLeft size={16} />
       </m.button>
@@ -65,6 +68,9 @@ export function MobileTabBar({ panels }: { panels: PanelsApi }) {
         animate={{ opacity: canScrollRight ? 1 : 0 }}
         className={`absolute right-1 top-1/2 z-30 -translate-y-1/2 rounded-full bg-surface-2 p-1 shadow-md ${canScrollRight ? 'pointer-events-auto' : 'pointer-events-none'}`}
         onClick={() => scroll('right')}
+        aria-label={t('aria.scrollRight')}
+        aria-hidden={!canScrollRight}
+        tabIndex={canScrollRight ? 0 : -1}
       >
         <ChevronRight size={16} />
       </m.button>
@@ -131,6 +137,9 @@ export function ToolRail({ panels }: { panels: PanelsApi }) {
         animate={{ opacity: canScrollUp ? 1 : 0 }}
         className={`absolute inset-x-0 top-1 z-30 mx-auto w-8 rounded-full bg-surface-2 py-0.5 shadow-md ${canScrollUp ? 'pointer-events-auto' : 'pointer-events-none'}`}
         onClick={() => scroll('up')}
+        aria-label={t('aria.scrollUp')}
+        aria-hidden={!canScrollUp}
+        tabIndex={canScrollUp ? 0 : -1}
       >
         <ChevronUp size={16} className="mx-auto" />
       </m.button>
@@ -140,6 +149,9 @@ export function ToolRail({ panels }: { panels: PanelsApi }) {
         animate={{ opacity: canScrollDown ? 1 : 0 }}
         className={`absolute inset-x-0 bottom-1 z-30 mx-auto w-8 rounded-full bg-surface-2 py-0.5 shadow-md ${canScrollDown ? 'pointer-events-auto' : 'pointer-events-none'}`}
         onClick={() => scroll('down')}
+        aria-label={t('aria.scrollDown')}
+        aria-hidden={!canScrollDown}
+        tabIndex={canScrollDown ? 0 : -1}
       >
         <ChevronDown size={16} className="mx-auto" />
       </m.button>

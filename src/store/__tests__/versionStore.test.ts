@@ -89,6 +89,23 @@ describe('saveSnapshot', () => {
     expect(await store.getSnapshots('b')).toHaveLength(1)
   })
 
+  it('re-records after the newest snapshot is deleted', async () => {
+    // saveSnapshot keeps an in-memory fingerprint of the newest record so the
+    // 1.5s autosave doesn't re-read the whole index on every idle pause.
+    // Deleting that record has to invalidate it, or an unchanged document
+    // would be silently skipped and the history left empty.
+    const store = useVersionStore.getState()
+    const els = [text('a')]
+    await store.saveSnapshot('p7', els, bg())
+
+    const [row] = await store.getSnapshots('p7')
+    await store.deleteSnapshot(row.id)
+    expect(await store.getSnapshots('p7')).toHaveLength(0)
+
+    await store.saveSnapshot('p7', els, bg())
+    expect(await store.getSnapshots('p7')).toHaveLength(1)
+  })
+
   it('round-trips a snapshot through restore', async () => {
     const store = useVersionStore.getState()
     await store.saveSnapshot('p6', [text('keep-me')], bg())

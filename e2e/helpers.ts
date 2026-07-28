@@ -21,6 +21,22 @@ interface EditorState {
   gridId: string | null
   assignLayoutId: string | null
   canvasZoom: number
+  clearAll: () => void
+}
+
+/** Only the members the suite drives; the real stores have far more. */
+interface ProjectsState {
+  activeProjectId: string | null
+  createProject: (name: string) => Promise<string>
+  openProject: (id: string) => Promise<void>
+  saveActiveProject: () => Promise<void>
+}
+
+interface VersionState {
+  getSnapshots: (projectId: string) => Promise<{ id: string; timestamp: number }[]>
+  restoreSnapshot: (
+    id: string,
+  ) => Promise<{ elements: { type: string }[] } | null>
 }
 
 declare global {
@@ -28,6 +44,9 @@ declare global {
     __editor?: { getState: () => EditorState }
     /** Dev-only: the board's on-screen rect (see EditorCanvas). */
     __boardRect?: () => { x: number; y: number; width: number; height: number }
+    /** Dev-only store seams, for flows that have to survive a page reload. */
+    __projects?: { getState: () => ProjectsState }
+    __versions?: { getState: () => VersionState }
   }
 }
 
@@ -68,6 +87,15 @@ export const getZones = (page: Page) =>
         }
       }) ?? [],
   )
+
+/**
+ * A layout card in the start-up gallery. Scoped to buttons on purpose: the
+ * cards are labelled "<name> photos", and other things carry labels containing
+ * "photos" too (the empty-cell file input is "Add photos"), so a bare
+ * [aria-label*="photos"] would match whichever comes first in the DOM.
+ */
+export const layoutCard = (page: Page) =>
+  page.locator('button[aria-label*="photos"]').first()
 
 /** The photo-assignment sheet's title, disambiguated from the Photos panel's
  *  "Add photos" button, which getByText would also match. */
@@ -115,7 +143,7 @@ export async function skipGallery(page: Page) {
  * that follows, leaving the app in grid mode.
  */
 export async function pickFirstLayout(page: Page) {
-  await page.locator('[aria-label*="photos"]').first().click()
+  await layoutCard(page).click()
   await expect(page.getByText('Add Photos')).toBeVisible()
 }
 
