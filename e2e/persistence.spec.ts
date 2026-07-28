@@ -155,6 +155,49 @@ test.describe('photos survive a reload', () => {
     expect(await srcsResolve(page)).toBe(true)
   })
 
+  test('a second page survives a reload, with its photos', async ({ page }) => {
+    // Pages live in the project record; the editor only ever holds the one you
+    // are looking at. A reload is the only thing that proves the other pages
+    // were really written rather than just held in memory.
+    await openApp(page)
+    await page.locator('#empty-gallery-input').setInputFiles(pngFile())
+    await waitForElements(page, 'photo')
+
+    const projectId = await page.evaluate(async () => {
+      const p = window.__projects!.getState()
+      const id = await p.createProject('Two Pages')
+      await window.__projects!.getState().addPage()
+      return id
+    })
+    // The new page is blank...
+    expect(await page.evaluate(() => window.__editor!.getState().elements.length)).toBe(0)
+
+    // ...so give it a photo of its own.
+    await page.locator('#panel-gallery-input').setInputFiles(pngFile('second.png')).catch(async () => {
+      await page.getByRole('button', { name: 'Photos', exact: true }).click()
+      await page.locator('#panel-gallery-input').setInputFiles(pngFile('second.png'))
+    })
+    await waitForElements(page, 'photo')
+    await page.evaluate(() => window.__projects!.getState().saveActiveProject())
+
+    await page.reload()
+    await page.waitForFunction(() => !!window.__editor)
+    await page.evaluate(async (id) => {
+      window.__editor!.getState().clearAll()
+      await window.__projects!.getState().openProject(id)
+    }, projectId)
+
+    const pageCount = await page.evaluate(() => window.__projects!.getState().pages.length)
+    expect(pageCount).toBe(2)
+
+    // Both pages still have a resolvable photo.
+    for (const index of [0, 1]) {
+      await page.evaluate((i) => window.__projects!.getState().setActivePage(i), index)
+      await waitForElements(page, 'photo')
+      expect(await srcsResolve(page)).toBe(true)
+    }
+  })
+
   test('a restored version keeps its photos', async ({ page }) => {
     await openApp(page)
     await page.locator('#empty-gallery-input').setInputFiles(pngFile())

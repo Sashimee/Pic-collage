@@ -27,9 +27,13 @@ interface EditorState {
 /** Only the members the suite drives; the real stores have far more. */
 interface ProjectsState {
   activeProjectId: string | null
+  pages: unknown[]
+  activePage: number
   createProject: (name: string) => Promise<string>
   openProject: (id: string) => Promise<void>
   saveActiveProject: () => Promise<void>
+  addPage: () => Promise<void>
+  setActivePage: (index: number) => Promise<void>
 }
 
 interface VersionState {
