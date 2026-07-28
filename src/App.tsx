@@ -215,10 +215,9 @@ export default function App() {
     if (kind === 'pdf') {
       track('export-pdf')
       const { exportPDF, downloadPDF } = await import('./lib/exportPDF')
-      const s = useEditor.getState()
       const url = await editorRef.current?.exportImage('png')
       if (url) {
-        const pdf = await exportPDF([{ dataUrl: url, width: s.boardWidth, height: s.boardHeight }])
+        const pdf = await exportPDF([{ dataUrl: url }])
         downloadPDF(pdf, `collage-${Date.now()}.pdf`)
         fireConfetti()
         maybeNudgeInstall()
