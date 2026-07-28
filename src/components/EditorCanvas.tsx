@@ -3,21 +3,18 @@ import {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
 import { Group, Layer, Line, Stage, Transformer } from 'react-konva'
 import { Magnet, Grid3x3, Ruler } from 'lucide-react'
 import type Konva from 'konva'
-import { useEditor } from '../store/editorStore'
+import { useEditor, type LoadedDocument } from '../store/editorStore'
 import { useT } from '../i18n/useLang'
-import { resolveLayoutById } from '../lib/grids'
-import { Background } from './Background'
-import { BoardFrame } from './BoardFrame'
-import { ElementNode } from './CanvasNodes'
-import { GridView } from './GridView'
+import { BoardScene, type BoardInteractions } from './BoardScene'
 import { exportBoard, type ExportFormat } from '../lib/exportImage'
-import type { CanvasElement, PhotoElement } from '../types'
+import type { CanvasElement } from '../types'
 import { computeSnap, type SnapLine } from '../lib/snap'
 import { useToasts } from './ToastContainer'
 import { CustomLayoutEditor, SNAP_STEP, type LayoutTool } from './CustomLayoutEditor'
@@ -477,12 +474,35 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
     setSnapGuides(result.guides)
   }
 
-  const gridLayout = gridId ? resolveLayoutById(gridId) : undefined
-  const photos = elements.filter((e): e is PhotoElement => e.type === 'photo')
-  const inGrid = mode === 'grid' && !!gridLayout
-  const freeElements = inGrid
-    ? elements.filter((e) => e.type !== 'photo')
-    : elements
+  // BoardScene draws from a document rather than from the store, so the same
+  // component can render a page that is not the one being edited (the photo
+  // book). Here that document is just the live editor state.
+  const liveDoc: LoadedDocument = useMemo(
+    () => ({
+      boardWidth,
+      boardHeight,
+      background,
+      mode,
+      gridId,
+      gridGap,
+      gridRadius,
+      frame,
+      elements,
+    }),
+    [boardWidth, boardHeight, background, mode, gridId, gridGap, gridRadius, frame, elements],
+  )
+
+  const interactions: BoardInteractions = {
+    selectedId,
+    onSelect: (id, e) => {
+      if (e?.evt?.shiftKey) toggleMultiSelect(id)
+      else select(id)
+    },
+    onChange: (id, patch) => updateElement(id, patch),
+    onEditText: (id) => openTextEditor(id),
+    onDragMove: (el) => handleDragMove(el),
+    onEmptyCell: openCellPicker,
+  }
 
   const openTextEditor = (id: string) => {
     const stage = stageRef.current
@@ -506,20 +526,6 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
     if (editing) updateElement(editing.id, { text: editing.value })
     setEditing(null)
   }
-
-  const renderElement = (el: CanvasElement) => (
-    <ElementNode
-      key={el.id}
-      el={el}
-      onSelect={(e) => {
-        if (e?.evt?.shiftKey) toggleMultiSelect(el.id)
-        else select(el.id)
-      }}
-      onChange={(patch) => updateElement(el.id, patch)}
-      onEditText={openTextEditor}
-      onDragMove={handleDragMove(el)}
-    />
-  )
 
   // Grid background dots / lines
   const gridSpacing = 40
@@ -673,135 +679,128 @@ export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ botto
             <Group ref={boardRef} x={tf.x} y={tf.y} scaleX={tf.scale} scaleY={tf.scale}>
               {/* In draw mode elements ignore hits so strokes land on the stage. */}
               <Group listening={!drawMode}>
-                <Background bg={background} width={boardWidth} height={boardHeight} />
-
-                {/* Grid background */}
-                {showGrid && gridType === 'dot' &&
-                  gridDots.map((d, i) => (
-                    <Line
-                      key={`gd-${i}`}
-                      points={[d.x, d.y, d.x + 0.1, d.y + 0.1]}
-                      stroke="rgba(0,0,0,0.12)"
-                      strokeWidth={1.5}
-                      lineCap="round"
-                      listening={false}
-                    />
-                  ))}
-                {showGrid && gridType === 'line' && (
-                  <>
-                    {gridLinesV.map((l, i) => (
+                <BoardScene
+                  doc={liveDoc}
+                  interactions={interactions}
+                  overlay={
+                    <>
+                    {/* Snap guide lines */}
+                    {snapGuides.map((g, i) => (
                       <Line
-                        key={`gv-${i}`}
-                        points={[l.x1, l.y1, l.x2, l.y2]}
-                        stroke="rgba(0,0,0,0.08)"
-                        strokeWidth={0.5}
+                        key={`sg-${i}`}
+                        points={
+                          g.axis === 'x'
+                            ? [g.pos, g.from, g.pos, g.to]
+                            : [g.from, g.pos, g.to, g.pos]
+                        }
+                        stroke="#ef4444"
+                        strokeWidth={1}
+                        dash={[6, 4]}
                         listening={false}
                       />
                     ))}
-                    {gridLinesH.map((l, i) => (
+
+                    {drawing.current && ptsRef.current.length >= 2 && (
                       <Line
-                        key={`gh-${i}`}
-                        points={[l.x1, l.y1, l.x2, l.y2]}
-                        stroke="rgba(0,0,0,0.08)"
-                        strokeWidth={0.5}
+                        points={ptsRef.current}
+                        stroke={brushColor}
+                        strokeWidth={brushSize}
+                        lineCap="round"
+                        lineJoin="round"
+                        tension={0.4}
                         listening={false}
                       />
-                    ))}
-                  </>
-                )}
-
-                {/* Pixel rulers */}
-                {showRulers && (
-                  <>
-                    {/* Top ruler */}
-                    {Array.from({ length: Math.floor(boardWidth / 100) + 1 }).map((_, i) => {
-                      const x = i * 100
-                      return (
+                    )}
+                    </>
+                  }
+                  backdrop={
+                    <>
+                    {/* Grid background */}
+                    {showGrid && gridType === 'dot' &&
+                      gridDots.map((d, i) => (
                         <Line
-                          key={`rt-${i}`}
-                          points={[x, 0, x, 12]}
-                          stroke="rgba(0,0,0,0.25)"
-                          strokeWidth={0.5}
+                          key={`gd-${i}`}
+                          points={[d.x, d.y, d.x + 0.1, d.y + 0.1]}
+                          stroke="rgba(0,0,0,0.12)"
+                          strokeWidth={1.5}
+                          lineCap="round"
                           listening={false}
                         />
-                      )
-                    })}
-                    {/* Left ruler */}
-                    {Array.from({ length: Math.floor(boardHeight / 100) + 1 }).map((_, i) => {
-                      const y = i * 100
-                      return (
-                        <Line
-                          key={`rl-${i}`}
-                          points={[0, y, 12, y]}
-                          stroke="rgba(0,0,0,0.25)"
-                          strokeWidth={0.5}
-                          listening={false}
-                        />
-                      )
-                    })}
-                  </>
-                )}
+                      ))}
+                    {showGrid && gridType === 'line' && (
+                      <>
+                        {gridLinesV.map((l, i) => (
+                          <Line
+                            key={`gv-${i}`}
+                            points={[l.x1, l.y1, l.x2, l.y2]}
+                            stroke="rgba(0,0,0,0.08)"
+                            strokeWidth={0.5}
+                            listening={false}
+                          />
+                        ))}
+                        {gridLinesH.map((l, i) => (
+                          <Line
+                            key={`gh-${i}`}
+                            points={[l.x1, l.y1, l.x2, l.y2]}
+                            stroke="rgba(0,0,0,0.08)"
+                            strokeWidth={0.5}
+                            listening={false}
+                          />
+                        ))}
+                      </>
+                    )}
 
-                {inGrid && gridLayout && (
-                  <GridView
-                    layout={gridLayout}
-                    photos={photos}
-                    width={boardWidth}
-                    height={boardHeight}
-                    gap={gridGap}
-                    radius={gridRadius}
-                    selectedId={selectedId}
-                    onSelect={select}
-                    onUpdate={updateElement}
-                    onEmptyCell={openCellPicker}
-                  />
-                )}
-                {mode === 'custom-layout' && (
-                  <CustomLayoutEditor
-                    boardWidth={boardWidth}
-                    boardHeight={boardHeight}
-                    zones={customLayoutZones}
-                    gap={gridGap}
-                    tool={layoutTool}
-                    onStroke={handleLayoutStroke}
-                    onTapZone={(i) => {
-                      if (!mergeCustomLayoutCell(i)) toast.info(t('customLayout.noMerge'))
-                    }}
-                    tf={tf}
-                    snapEnabled={customSnapEnabled}
-                  />
-                )}
-                {freeElements.map(renderElement)}
+                    {/* Pixel rulers */}
+                    {showRulers && (
+                      <>
+                        {/* Top ruler */}
+                        {Array.from({ length: Math.floor(boardWidth / 100) + 1 }).map((_, i) => {
+                          const x = i * 100
+                          return (
+                            <Line
+                              key={`rt-${i}`}
+                              points={[x, 0, x, 12]}
+                              stroke="rgba(0,0,0,0.25)"
+                              strokeWidth={0.5}
+                              listening={false}
+                            />
+                          )
+                        })}
+                        {/* Left ruler */}
+                        {Array.from({ length: Math.floor(boardHeight / 100) + 1 }).map((_, i) => {
+                          const y = i * 100
+                          return (
+                            <Line
+                              key={`rl-${i}`}
+                              points={[0, y, 12, y]}
+                              stroke="rgba(0,0,0,0.25)"
+                              strokeWidth={0.5}
+                              listening={false}
+                            />
+                          )
+                        })}
+                      </>
+                    )}
+                    {mode === 'custom-layout' && (
+                      <CustomLayoutEditor
+                        boardWidth={boardWidth}
+                        boardHeight={boardHeight}
+                        zones={customLayoutZones}
+                        gap={gridGap}
+                        tool={layoutTool}
+                        onStroke={handleLayoutStroke}
+                        onTapZone={(i) => {
+                          if (!mergeCustomLayoutCell(i)) toast.info(t('customLayout.noMerge'))
+                        }}
+                        tf={tf}
+                        snapEnabled={customSnapEnabled}
+                      />
+                    )}
+                    </>
+                  }
+                />
               </Group>
 
-              {/* Snap guide lines */}
-              {snapGuides.map((g, i) => (
-                <Line
-                  key={`sg-${i}`}
-                  points={
-                    g.axis === 'x'
-                      ? [g.pos, g.from, g.pos, g.to]
-                      : [g.from, g.pos, g.to, g.pos]
-                  }
-                  stroke="#ef4444"
-                  strokeWidth={1}
-                  dash={[6, 4]}
-                  listening={false}
-                />
-              ))}
-
-              {drawing.current && ptsRef.current.length >= 2 && (
-                <Line
-                  points={ptsRef.current}
-                  stroke={brushColor}
-                  strokeWidth={brushSize}
-                  lineCap="round"
-                  lineJoin="round"
-                  tension={0.4}
-                  listening={false}
-                />
-              )}
-              <BoardFrame frame={frame} width={boardWidth} height={boardHeight} />
             </Group>
             <Transformer
               ref={trRef}
