@@ -18,6 +18,37 @@ const photoSrcs = (page: import('@playwright/test').Page) =>
       .map((e) => (e as unknown as { src: string }).src),
   )
 
+/** Photos in the autosaved document as it actually sits in IndexedDB. */
+const persistedPhotoCount = (page: import('@playwright/test').Page) =>
+  page.evaluate(
+    () =>
+      new Promise<number>((resolve) => {
+        // Mirrors src/lib/persistence.ts — DB 'piccollage', store 'doc'.
+        const req = indexedDB.open('piccollage')
+        req.onsuccess = () => {
+          const db = req.result
+          if (!db.objectStoreNames.contains('doc')) {
+            db.close()
+            return resolve(0)
+          }
+          const t = db.transaction('doc', 'readonly')
+          const get = t.objectStore('doc').getAll()
+          get.onsuccess = () => {
+            const docs = get.result as { elements?: { type: string }[] }[]
+            resolve(
+              docs.reduce(
+                (n, d) => n + (d?.elements?.filter((e) => e.type === 'photo').length ?? 0),
+                0,
+              ),
+            )
+          }
+          get.onerror = () => resolve(0)
+          t.oncomplete = () => db.close()
+        }
+        req.onerror = () => resolve(0)
+      }),
+  )
+
 /** Do the sources actually resolve, or are they dead handles? */
 const srcsResolve = async (page: import('@playwright/test').Page) => {
   const srcs = await photoSrcs(page)
@@ -40,7 +71,10 @@ test.describe('photos survive a reload', () => {
     await openApp(page)
     await page.locator('#empty-gallery-input').setInputFiles(pngFile())
     await waitForElements(page, 'photo')
-    await page.waitForTimeout(900) // let the 500ms autosave debounce land
+    // Wait for the write itself, not a guess at how long the 500ms debounce
+    // plus an IndexedDB round-trip takes. A fixed sleep is fine on an idle
+    // machine and wrong exactly when the suite is busy.
+    await expect.poll(() => persistedPhotoCount(page), { timeout: 15_000 }).toBeGreaterThan(0)
 
     await page.reload()
     await page.waitForFunction(() => !!window.__editor)
