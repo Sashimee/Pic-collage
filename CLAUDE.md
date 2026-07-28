@@ -70,7 +70,7 @@ Pic-Collage-Maker/
     ├── types.ts                # CanvasElement union, Background, Grid types, DEFAULT_FILTERS
     ├── store/
     │   ├── editorStore.ts      # zustand: elements, selection, background, mode, z-order, actions
-    │   ├── projectsStore.ts    # named projects in IndexedDB + debounced autosave
+    │   ├── projectsStore.ts    # named projects in IndexedDB + autosave + the page list
     │   ├── versionStore.ts     # version history snapshots (deduped, capped at MAX_SNAPSHOTS)
     │   ├── workspaceStore.ts   # panel layout / active tab persistence
     │   └── toastStore.ts       # toasts, with an optional action button
@@ -81,9 +81,13 @@ Pic-Collage-Maker/
     ├── hooks/
     │   ├── useImage.ts         # URL → decoded HTMLImageElement
     │   ├── useMediaQuery.ts    # useIsDesktop() and friends
+    │   ├── usePointerReorder.ts# axis-agnostic drag-to-reorder (LayerPanel, PageStrip)
+    │   ├── usePageThumbs.ts    # page photo thumbs out of IndexedDB, with URL revocation
     │   └── useScrollOverflow.ts# scroll-position → fade/arrow affordances (Docks, ActionSheet)
     ├── lib/
-    │   ├── grids.ts            # normalised collage grid presets (GRID_LAYOUTS)
+    │   ├── grids.ts            # grid presets (GRID_LAYOUTS) + cellRect/assignSlots
+    │   ├── projectSchema.ts    # ProjectDocument (schema 2): pages + activePage, w/ migration
+    │   ├── pagePreview.ts      # page → CSS background + photo rects, for the page strip
     │   ├── customLayout.ts     # draw-your-own layouts: polygon zones, stroke → split/circle
     │   ├── filters.ts          # FILTER_PRESETS + computeFilterConfig() → Konva filter stack
     │   ├── importPhotos.ts     # File → orig/preview(1080px)/thumb blobs + object URLs
@@ -96,6 +100,8 @@ Pic-Collage-Maker/
         ├── EditorCanvas.tsx    # Konva stage, board group, gestures, transformer, export handle
         ├── CanvasNodes.tsx     # ElementNode dispatcher: PhotoNode / TextNode / StickerNode
         ├── GridView.tsx        # grid-mode: clipped cover-fit photo cells + placeholders
+        ├── PageStrip.tsx       # rail of pages under the canvas: add/switch/reorder/delete
+        ├── PageThumb.tsx       # one page as plain DOM (background + positioned photos)
         ├── Background.tsx      # solid / linear-gradient board background rect
         ├── Toolbar.tsx         # bottom tab bar + active panel sheet
         ├── Panels.tsx          # Photos / Layout / Text / Stickers / Background / Filters panels
@@ -262,6 +268,20 @@ untranslated.
   the normal build sets `base=/Pic-collage/` for Pages. Building the usual way
   makes the bundle 404 and Lighthouse fails with `NO_FCP` without ever scoring
   anything.
+- **An `<img>` inside a pointer-drag needs `draggable={false}`.** Pressing on an
+  image starts the browser's own image drag, which fires `pointercancel` and
+  kills the pointer stream after roughly one move — so a drag gesture built on
+  pointer events silently does nothing, with no error anywhere. This is what
+  made the page strip's reorder a no-op; `PageThumb` sets it, and any future
+  draggable thing containing an image must too.
+- **Pages live in `projectsStore`, not `editorStore`.** The editor holds exactly
+  one live document — the page you are looking at — which is the assumption
+  baked into `Snapshot`, `record()` and `loadDocument`. The store's
+  `pages[activePage]` therefore *lags* the editor until the next save, so every
+  page action folds the live document back in (`commitPages`) before touching
+  the list. Skip that and adding a page discards whatever you just drew. For the
+  same reason the page strip draws its active tile from the live editor state,
+  not from `pages`.
 - **Dev-only test seams**, exposed under `import.meta.env.DEV`: `window.__editor`
   (editorStore), `__projects`, `__versions`, and `__boardRect()` (the board's
   on-screen rect, from `EditorCanvas`). The e2e suite drives flows through these
@@ -303,14 +323,14 @@ tools (auto-enhance, background removal, portrait retouch, smart crop, caption
 suggestions), layers panel + reorder/duplicate/delete/group, undo/redo, snapping
 guides, watermark + print marks, PNG/JPG/SVG/PDF/ZIP export + Web Share,
 autosave/restore + projects + version history (IndexedDB), mobile pinch/wheel
-zoom + aspect presets, installable PWA + Pages CI/CD, **6-language UI**.
+zoom + aspect presets, installable PWA + Pages CI/CD, **6-language UI**,
+**multiple montages per project** (page model + migration, page actions, and the
+page strip under the canvas).
 
-Next up: **multiple montages per project** (a page model — `Project.data` is a
-single document today — plus a page strip reusing `LayerPanel`'s pointer-drag
-reordering) and a **photo book** built from them. `exportPDF` already takes an
-array of pages, so the output side is close; the work is the page model, its
-schema migration, and real page geometry (it currently sizes each PDF page to
-the bitmap at 72 DPI, where a printed book wants a fixed physical size at 300).
+Next up: the **photo book**. `exportPDF` already takes an array of pages, so the
+output side is close; the work is real page geometry — it currently sizes each
+PDF page to the bitmap at 72 DPI, where a printed book wants a fixed physical
+size at 300 — plus page-size presets, an optional cover and page numbers.
 
 Other ideas: richer touch gestures (two-finger rotate) · more grid layouts +
 adjustable gutter/corner radius · crop tool polish · a real animation/export-video
