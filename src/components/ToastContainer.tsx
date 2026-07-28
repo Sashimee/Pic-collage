@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { m, AnimatePresence } from './motion'
 import { CheckCircle, AlertCircle, Info } from 'lucide-react'
 import { useToast, type ToastAction } from '../store/toastStore'
 import type { ReactNode } from 'react'
@@ -25,7 +25,7 @@ export function ToastContainer() {
     >
       <AnimatePresence>
         {toasts.map((toast) => (
-          <motion.div
+          <m.div
             key={toast.id}
             initial={{ opacity: 0, y: -12, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -50,7 +50,7 @@ export function ToastContainer() {
             >
               ✕
             </button>
-          </motion.div>
+          </m.div>
         ))}
       </AnimatePresence>
     </div>

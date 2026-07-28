@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { m, AnimatePresence } from './motion'
 import { ChevronDown } from 'lucide-react'
 import { useScrollOverflow } from '../hooks/useScrollOverflow'
 import type { ReactNode } from 'react'
@@ -44,7 +44,7 @@ export function ActionSheet({ open, onClose, title, children }: ActionSheetProps
       {open && (
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
           {/* Backdrop */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -55,7 +55,7 @@ export function ActionSheet({ open, onClose, title, children }: ActionSheetProps
 
           {/* Sheet */}
           <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end">
-            <motion.div
+            <m.div
               ref={sheetRef}
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
@@ -96,7 +96,7 @@ export function ActionSheet({ open, onClose, title, children }: ActionSheetProps
                   </div>
                 )}
               </div>
-            </motion.div>
+            </m.div>
           </div>
         </div>
       )}

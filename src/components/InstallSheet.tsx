@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { m, AnimatePresence } from './motion'
 import { X, Download, WifiOff, Maximize2, Zap } from 'lucide-react'
 import { useT } from '../i18n/useLang'
 import { useInstall } from '../lib/pwaInstall'
@@ -95,7 +95,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
     <AnimatePresence>
       {open && (
         <>
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -103,7 +103,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
             onClick={dismiss}
           />
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
@@ -166,7 +166,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
             >
               {t('install.later')}
             </button>
-          </motion.div>
+          </m.div>
         </>
       )}
     </AnimatePresence>
