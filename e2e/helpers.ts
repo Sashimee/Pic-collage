@@ -202,6 +202,21 @@ async function boardBox(page: Page) {
   return box
 }
 
+/**
+ * Yield until the page has actually rendered a frame.
+ *
+ * Chromium coalesces mousemoves that arrive within one frame, so a stroke
+ * driven faster than the compositor loses its middle and the editor rightly
+ * reads what's left as a tap. A fixed sleep only approximates "the move was
+ * processed" and gets it wrong exactly when the machine is busy — which is why
+ * these gesture specs failed in a different combination on every contended run.
+ * Waiting on a real frame is the condition we actually need.
+ */
+const afterFrame = (page: Page) =>
+  page.evaluate(
+    () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))),
+  )
+
 /** Drag across the board, in board-relative fractions (0..1 of the board). */
 export async function dragOnCanvas(
   page: Page,
@@ -216,15 +231,13 @@ export async function dragOnCanvas(
   const y2 = box.y + box.height * to[1]
   await page.mouse.move(x1, y1)
   await page.mouse.down()
+  await afterFrame(page)
   for (let i = 1; i <= steps; i++) {
     await page.mouse.move(x1 + ((x2 - x1) * i) / steps, y1 + ((y2 - y1) * i) / steps)
-    // Breathe between moves. Under load Chromium coalesces mousemoves, and a
-    // stroke that starts outside the board then loses its middle collapses to
-    // the clamped start point — which the editor rightly reads as a tap.
-    await page.waitForTimeout(8)
+    await afterFrame(page)
   }
   await page.mouse.up()
-  await page.waitForTimeout(150)
+  await afterFrame(page)
 }
 
 /** Draw a closed loop on the board, for the round-zone tool. */
@@ -233,12 +246,14 @@ export async function loopOnCanvas(page: Page, centre: [number, number], radiusP
   const cx = box.x + box.width * centre[0]
   const cy = box.y + box.height * centre[1]
   await page.mouse.move(cx + radiusPx, cy)
+  await afterFrame(page)
   await page.mouse.down()
+  await afterFrame(page)
   for (let i = 1; i <= 32; i++) {
     const a = (i / 32) * Math.PI * 2
     await page.mouse.move(cx + Math.cos(a) * radiusPx, cy + Math.sin(a) * radiusPx)
-    await page.waitForTimeout(6)
+    await afterFrame(page)
   }
   await page.mouse.up()
-  await page.waitForTimeout(150)
+  await afterFrame(page)
 }
