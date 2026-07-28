@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { assignmentSheet, getMode, openApp, pngFile, waitForElements } from './helpers'
+import { assignmentSheet, getMode, layoutCard, openApp, pngFile, waitForElements } from './helpers'
 
 test.describe('layout-first onboarding', () => {
   test.beforeEach(async ({ page }) => {
@@ -23,19 +23,19 @@ test.describe('layout-first onboarding', () => {
   })
 
   test('tapping a layout opens the photo assignment sheet', async ({ page }) => {
-    await page.locator('[aria-label*="photos"]').first().click()
+    await layoutCard(page).click()
     await expect(assignmentSheet(page)).toBeVisible()
     await expect(page.getByText('Tap a slot to add a photo')).toBeVisible()
   })
 
   test('skipping assignment enters grid mode', async ({ page }) => {
-    await page.locator('[aria-label*="photos"]').first().click()
+    await layoutCard(page).click()
     await page.getByRole('button', { name: /Skip for now/i }).click()
     await expect.poll(() => getMode(page)).toBe('grid')
   })
 
   test('assigning a photo to a slot puts it in the collage', async ({ page }) => {
-    await page.locator('[aria-label*="photos"]').first().click()
+    await layoutCard(page).click()
 
     // Each slot opens a *detached* input, so the file chooser event is the only
     // way in — there is no input element in the DOM to target.
@@ -51,7 +51,7 @@ test.describe('layout-first onboarding', () => {
   })
 
   test('auto-fill adds several photos at once', async ({ page }) => {
-    await page.locator('[aria-label*="photos"]').first().click()
+    await layoutCard(page).click()
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.getByRole('button', { name: /Auto-fill from Gallery/i }).click(),
