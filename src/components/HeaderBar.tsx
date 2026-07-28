@@ -5,7 +5,7 @@ import {
   Share2, FileImage, Image as ImageIcon,
   RefreshCcw, Menu, FolderOpen, Save, Upload,
   ChevronDown, FileCode, Maximize, FileText, Package, Smartphone,
-  Plus,
+  Plus, BookOpen,
 } from 'lucide-react'
 import { useEditor } from '../store/editorStore'
 import { useProjects } from '../store/projectsStore'
@@ -23,7 +23,7 @@ import { useToasts } from './ToastContainer'
 import { FullScreenButton } from './FullScreen'
 import { useInstall } from '../lib/pwaInstall'
 
-export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'batch'
+export type ExportKind = 'png' | 'jpg' | 'share' | 'svg' | 'pdf' | 'book' | 'batch'
 
 /**
  * The app mark — the same photo-stack as public/favicon.svg, simplified for
@@ -301,6 +301,9 @@ export function HeaderBar({
                     <MenuItem onClick={() => handleExport('pdf')} icon={<FileText size={16} />}>
                       {t('export.pdf')}
                     </MenuItem>
+                    <MenuItem onClick={() => handleExport('book')} icon={<BookOpen size={16} />}>
+                      {t('export.book')}
+                    </MenuItem>
                     <MenuItem onClick={() => { setExportOpen(false); handleBatchExport() }} icon={<Package size={16} />}>
                       {t('export.batch')}
                     </MenuItem>
@@ -479,6 +482,11 @@ export function HeaderBar({
           onClick={() => { setSheetOpen(false); handleExport('pdf') }}
           icon={<FileText size={18} />}
           label={t('export.pdf')}
+        />
+        <ActionItem
+          onClick={() => { setSheetOpen(false); handleExport('book') }}
+          icon={<BookOpen size={18} />}
+          label={t('export.book')}
         />
         <ActionItem
           onClick={() => { setSheetOpen(false); handleBatchExport() }}

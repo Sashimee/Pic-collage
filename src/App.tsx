@@ -29,7 +29,10 @@ import { UpdateBanner } from './components/UpdateBanner'
 import { ZoomControls } from './components/ZoomControls'
 import { StatusBar } from './components/StatusBar'
 import { PageStrip } from './components/PageStrip'
-import { useEditor } from './store/editorStore'
+const PhotoBookSheet = lazy(() =>
+  import('./components/PhotoBookSheet').then((m) => ({ default: m.PhotoBookSheet })),
+)
+import { useEditor, type LoadedDocument } from './store/editorStore'
 import { useT } from './i18n/useLang'
 import { useProjects, defaultProjectName } from './store/projectsStore'
 import { useWorkspace } from './store/workspaceStore'
@@ -93,6 +96,8 @@ function toStoredDoc(): StoredDoc {
 export default function App() {
   const editorRef = useRef<EditorHandle>(null)
   const [installOpen, setInstallOpen] = useState(false)
+  const [bookOpen, setBookOpen] = useState(false)
+  const [bookPages, setBookPages] = useState<LoadedDocument[]>([])
   const select = useEditor((s) => s.select)
   const loadDocument = useEditor((s) => s.loadDocument)
   const [hydrated, setHydrated] = useState(false)
@@ -189,6 +194,22 @@ export default function App() {
    * exists, so with no active project there is nothing to save into — create
    * one, silently, rather than leaving the work unprotected.
    */
+  /** The board on screen as a page document, for a book with no project. */
+  const liveDocument = (): LoadedDocument => {
+    const s = useEditor.getState()
+    return {
+      boardWidth: s.boardWidth,
+      boardHeight: s.boardHeight,
+      background: s.background,
+      mode: s.mode,
+      gridId: s.gridId,
+      gridGap: s.gridGap,
+      gridRadius: s.gridRadius,
+      frame: s.frame,
+      elements: s.elements,
+    }
+  }
+
   const ensureProjectSaved = async () => {
     const projects = useProjects.getState()
     try {
@@ -210,6 +231,19 @@ export default function App() {
     }
     if (kind === 'batch') {
       // Handled by HeaderBar's handleBatchExport
+      return
+    }
+    if (kind === 'book') {
+      track('export-book')
+      // Fold the live page into the page list first — the store's copy of the
+      // page being edited lags until a save, so a book built without this
+      // would print the last saved version of whatever is on screen.
+      await ensureProjectSaved()
+      const stored = useProjects.getState().pages
+      // With no IndexedDB there is no page list; the board on screen is still
+      // a perfectly good one-page book.
+      setBookPages(stored.length ? stored : [liveDocument()])
+      setBookOpen(true)
       return
     }
     if (kind === 'pdf') {
@@ -355,6 +389,22 @@ export default function App() {
           </>
         )}
         <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
+        {bookOpen && (
+          <Suspense fallback={null}>
+            <PhotoBookSheet
+              open={bookOpen}
+              pages={bookPages}
+              onClose={() => setBookOpen(false)}
+              onDone={async (pdf) => {
+                const { downloadPDF } = await import('./lib/exportPDF')
+                downloadPDF(pdf, `photo-book-${Date.now()}.pdf`)
+                setBookOpen(false)
+                fireConfetti()
+                maybeNudgeInstall()
+              }}
+            />
+          </Suspense>
+        )}
         <UpdateBanner />
         <ToastContainer />
         <OnboardingOverlay />

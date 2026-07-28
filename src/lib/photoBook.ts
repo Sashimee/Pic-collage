@@ -104,3 +104,40 @@ export function pageNumberFor(index: number, options: BookOptions): number | nul
   if (options.cover) return index === 0 ? null : index
   return index + 1
 }
+
+/**
+ * Render every page and bind them into a PDF at the chosen physical size.
+ *
+ * Both heavy modules are imported lazily: pdf-lib is ~420 KB and the
+ * off-screen renderer pulls in react-konva. Neither belongs in the bundle
+ * someone downloads to look at the layout gallery.
+ */
+export async function buildPhotoBook(
+  pages: import('../store/editorStore').LoadedDocument[],
+  options: BookOptions,
+  hooks: {
+    onProgress?: (done: number, total: number) => void
+    signal?: { cancelled: boolean }
+  } = {},
+): Promise<Uint8Array | null> {
+  if (!pages.length) return null
+  const size = bookSizeById(options.sizeId)
+
+  const [{ renderPages }, { exportPDF }] = await Promise.all([
+    import('./renderPages'),
+    import('./exportPDF'),
+  ])
+
+  const bitmaps = await renderPages(pages, {
+    ...pageSizePx(size),
+    format: 'jpeg',
+    onProgress: hooks.onProgress,
+    signal: hooks.signal,
+  })
+  if (!bitmaps.length || hooks.signal?.cancelled) return null
+
+  return exportPDF(
+    bitmaps.map((dataUrl, i) => ({ dataUrl, pageNumber: pageNumberFor(i, options) })),
+    { page: pageSizePt(size), title: 'Photo Book' },
+  )
+}

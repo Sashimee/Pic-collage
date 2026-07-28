@@ -3,6 +3,7 @@ import { Group, Image as KonvaImage, Rect, Text } from 'react-konva'
 import type Konva from 'konva'
 import type { GridCell, GridCellShape, GridLayout, PhotoElement } from '../types'
 import { useImage } from '../hooks/useImage'
+import { useEditor } from '../store/editorStore'
 import { computeFilterConfig } from '../lib/filters'
 import { CELL_SHAPE_PRESETS } from '../lib/cellShapes'
 import { assignSlots, cellRect, type CellRect as Rect2 } from '../lib/grids'
@@ -147,7 +148,14 @@ function CellPhoto({
   onPan,
   onReset,
 }: CellPhotoProps) {
-  const image = useImage(el.src)
+  // Grid cells used to draw `el.src` unconditionally, so an export of a grid
+  // collage silently used the 1080px preview however large it was rendered —
+  // the same half-resolution bug that was fixed for free photos, still live
+  // here because this path never looked at the flag.
+  const exporting = useEditor((s) => s.exporting)
+  const image = useImage(
+    exporting ? (el.originalSrc ?? el.previewSrc ?? el.src) : (el.previewSrc ?? el.src),
+  )
   const ref = useRef<Konva.Image>(null)
 
   useEffect(() => {
