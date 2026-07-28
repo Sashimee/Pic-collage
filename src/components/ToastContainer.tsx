@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle, AlertCircle, Info } from 'lucide-react'
-import { useToast } from '../store/toastStore'
+import { useToast, type ToastAction } from '../store/toastStore'
 import type { ReactNode } from 'react'
 import { useT } from '../i18n/useLang'
 
@@ -29,6 +29,14 @@ export function ToastContainer() {
           >
             {ICONS[toast.type]}
             <span className="flex-1">{toast.message}</span>
+            {toast.action && (
+              <button
+                onClick={toast.action.onClick}
+                className="shrink-0 rounded-lg bg-accent/15 px-2.5 py-1 text-xs font-semibold text-accent transition hover:bg-accent/25 active:scale-95"
+              >
+                {toast.action.label}
+              </button>
+            )}
             <button
               onClick={() => remove(toast.id)}
               className="ml-1 rounded-md p-1 text-muted transition hover:text-text hover:bg-surface-2"
@@ -51,5 +59,8 @@ export function useToasts() {
     error: (msg: string) => addToast(msg, 'error', 4000),
     info: (msg: string) => addToast(msg, 'info', 3000),
     warn: (msg: string) => addToast(msg, 'error', 5000),
+    /** A toast that offers a way out — e.g. "save the file the share ate". */
+    action: (msg: string, action: ToastAction, duration = 8000) =>
+      addToast(msg, 'info', duration, action),
   }
 }

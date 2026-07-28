@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-
+import { ChevronDown } from 'lucide-react'
+import { useScrollOverflow } from '../hooks/useScrollOverflow'
 import type { ReactNode } from 'react'
 
 interface ActionSheetProps {
@@ -12,6 +13,13 @@ interface ActionSheetProps {
 
 export function ActionSheet({ open, onClose, title, children }: ActionSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
+  // `open` is a dep because the scroller only exists while the sheet is
+  // mounted — the first measurement has to wait for that.
+  const {
+    ref: bodyRef,
+    canScrollStart: canScrollUp,
+    canScrollEnd: canScrollDown,
+  } = useScrollOverflow<HTMLDivElement>('y', [open])
 
   // Close on escape
   useEffect(() => {
@@ -66,11 +74,27 @@ export function ActionSheet({ open, onClose, title, children }: ActionSheetProps
                 </h3>
               )}
 
-              <div className="max-h-[80vh] overflow-y-auto px-2 pb-4 relative">
-                {children}
-                {/* Visual cue for scrollable content */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-surface-2 to-transparent" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-surface-2 to-transparent" />
+              {/* The fades must be siblings of the scroller, not children of
+                  it: an absolutely positioned child of an overflow container is
+                  laid out against the *content* box and scrolls away with it. */}
+              <div className="relative">
+                <div ref={bodyRef} className="max-h-[80vh] overflow-y-auto px-2 pb-4">
+                  {children}
+                </div>
+                {canScrollUp && (
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-surface to-transparent" />
+                )}
+                {canScrollDown && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-9 items-end justify-center bg-gradient-to-t from-surface to-transparent">
+                    {!canScrollUp && (
+                      <ChevronDown
+                        size={16}
+                        className="mb-0.5 animate-bounce text-muted"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

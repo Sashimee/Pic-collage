@@ -29,7 +29,7 @@ import { fireConfetti } from './lib/confetti'
 import { track } from './lib/analytics'
 import { InstallSheet } from './components/InstallSheet'
 import { useInstall } from './lib/pwaInstall'
-import { ToastContainer } from './components/ToastContainer'
+import { ToastContainer, useToasts } from './components/ToastContainer'
 import { useDefaultShortcuts } from './hooks/useKeyboard'
 import { OnboardingOverlay } from './components/Onboarding'
 import { restoreCustomFonts } from './lib/fonts'
@@ -99,6 +99,7 @@ export default function App() {
   const panels = usePanels(isDesktopInitial)
   const sidePanelWidth = panelSizes['side'] ?? 336
   const t = useT()
+  const toast = useToasts()
 
   useVersionCheck()
   useMemoryPressure()
@@ -225,7 +226,9 @@ export default function App() {
       }
       return
     }
-    const format: ExportFormat = kind === 'jpg' ? 'jpg' : 'png'
+    // Share as JPEG: it is a fraction of the size and Android share targets
+    // accept it far more reliably — several reject a large PNG outright.
+    const format: ExportFormat = kind === 'jpg' || kind === 'share' ? 'jpg' : 'png'
     let url = editorRef.current?.exportImage(format)
     if (url) {
       track(kind === 'share' ? 'export-share' : `export-${format}`)
@@ -239,7 +242,19 @@ export default function App() {
       }
       if (kind === 'share') {
         const shared = await shareDataURL(url, format, t('share.title'))
-        if (!shared) downloadDataURL(url, format)
+        if (!shared) {
+          downloadDataURL(url, format)
+        } else {
+          // `navigator.share()` resolving only means the target *accepted* the
+          // intent. Facebook accepts it and then opens its composer without the
+          // file, so a resolved share is no guarantee the picture went
+          // anywhere. Leave the user a one-tap way to keep it.
+          const saved = url
+          toast.action(t('share.maybeFailed'), {
+            label: t('share.saveInstead'),
+            onClick: () => downloadDataURL(saved, format),
+          })
+        }
       } else {
         downloadDataURL(url, format)
       }
@@ -310,7 +325,11 @@ export default function App() {
                   backgroundSize: '24px 24px',
                 }}
               />
-              <EditorCanvas ref={editorRef} />
+              {/* The sheet overlays the stage at 46% of this box (BottomSheet's
+                  collapsed snap point) with no scrim, so tell the canvas to fit
+                  the board above it. Dragging it up to 86% is left alone — that
+                  is a deliberate "show me more panel" gesture. */}
+              <EditorCanvas ref={editorRef} bottomInset={panels.current ? 0.46 : 0} />
               <SelectionBar />
               <EmptyState />
               <MobileSheet panels={panels} />

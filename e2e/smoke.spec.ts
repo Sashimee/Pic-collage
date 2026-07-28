@@ -45,4 +45,44 @@ test.describe('smoke', () => {
     await page.getByRole('button', { name: 'Night mode' }).click()
     await expect(page.getByRole('button', { name: 'Day mode' })).toBeVisible()
   })
+
+  test('the Facebook route is offered even without Web Share', async ({ page }) => {
+    // Desktop Chromium has no navigator.canShare, and the sharer URL is a plain
+    // link — gating it on Web Share hid it from the browsers it works best in.
+    await openApp(page)
+    await page.getByRole('button', { name: 'Export' }).click()
+    await expect(
+      page.getByRole('menuitem', { name: 'Share link on Facebook' }),
+    ).toBeVisible()
+  })
+
+  test('no menu item is labelled with a raw translation key', async ({ page }) => {
+    // `t()` renders the key itself when it is missing from the language map,
+    // which is how a menu item reading "export.facebook" reached production.
+    // (src/i18n/__tests__ covers all six languages; this checks it renders.)
+    await openApp(page)
+    await page.getByRole('button', { name: 'Export' }).click()
+    const labels = await page.getByRole('menuitem').allInnerTexts()
+    expect(labels.length).toBeGreaterThan(4)
+    expect(labels.filter((l) => /^[a-z]+\.[a-zA-Z]+$/.test(l.trim()))).toEqual([])
+  })
+})
+
+test.describe('mobile chrome', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('the menu says it scrolls', async ({ page }) => {
+    // The action sheet holds ~20 rows; more than half sits below the fold with
+    // nothing to suggest it. The cue only shows when there is more to see.
+    await openApp(page)
+    await page.getByRole('button', { name: 'Menu' }).click()
+
+    const fade = page.locator('.bg-gradient-to-t.from-surface')
+    await expect(fade).toBeVisible()
+
+    // ...and goes away once you reach the end.
+    const body = page.locator('[role="dialog"] .overflow-y-auto')
+    await body.evaluate((el) => el.scrollTo(0, el.scrollHeight))
+    await expect(fade).toBeHidden()
+  })
 })

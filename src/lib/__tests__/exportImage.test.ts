@@ -86,6 +86,22 @@ describe('shareDataURL', () => {
     vi.unstubAllGlobals()
   })
 
+  it('hands the target a correctly named and typed file', async () => {
+    // The share path exports JPEG (smaller, and Android targets reject large
+    // PNGs), so the file the target receives has to say so.
+    let shared: { files?: File[] } | undefined
+    vi.stubGlobal('navigator', {
+      canShare: () => true,
+      share: async (data: { files?: File[] }) => {
+        shared = data
+      },
+    })
+    await shareDataURL('data:image/jpeg;base64,/9j/4AAQ', 'jpg', 'My Collage')
+    expect(shared?.files?.[0].name).toBe('collage.jpg')
+    expect(shared?.files?.[0].type).toBe('image/jpeg')
+    vi.unstubAllGlobals()
+  })
+
   it('returns false when share throws', async () => {
     vi.stubGlobal('navigator', {
       canShare: () => true,

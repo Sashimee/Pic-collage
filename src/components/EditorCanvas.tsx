@@ -34,7 +34,16 @@ export interface EditorHandle {
 const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v))
 
-export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
+export interface EditorCanvasProps {
+  /**
+   * Fraction of the canvas height (0..1) hidden behind an overlaying panel
+   * sheet. The board is fitted above it so a photo at the bottom of the
+   * collage stays visible — and adjustable — while its panel is open.
+   */
+  bottomInset?: number
+}
+
+export const EditorCanvas = forwardRef<EditorHandle, EditorCanvasProps>(({ bottomInset = 0 }, ref) => {
   const t = useT()
   const hostRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
@@ -175,10 +184,15 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   // Floating chrome sits *over* the stage, so the board has to be fitted into
   // what's left rather than into the whole host box — otherwise the toolbar and
   // the selection/zoom controls cover the top and bottom of the board.
-  const chromeInsets =
+  const base =
     mode === 'custom-layout'
       ? { top: 60, bottom: 96, left: 8, right: 8 } // tool bar / hint + padding row
       : { top: 12, bottom: 60, left: 52, right: 8 } // snap/grid column + controls
+  // An open panel sheet overlays the stage without a scrim, so it eats into the
+  // same space the floating chrome does. Cap it so a tall sheet can't squeeze
+  // the board down to nothing.
+  const panelInset = clamp(bottomInset, 0, 0.6) * size.h
+  const chromeInsets = { ...base, bottom: Math.max(base.bottom, panelInset) }
 
   const fitToScreen = () => {
     if (!size.w || !size.h) return
@@ -195,7 +209,7 @@ export const EditorCanvas = forwardRef<EditorHandle>((_props, ref) => {
   }
 
   // Re-fit when the viewport, the board or the on-canvas chrome changes.
-  useEffect(fitToScreen, [size.w, size.h, boardWidth, boardHeight, mode])
+  useEffect(fitToScreen, [size.w, size.h, boardWidth, boardHeight, mode, bottomInset])
 
   // --- transformer attachment --------------------------------------------
   useEffect(() => {

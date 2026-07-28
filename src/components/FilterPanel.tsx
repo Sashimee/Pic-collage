@@ -103,7 +103,7 @@ export function FilterPanel() {
   const preview = computeFilterConfigFromStack(stack)
 
   return (
-    <div className="flex flex-col gap-4 relative z-60">
+    <div className="flex flex-col gap-4">
       {/* Preview thumbnail */}
       <div className="relative overflow-hidden rounded-xl border border-border bg-surface-2">
         <img
