@@ -72,6 +72,55 @@ test.describe('photos survive a reload', () => {
     expect(await srcsResolve(page)).toBe(true)
   })
 
+  test('a project saved by the old single-page version still opens', async ({ page }) => {
+    // Projects stored before the page model hold a bare document in `data`.
+    // Rewrite a record into that shape to stand in for one already on a user's
+    // device — the migration exists precisely so these keep working.
+    await openApp(page)
+    await page.locator('#empty-gallery-input').setInputFiles(pngFile())
+    await waitForElements(page, 'photo')
+
+    const projectId = await page.evaluate(() =>
+      window.__projects!.getState().createProject('Legacy'),
+    )
+
+    const downgraded = await page.evaluate(
+      (id) =>
+        new Promise<boolean>((resolve) => {
+          const req = indexedDB.open('pic-collage-db')
+          req.onsuccess = () => {
+            const db = req.result
+            const t = db.transaction('projects', 'readwrite')
+            const store = t.objectStore('projects')
+            const get = store.get(id)
+            get.onsuccess = () => {
+              const rec = get.result
+              if (!rec?.data?.pages) return resolve(false)
+              rec.data = rec.data.pages[0] // strip the wrapper
+              store.put(rec)
+            }
+            t.oncomplete = () => {
+              db.close()
+              resolve(true)
+            }
+          }
+          req.onerror = () => resolve(false)
+        }),
+      projectId,
+    )
+    expect(downgraded).toBe(true)
+
+    await page.reload()
+    await page.waitForFunction(() => !!window.__editor)
+    await page.evaluate(async (id) => {
+      window.__editor!.getState().clearAll()
+      await window.__projects!.getState().openProject(id)
+    }, projectId)
+
+    await waitForElements(page, 'photo')
+    expect(await srcsResolve(page)).toBe(true)
+  })
+
   test('a restored version keeps its photos', async ({ page }) => {
     await openApp(page)
     await page.locator('#empty-gallery-input').setInputFiles(pngFile())

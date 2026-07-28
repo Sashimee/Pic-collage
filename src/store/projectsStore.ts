@@ -3,6 +3,12 @@ import { saveProject, loadProject, deleteProject, listProjects, type Project } f
 import { useEditor, type LoadedDocument } from './editorStore'
 import { useVersionStore } from './versionStore'
 import { rehydratePhotos, stripPhotoUrls } from '../lib/photoRehydrate'
+import {
+  activeDocument,
+  singlePage,
+  toProjectDocument,
+  withActivePage,
+} from '../lib/projectSchema'
 
 export interface ProjectMeta {
   id: string
@@ -101,7 +107,7 @@ export const useProjects = create<ProjectsState>((set, get) => ({
     if (typeof indexedDB === 'undefined') return ''
     const id = uid()
     const now = Date.now()
-    const snapshot = getSnapshot()
+    const snapshot = singlePage(getSnapshot())
     const project: Project = {
       id,
       name: name || 'Untitled',
@@ -121,9 +127,15 @@ export const useProjects = create<ProjectsState>((set, get) => ({
   openProject: async (id) => {
     if (typeof indexedDB === 'undefined') return
     const project = await loadProject(id)
-    if (!project || !project.data) return
-    const elements = await rehydratePhotos(project.data.elements)
-    useEditor.getState().loadDocument({ ...project.data, elements })
+    if (!project) return
+    // Migrates a legacy single-document project into a one-page one; returns
+    // null only when there is nothing usable, in which case leave the canvas
+    // as it is rather than clearing the user's work.
+    const doc = toProjectDocument(project.data)
+    if (!doc) return
+    const page = activeDocument(doc)
+    const elements = await rehydratePhotos(page.elements)
+    useEditor.getState().loadDocument({ ...page, elements })
     set({ activeProjectId: id })
   },
 
@@ -180,7 +192,11 @@ export const useProjects = create<ProjectsState>((set, get) => ({
     if (!activeProjectId) return
     const project = await loadProject(activeProjectId)
     if (!project) return
-    project.data = getSnapshot()
+    // Keep any other pages; only the one being edited is replaced.
+    const existing = toProjectDocument(project.data)
+    project.data = existing
+      ? withActivePage(existing, getSnapshot())
+      : singlePage(getSnapshot())
     project.updatedAt = Date.now()
     await saveProject(project)
     await recordVersion(activeProjectId)
