@@ -41,8 +41,16 @@ npm run dev            # dev server with HMR (http://localhost:5173/<base>/)
 npm run build          # tsc -b && vite build  →  dist/
 npm run preview        # serve the production build locally
 npm run lint           # type-check only (tsc -b --noEmit)
+npm run test           # vitest run (unit)
+npm run test:e2e       # playwright, e2e/playwright.config.ts (starts its own dev server)
+npm run build:lh       # root-based build into dist-lh/, for Lighthouse only — see gotchas
 npm run generate:icons # regenerate PWA PNG icons from scripts/generate-icons.mjs
 ```
+
+The e2e suite is the main regression net; run it before shipping anything that
+touches the canvas, persistence or export. In a sandbox whose Chromium isn't the
+build Playwright pins, add `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chromium`, and
+`--workers=1` to match CI (the gesture specs are sensitive to contention).
 
 ## Directory map
 
@@ -61,16 +69,27 @@ Pic-Collage-Maker/
     ├── index.css               # Tailwind import + base/touch styles
     ├── types.ts                # CanvasElement union, Background, Grid types, DEFAULT_FILTERS
     ├── store/
-    │   └── editorStore.ts      # zustand: elements, selection, background, mode, z-order, actions
+    │   ├── editorStore.ts      # zustand: elements, selection, background, mode, z-order, actions
+    │   ├── projectsStore.ts    # named projects in IndexedDB + debounced autosave
+    │   ├── versionStore.ts     # version history snapshots (deduped, capped at MAX_SNAPSHOTS)
+    │   ├── workspaceStore.ts   # panel layout / active tab persistence
+    │   └── toastStore.ts       # toasts, with an optional action button
     ├── i18n/
     │   ├── translations.ts     # Lang type, LANGS (flags), 6-language string maps
     │   └── useLang.ts          # lang store (detect+persist) + useT() translator hook
     ├── hooks/
-    │   └── useImage.ts         # URL → decoded HTMLImageElement
+    │   ├── useImage.ts         # URL → decoded HTMLImageElement
+    │   ├── useMediaQuery.ts    # useIsDesktop() and friends
+    │   └── useScrollOverflow.ts# scroll-position → fade/arrow affordances (Docks, ActionSheet)
     ├── lib/
     │   ├── grids.ts            # normalised collage grid presets (GRID_LAYOUTS)
+    │   ├── customLayout.ts     # draw-your-own layouts: polygon zones, stroke → split/circle
     │   ├── filters.ts          # FILTER_PRESETS + computeFilterConfig() → Konva filter stack
-    │   ├── importPhotos.ts     # File → object URL + intrinsic size
+    │   ├── importPhotos.ts     # File → orig/preview(1080px)/thumb blobs + object URLs
+    │   ├── photoRehydrate.ts   # strip blob: URLs before persisting, rebuild them on load
+    │   ├── pwaInstall.ts       # beforeinstallprompt store + platform detection
+    │   ├── analytics.ts        # cookieless GoatCounter beacon (honours DNT/GPC)
+    │   ├── exportPDF.ts        # pdf-lib; takes an *array* of pages
     │   └── exportImage.ts      # exportBoard(), download, Web Share
     └── components/
         ├── EditorCanvas.tsx    # Konva stage, board group, gestures, transformer, export handle
@@ -216,6 +235,28 @@ untranslated.
 - Emoji flags render as flags on iOS/Android; some desktop/Windows fonts show
   letters — cosmetic only.
 - React **StrictMode** is on (dev double-invoke) — keep effects idempotent.
+- **Never let a `blob:` URL reach persistence.** Photo elements hold their pixels
+  as object URLs, which are handles into the *current document* and die on
+  reload; the bytes live in IndexedDB under `photoId`. Anything that saves a
+  document must `stripPhotoUrls()` first and `rehydratePhotos()` on the way back
+  (`src/lib/photoRehydrate.ts`). Saved projects and version history both shipped
+  without this and silently lost their photos across a restart. It looks fine
+  until you reload — so **test persistence with an actual page reload**.
+- **A store flag read through a React selector can't be set and used in the same
+  tick.** `exporting` (swaps photos to full resolution for export) was set,
+  used, and cleared in three consecutive statements; React never re-rendered, so
+  it never took effect and every export used the 1080px preview. If a render has
+  to observe a flag, `await` a frame — see `EditorCanvas.exportImage`.
+- **Lighthouse needs its own build.** `npm run build:lh` emits `dist-lh/` with
+  `base=/` because LHCI's static server serves the directory at the root, while
+  the normal build sets `base=/Pic-collage/` for Pages. Building the usual way
+  makes the bundle 404 and Lighthouse fails with `NO_FCP` without ever scoring
+  anything.
+- **Dev-only test seams**, exposed under `import.meta.env.DEV`: `window.__editor`
+  (editorStore), `__projects`, `__versions`, and `__boardRect()` (the board's
+  on-screen rect, from `EditorCanvas`). The e2e suite drives flows through these
+  — particularly ones that must survive a page reload, where module imports and
+  React refs are gone.
 
 ## Git workflow
 
@@ -254,7 +295,14 @@ guides, watermark + print marks, PNG/JPG/SVG/PDF/ZIP export + Web Share,
 autosave/restore + projects + version history (IndexedDB), mobile pinch/wheel
 zoom + aspect presets, installable PWA + Pages CI/CD, **6-language UI**.
 
-Next ideas: richer touch gestures (two-finger rotate) · more grid layouts +
+Next up: **multiple montages per project** (a page model — `Project.data` is a
+single document today — plus a page strip reusing `LayerPanel`'s pointer-drag
+reordering) and a **photo book** built from them. `exportPDF` already takes an
+array of pages, so the output side is close; the work is the page model, its
+schema migration, and real page geometry (it currently sizes each PDF page to
+the bitmap at 72 DPI, where a printed book wants a fixed physical size at 300).
+
+Other ideas: richer touch gestures (two-finger rotate) · more grid layouts +
 adjustable gutter/corner radius · crop tool polish · a real animation/export-video
 pipeline (the half-baked one was removed) · **Capacitor** wrapper for App Store /
 Play Store (structure is ready; not installed).
