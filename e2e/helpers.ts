@@ -119,14 +119,16 @@ export const assignmentSheet = (page: Page) =>
 export async function openApp(page: Page, opts: { lang?: string; tips?: boolean } = {}) {
   await page.addInitScript(
     ({ lang, tips }) => {
-      if (!tips) {
-        // A timestamp of 1 reads as "seen"; the value is never displayed.
-        const seen = ['welcome', 'pinch', 'draw', 'layout', 'layers', 'cellZoom']
-        localStorage.setItem(
-          'pic-collage-tips-v1',
-          JSON.stringify(Object.fromEntries(seen.map((id) => [id, 1]))),
-        )
-      }
+      // A timestamp of 1 reads as "seen"; the value is never displayed. The
+      // welcome carousel is suppressed either way — it is a full-screen modal,
+      // and a spec about a gesture tip should not have to click through it.
+      const seen = tips
+        ? ['welcome']
+        : ['welcome', 'pinch', 'draw', 'layout', 'layers', 'cellZoom']
+      localStorage.setItem(
+        'pic-collage-tips-v1',
+        JSON.stringify(Object.fromEntries(seen.map((id) => [id, 1]))),
+      )
       if (lang) localStorage.setItem('lang', lang)
     },
     { lang: opts.lang ?? '', tips: !!opts.tips },
