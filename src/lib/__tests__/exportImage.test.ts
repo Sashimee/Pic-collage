@@ -7,6 +7,8 @@ import {
   shareFileName,
   canShareImage,
   exportBoard,
+  buildShareText,
+  appUrl,
 } from '../exportImage'
 
 /**
@@ -312,6 +314,63 @@ describe('shareImages', () => {
     vi.stubGlobal('navigator', { canShare: () => true, share: async () => {} })
     expect(await shareImages([], 'jpg')).toBe('unsupported')
     vi.unstubAllGlobals()
+  })
+
+  it('carries the caption and the app link in the shared text', async () => {
+    let shared: { text?: string } | undefined
+    vi.stubGlobal('navigator', {
+      canShare: () => true,
+      share: async (data: { text?: string }) => {
+        shared = data
+      },
+    })
+    await shareImages(jpg(1), 'jpg', 'My Collage', 'Made with Pic Collage Maker —')
+    expect(shared?.text).toBe(`Made with Pic Collage Maker — ${appUrl()}`)
+    vi.unstubAllGlobals()
+  })
+
+  it('shares the link even when the caller passes no caption', async () => {
+    let shared: { text?: string } | undefined
+    vi.stubGlobal('navigator', {
+      canShare: () => true,
+      share: async (data: { text?: string }) => {
+        shared = data
+      },
+    })
+    await shareImages(jpg(1), 'jpg')
+    expect(shared?.text).toBe(appUrl())
+    vi.unstubAllGlobals()
+  })
+
+  it('drops the text, not the picture, when a target refuses text with files', async () => {
+    let shared: { text?: string; files?: File[] } | undefined
+    vi.stubGlobal('navigator', {
+      canShare: (data: { text?: string }) => !data.text,
+      share: async (data: { text?: string; files?: File[] }) => {
+        shared = data
+      },
+    })
+    expect(await shareImages(jpg(2), 'jpg')).toBe('shared')
+    expect(shared?.text).toBeUndefined()
+    expect(shared?.files).toHaveLength(2)
+    vi.unstubAllGlobals()
+  })
+})
+
+describe('buildShareText', () => {
+  it('is the bare link when there is no caption to lead with', () => {
+    expect(buildShareText()).toBe(appUrl())
+    expect(buildShareText('   ')).toBe(appUrl())
+  })
+
+  it('puts the caption first and the link last', () => {
+    expect(buildShareText('Hello')).toBe(`Hello ${appUrl()}`)
+  })
+
+  it('falls back to the published URL rather than sharing a localhost address', () => {
+    // jsdom serves the tests from localhost, which is exactly the case the
+    // fallback exists for.
+    expect(appUrl()).toBe('https://sashimee.github.io/Pic-collage/')
   })
 })
 

@@ -284,7 +284,7 @@ export default function App() {
     if (urls.length) {
       track(sharing ? 'export-share' : `export-${format}`)
       if (sharing) {
-        const outcome = await shareImages(urls, format, t('share.title'))
+        const outcome = await shareImages(urls, format, t('share.title'), t('share.text'))
         // Cancelling is a decision, not a failure: no file, no confetti, no
         // toast. Downloading anyway is what put an unwanted "open in Preview"
         // sheet in front of testers who had changed their mind.

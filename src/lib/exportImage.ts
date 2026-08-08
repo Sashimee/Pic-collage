@@ -312,6 +312,39 @@ export const shareFileName = (format: ExportFormat, index = 0, total = 1) =>
   total > 1 ? `collage-${index + 1}.${extFor(format)}` : `collage.${extFor(format)}`
 
 /**
+ * The public address of the app.
+ *
+ * Read off the page it is actually served from (origin + Vite base), so a
+ * renamed repo or a custom domain needs no edit here. Only local dev and
+ * `file:` builds — where the real address is unknowable — fall back to the
+ * published URL, because a share reading `http://localhost:5173/` helps nobody.
+ */
+const PUBLISHED_URL = 'https://sashimee.github.io/Pic-collage/'
+
+export function appUrl(): string {
+  try {
+    const { origin, protocol } = window.location
+    const local = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(origin)
+    if (/^https?:$/.test(protocol) && !local) {
+      return new URL(import.meta.env.BASE_URL || '/', origin).href
+    }
+  } catch {
+    /* no window (SSR/tests) — fall through to the published URL */
+  }
+  return PUBLISHED_URL
+}
+
+/**
+ * The text that rides along with every share: the caller's caption, then the
+ * link back to the app. The link is not optional — it is the only thing that
+ * lets someone who sees a collage find out what made it.
+ */
+export function buildShareText(caption?: string): string {
+  const trimmed = caption?.trim()
+  return trimmed ? `${trimmed} ${appUrl()}` : appUrl()
+}
+
+/**
  * Share one or more images through the Web Share API.
  *
  * The `canShare` probe uses the **whole** array: a target can accept one file
@@ -326,15 +359,22 @@ export async function shareImages(
   dataURLs: string[],
   format: ExportFormat,
   title = 'My Collage',
+  caption?: string,
 ): Promise<ShareOutcome> {
   if (!canShareImage() || !dataURLs.length) return 'unsupported'
   const files = dataURLs.map((dataURL, i) => {
     const blob = dataURLToBlob(dataURL)
     return new File([blob], shareFileName(format, i, dataURLs.length), { type: blob.type })
   })
-  if (!navigator.canShare({ files })) return 'unsupported'
+  const payload: ShareData = { files, title, text: buildShareText(caption) }
+  if (!navigator.canShare(payload)) {
+    // A target that takes the files but not the accompanying text is still a
+    // working share — drop the text rather than the picture.
+    if (!navigator.canShare({ files })) return 'unsupported'
+    delete payload.text
+  }
   try {
-    await navigator.share({ files, title })
+    await navigator.share(payload)
     return 'shared'
   } catch (err) {
     // Every browser reports a dismissed share sheet as AbortError.
@@ -349,6 +389,7 @@ export async function shareDataURL(
   dataURL: string,
   format: ExportFormat,
   title = 'My Collage',
+  caption?: string,
 ): Promise<ShareOutcome> {
-  return shareImages([dataURL], format, title)
+  return shareImages([dataURL], format, title, caption)
 }

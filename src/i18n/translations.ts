@@ -272,6 +272,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     'canvas.editText': 'Edit text',
     'share.title': 'My Collage',
+    'share.text': 'Made with Pic Collage Maker —',
     'share.maybeFailed': 'Shared. Didn\'t arrive? Save the image.',
     'share.saveInstead': 'Save',
     'project.title': 'Projects',
@@ -744,6 +745,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     'canvas.editText': 'Text bearbeiten',
     'share.title': 'Meine Collage',
+    'share.text': 'Erstellt mit Pic Collage Maker —',
     'share.maybeFailed': 'Geteilt. Nicht angekommen? Bild speichern.',
     'share.saveInstead': 'Speichern',
     'project.title': 'Projekte',
@@ -1199,6 +1201,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     'canvas.editText': 'Editar texto',
     'share.title': 'Mi Collage',
+    'share.text': 'Hecho con Pic Collage Maker —',
     'share.maybeFailed': 'Compartido. ¿No llegó? Guarda la imagen.',
     'share.saveInstead': 'Guardar',
     'project.title': 'Proyectos',
@@ -1671,6 +1674,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     'canvas.editText': 'Modifier le texte',
     'share.title': 'Mon collage',
+    'share.text': 'Créé avec Pic Collage Maker —',
     'share.maybeFailed': 'Partagé. Rien reçu ? Enregistrez l’image.',
     'share.saveInstead': 'Enregistrer',
     'project.title': 'Projets',
@@ -2143,6 +2147,7 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     'canvas.editText': 'Modifica testo',
     'share.title': 'Il mio collage',
+    'share.text': 'Creato con Pic Collage Maker —',
     'share.maybeFailed': 'Condiviso. Non è arrivato? Salva l\'immagine.',
     'share.saveInstead': 'Salva',
     'project.title': 'Progetti',
@@ -2646,6 +2651,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'toast.pasted': 'Colado!',
     'canvas.editText': 'Editar texto',
     'share.title': 'Minha Colagem',
+    'share.text': 'Feito com Pic Collage Maker —',
     'share.maybeFailed': 'Compartilhado. Não chegou? Salve a imagem.',
     'share.saveInstead': 'Salvar',
     'project.title': 'Projetos',
